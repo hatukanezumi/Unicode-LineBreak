@@ -1,0 +1,70 @@
+#-*- perl -*-
+
+package Unicode::LineBreak;
+
+=head1 NAME
+
+Unicode::LineBreak::Defaults - Configuration for Unicode::LineBreak
+
+=head1 SYNOPSIS
+
+Edit this file and place it on Unicode/LineBreak/Defaults.pm 
+to activate custom settings.
+
+=head1 DESCRIPTION
+
+Following settings are derived from MIME/Charset/Defaults.pm,
+but you may override them for this module locally.
+
+=over 4
+
+=item Detect7bit
+
+=item Mapping
+
+=item Replacement
+
+=back
+
+Following settings are specific to this module.
+
+=over 4
+
+=item Charset
+
+=item Context
+
+=item HangulAsAL
+
+=item Language
+
+=item MaxColumns
+
+=item NSKanaAsID
+
+=back
+
+=head1 SEE ALSO
+
+L<Unicode::LineBreak>
+
+=cut
+
+#--------------------------------------------------------------------------#
+# Add your own settings below.
+#--------------------------------------------------------------------------#
+
+## Default settings on MIME::Charset are:
+# $Config->{Detect7bit} = 'YES';
+# $Config->{Mapping} = 'EXTENDED';
+# $Config->{Replacement} = 'DEFAULT';
+
+## Default settings on current release are:
+# $Config->{Charset} = 'UTF-8';
+# $Config->{Context} = '';
+# $Config->{HangulAsAL} = 'NO';
+# $Config->{Language} = 'XX';
+# $Config->{MaxColumns} = 76;
+# $Config->{NSKanaAsID} = 'NO';
+
+1;

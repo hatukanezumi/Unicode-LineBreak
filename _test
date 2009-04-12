@@ -1,0 +1,15 @@
+#! perl
+
+use Encode;
+use Unicode::LineBreak;
+
+while (<>) {
+    $_ = Encode::decode_utf8($_);
+    my $lb = Unicode::LineBreak->new($_);
+    while (1) {
+	my ($break, $str) = $lb->_breakable;
+	print "$break:$lb->{_pos}:\"".Encode::encode_utf8($str)."\"\n";
+	last if $break < 0;
+    }
+}
+

@@ -1,0 +1,101 @@
+NAME
+    Unicode::LineBreak - UAX #14 Unicode Line Breaking Algorithm
+
+SYNOPSIS
+        use Unicode::LineBreak;
+        $lb = Unicode::LineBreak->new($string);
+        $string = $lb->break;
+
+DESCRIPTION
+    Unicode::LineBreak performs Line Breaking Algorithm described in Unicode
+    Standards Annex #14 [UAX #14]. East_Asian_Width informative properties
+    [UAX #11] will be concerned to determin breaking points.
+
+PUBLIC INTERFACE
+    new [STRING, [OPTIONS...]]
+        DeScRiPtIoNs...
+
+    config [OPTIONS...]
+
+        Charset => CHARSET
+        Context => "EASTASIAN" | "NONEASTASIAN"
+        Language => LANGUAGE
+            DeScRiPtIoNs...
+
+        HangulAsAL => "YES" | "NO"
+            Treat hangul syllables and conjoining jamos as AL.
+
+        MaxColumns => NUMBER
+            DeScRiPtIoNs...
+
+        NSKanaAsID => "YES" | "NO"
+            Treat hiragana/katakana non-starters and prolonged signs (NS) as
+            ID. This feature is optional in [JIS X 4051].
+
+        OutputCharset => CHARSET
+            DeScRiPtIoNs...
+
+    break
+        DeScRiPtIoNs...
+
+  Configuration Files
+    Built-in defaults of option parameters for "new" and "config" can be
+    overridden by configuration files: MIME/Charset/Defaults.pm and
+    Unicode/LineBreak/Defaults.pm. For more details read
+    Unicode/LineBreak/Defaults.pm.sample.
+
+  Conformance to Standards
+    Character properties based on by this module are defined by Unicode
+    Standards version 5.1.0.
+
+    This module implements UAX14-C2.
+
+    *   Hiragana/katakana small letters and prolonged signs may be treated
+        as either NS or ID by choice (See [JIS X 4051] 6.1.1).
+
+    *   Hangul syllables and conjoining jamos may be treated as either
+        H2/H3/JL/JT/JV or AL by choice.
+
+    *   Characters assigned to AI may be resolved to either AL or ID by
+        choice.
+
+    *   Character(s) assigned to CB are not resolved.
+
+    *   Characters assigned to SA are resolved to AL, except that characters
+        that have General_Category Mn or Mc be resolved to CM.
+
+    *   Characters assigned to SG or XX are resolved to AL.
+
+BUGS
+    Slightly slow. XS implementation might be required.
+
+VERSION
+    This is pre-alpha release.
+
+    Development versions of this module may be found at
+    <http://hatuka.nezumi.nu/repos/Unicode-LineBreak/>.
+
+SEE ALSO
+    Text::Wrap.
+
+REFERENCES
+    [JIS X 4051]
+        JIS X 4051:2004 *日本語文書の組版方法* (*Formatting Rules
+        for Japanese Documents*), published by Japanese Standards
+        Association, 2004.
+
+    [UAX #11]
+        A. Freytag (2008). *Unicode Standard Annex #11: East Asian Width*,
+        Revision 17. <http://unicode.org/reports/tr11/>.
+
+    [UAX #14]
+        A. Freytag and A. Heninger (2008). *Unicode Standard Annex #14:
+        Unicode Line Breaking Algorithm*, Revision 22.
+        <http://unicode.org/reports/tr14/>.
+
+AUTHORS
+    Copyright (C) 2009 Hatuka*nezumi - IKEDA Soji <hatuka(at)nezumi.nu>.
+
+    This program is free software; you can redistribute it and/or modify it
+    under the same terms as Perl itself.
+
