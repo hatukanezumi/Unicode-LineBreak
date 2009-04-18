@@ -19,6 +19,8 @@ Unicode::LineBreak performs Line Breaking Algorithm described in
 Unicode Standards Annex #14 [UAX #14].  East_Asian_Width informative
 properties [UAX #11] will be concerned to determin breaking points.
 
+B<NOTE>: Current release of this module is pre-alpha just for proof-of-concept.
+
 =cut
 
 ### Pragmas:
@@ -86,13 +88,53 @@ my $EASTASIAN_LANGUAGES = qr{
 }ix;
 
 
-=head1 PUBLIC INTERFACE
+=head2 Public Interface
 
 =over 4
 
-=item new [STRING, [OPTIONS...]]
+=item new STRING, [OPTIONS...]
 
-DeScRiPtIoNs...
+Constructor.  Following OPTIONS may be specified.
+
+=over 4
+
+=item Charset => CHARSET
+
+Character set that is used to encode string STRING.
+Default is C<"UTF-8">.
+
+=item Context => C<"EASTASIAN"> | C<"NONEASTASIAN">
+
+=item Language => LANGUAGE
+
+Along with Charset option, these options may be used to define
+language/region context.
+Currently available contexts are C<"EASTASIAN"> and C<"NONEASTASIAN">.
+
+=item HangulAsAL => C<"YES"> | C<"NO">
+
+Treat hangul syllables and conjoining jamos as alphabetic characters (AL).
+Default is C<"NO">.
+
+=item MaxColumns => NUMBER
+
+Maximum number of columns line may include, in other words, length of line.
+Default is C<76>.
+
+=item NSKanaAsID => C<"YES"> | C<"NO">
+
+Treat hiragana/katakana non-starters and prolonged signs (NS) as
+ideographic characters (ID).
+This feature is optional in [JIS X 4051].
+Default is C<"NO">.
+
+=item OutputCharset => CHARSET
+
+Character set that is used to encode result of break().
+If a special value C<"_UNICODE_"> is specified, result will be Unicode string.
+Default is C<"UTF-8">.
+
+=back
 
 =back
 
@@ -102,8 +144,9 @@ sub new {
     my $class = shift;
     my $str = shift;
 
-    my $self = { _pos => 0 };
+    my $self = { };
     &config($self, @_);
+    &setRules($self);
     if (Encode::is_utf8($str)) {
 	$self->{_str} = $str;
     } else {
@@ -111,43 +154,6 @@ sub new {
     }
     bless $self, $class;
 }
-
-=over 4
-
-=item config [OPTIONS...]
-
-=over 4
-
-=item Charset => CHARSET
-
-=item Context => C<"EASTASIAN"> | C<"NONEASTASIAN">
-
-=item Language => LANGUAGE
-
-DeScRiPtIoNs...
-
-=item HangulAsAL => C<"YES"> | C<"NO">
-
-Treat hangul syllables and conjoining jamos as AL.
-
-=item MaxColumns => NUMBER
-
-DeScRiPtIoNs...
-
-=item NSKanaAsID => C<"YES"> | C<"NO">
-
-Treat hiragana/katakana non-starters and prolonged signs (NS) as ID.
-This feature is optional in [JIS X 4051].
-
-=item OutputCharset => CHARSET
-
-DeScRiPtIoNs...
-
-=back
-
-=back
-
-=cut
 
 sub config {
     my $self = shift;
@@ -229,23 +235,21 @@ sub config {
 
     ## Customize East Asian Widths.
 
-    $self->{"ea_z"} ||= qr{\p{ea_z}};
+    $self->{"ea_z"} = qr{\p{ea_z}}os;
     if ($context eq 'EASTASIAN') {
-	$self->{"ea_w"} ||= qr{(?:\p{ea_F}|\p{ea_W}|\p{ea_A})};
-	$self->{"ea_n"} ||= qr{(?:\p{ea_H}|\p{ea_Na}|\p{ea_N})};
+	$self->{"ea_w"} = qr{(?:\p{ea_F}|\p{ea_W}|\p{ea_A})}os;
+	$self->{"ea_n"} = qr{(?:\p{ea_H}|\p{ea_Na}|\p{ea_N})}os;
     } else {
-	$self->{"ea_w"} ||= qr{(?:\p{ea_F}|\p{ea_W})};
-	$self->{"ea_n"} ||= qr{(?:\p{ea_H}|\p{ea_Na}|\p{ea_A}|\p{ea_N})};
+	$self->{"ea_w"} = qr{(?:\p{ea_F}|\p{ea_W})}os;
+	$self->{"ea_n"} = qr{(?:\p{ea_H}|\p{ea_Na}|\p{ea_A}|\p{ea_N})}os;
     }
-
-    return $self;
 }
 
 =over 4
 
 =item break
 
-DeScRiPtIoNs...
+Break string and returns it.
 
 =back
 
@@ -259,24 +263,37 @@ sub break {
     my $blen = 0;
     my $pbuf = '';
     my $plen = 0;
+    my $slen;
+    my $sp;
+    my $str = $self->{_str};
 
-    $self->{_pos} = 0;
+    return '' unless defined $str and length $str;
+
+    pos($str) = 0;
     while (1) {
-	($action, $sym) = $self->_breakable;
-	$sym =~ s/\u0020*$//;
-	my $sp = $& || '';
+	foreach my $r (@{$self->{_rules}}) {
+	    if ($str =~ m/$r->[0]/cg) {
+		($action, $sym) = ($r->[1], $&);
+		last;
+	    }
+	}
+	if ($sym =~ s/\u0020+$//) {
+	    $sp = $&;
+	} else {
+	    $sp = '';
+	}
+	$slen = $self->_strwidth($sym);
 
-	if ($bbuf ne '' and
-	    $self->{_max_columns} < $blen + $plen + $self->_strwidth($sym)) {
+	if ($bbuf ne '' and $self->{_max_columns} < $blen + $plen + $slen) {
 	    $result .= $bbuf."\n";
 	    $bbuf = '';
 	    $blen = 0;
-	    $pbuf .= $sym.$sp;
-	    $plen += $self->_strwidth($sym.$sp);
-	} else {
-	    $pbuf .= $sym.$sp;
-	    $plen += $self->_strwidth($sym.$sp);
 	}
+	$plen += $slen;
+	if ($slen and $pbuf =~ /\u0020+$/) {
+	    $plen += length $&;
+	}
+	$pbuf .= $sym.$sp;
 
 	if ($action == EOT) {
 	    $result .= $bbuf.$pbuf;
@@ -300,6 +317,7 @@ sub break {
     }
 }
 
+# TODO: Adjust widths of hangul conjoining jamos.
 sub _strwidth {
     my $self = shift;
     my $str = shift;
@@ -308,32 +326,20 @@ sub _strwidth {
     return 0 unless defined $str and length $str;
     my $i;
     for ($i = 0; $i < length $str; $i++) {
-	$result += $self->_charwidth(substr($str, $i, 1));
+	my $char = substr($str, $i, 1);
+	if ($char =~ /$self->{ea_w}/) {
+	    $result += 2;
+	} elsif ($char !~ /$self->{ea_z}/) {
+	    $result += 1;
+	}
     }
     return $result;
 }
 
-sub _charwidth {
-    my $self = shift;
-    my $char = shift;
-
-    return 0 unless defined $char and length $char;
-    croak sprintf "Not a single character: ``\\x%*v02X''", '\\x', $char
-	unless length($char) == 1;
-
-    if ($char =~ /$self->{ea_z}/) {
-	return 0;
-    } elsif ($char =~ /$self->{ea_w}/) {
-	return 2;
-    } else {
-	return 1;
-    }
-}
-
 =head2 Configuration Files
 
-Built-in defaults of option parameters for L<"new"> and
-L<"config"> can be overridden by configuration files:
+Built-in defaults of option parameters for L<"new"> method
+can be overridden by configuration files:
 F<MIME/Charset/Defaults.pm> and F<Unicode/LineBreak/Defaults.pm>.
 For more details read F<Unicode/LineBreak/Defaults.pm.sample>.
 
@@ -377,11 +383,11 @@ Characters assigned to SG or XX are resolved to AL.
 
 =head1 BUGS
 
-B<Slightly slow>.  XS implementation might be required.
+B<Slightly slow>.  This is pre-alpha release for proof-of-concept.
 
 =head1 VERSION
 
-This is pre-alpha release.
+Consult $VERSION variable.
 
 Development versions of this module may be found at 
 L<http://hatuka.nezumi.nu/repos/Unicode-LineBreak/>.

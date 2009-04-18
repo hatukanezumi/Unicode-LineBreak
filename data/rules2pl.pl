@@ -13,12 +13,9 @@ print <<'EOF';
 
 package Unicode::LineBreak;
 
-sub _breakable {
-    my $s = shift;
-    my $str = $s->{_str};
-    pos($str) = $s->{_pos};
-
-    return (EOT, '') unless $str;
+sub setRules {
+    my $self = shift;
+    my @rules = ();
 
 EOF
 
@@ -53,17 +50,14 @@ while (<RULES>) {
     $break = 'EOT' if $right =~ /\\z/;
 
     print <<"EOF";
-    if (\$str =~ m/\\G$left(?=$right)/cgsx) {
-	\$s->{_pos} = pos(\$str);
-	return ($break, \$&);
-    }
+    push \@rules, [qr{\\G$left(?=$right)}osx, $break];
 EOF
 }
 close RULES;
 
 print <<'EOF';
 
-    return NO_BREAK;
+    $self->{_rules} = \@rules;
 }
 
 1;
@@ -115,14 +109,13 @@ sub atom2re {
     } elsif ($atom eq 'ALL') {
 	$atom = '.';
     } elsif ($CM_AS_AL and $atom eq 'AL' and not $is_right) {
-        $atom = '(?:$s->{lb_AL}|$s->{lb_CM})';
-	$atom .= '$s->{lb_CM}*' if $OMIT_CM;
+        $atom = '(?:$self->{lb_AL}|$self->{lb_CM})';
+	$atom .= '$self->{lb_CM}*' if $OMIT_CM;
     } elsif ($OMIT_CM and $atom !~ /BK|CR|LF|NL|SP|ZW/ and not $is_right) {
-	$atom = '$s->{lb_'.$atom.'}$s->{lb_CM}*';
+	$atom = '$self->{lb_'.$atom.'}$self->{lb_CM}*';
     } else {
-        $atom = '$s->{lb_'.$atom.'}';
+        $atom = '$self->{lb_'.$atom.'}';
     }
 
     return $atom;
 }
-

@@ -11,35 +11,46 @@ DESCRIPTION
     Standards Annex #14 [UAX #14]. East_Asian_Width informative properties
     [UAX #11] will be concerned to determin breaking points.
 
-PUBLIC INTERFACE
-    new [STRING, [OPTIONS...]]
-        DeScRiPtIoNs...
+    NOTE: Current release of this module is pre-alpha just for
+    proof-of-concept.
 
-    config [OPTIONS...]
+  Public Interface
+    new STRING, [OPTIONS...]
+        Constructor. Following OPTIONS may be specified.
 
         Charset => CHARSET
+            Character set that is used to encode string STRING. Default is
+            "UTF-8".
+
         Context => "EASTASIAN" | "NONEASTASIAN"
         Language => LANGUAGE
-            DeScRiPtIoNs...
+            Along with Charset option, these options may be used to define
+            language/region context. Currently available contexts are
+            "EASTASIAN" and "NONEASTASIAN".
 
         HangulAsAL => "YES" | "NO"
-            Treat hangul syllables and conjoining jamos as AL.
+            Treat hangul syllables and conjoining jamos as alphabetic
+            characters (AL).
 
         MaxColumns => NUMBER
-            DeScRiPtIoNs...
+            Maximum number of columns line may include, in other words,
+            length of line.
 
         NSKanaAsID => "YES" | "NO"
             Treat hiragana/katakana non-starters and prolonged signs (NS) as
-            ID. This feature is optional in [JIS X 4051].
+            ideographic characters (ID). This feature is optional in [JIS X
+            4051].
 
         OutputCharset => CHARSET
-            DeScRiPtIoNs...
+            Character set that is used to encode result of break(). If a
+            special value "_UNICODE_" is specified, result will be Unicode
+            string. Default is "UTF-8".
 
     break
-        DeScRiPtIoNs...
+        Break string and returns it.
 
   Configuration Files
-    Built-in defaults of option parameters for "new" and "config" can be
+    Built-in defaults of option parameters for "new" method can be
     overridden by configuration files: MIME/Charset/Defaults.pm and
     Unicode/LineBreak/Defaults.pm. For more details read
     Unicode/LineBreak/Defaults.pm.sample.
@@ -67,10 +78,10 @@ PUBLIC INTERFACE
     *   Characters assigned to SG or XX are resolved to AL.
 
 BUGS
-    Slightly slow. XS implementation might be required.
+    Slightly slow. This is pre-alpha release for proof-of-concept.
 
 VERSION
-    This is pre-alpha release.
+    Consult $VERSION variable.
 
     Development versions of this module may be found at
     <http://hatuka.nezumi.nu/repos/Unicode-LineBreak/>.
