@@ -1,6 +1,6 @@
 --- #YAML:1.0
 name:                Unicode-LineBreak
-version:             0.001_01
+version:             0.001_02
 abstract:            UAX #14 Unicode Line Breaking Algorithm
 license:             perl
 author:              
@@ -10,7 +10,7 @@ distribution_type:   module
 requires:     
     Encode:                        1.98
     MIME::Charset:                 1.006.2
-    Test:                          0
+    Test::More:                    0
 meta-spec:
     url:     http://module-build.sourceforge.net/META-spec-v1.3.html
     version: 1.3

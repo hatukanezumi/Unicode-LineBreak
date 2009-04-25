@@ -15,31 +15,41 @@ DESCRIPTION
     proof-of-concept.
 
   Public Interface
-    new STRING, [OPTIONS...]
+    new STRING, [OPTIONS, ...]
         Constructor. Following OPTIONS may be specified.
 
         Charset => CHARSET
             Character set that is used to encode string STRING. Default is
             "UTF-8".
 
-        Context => "EASTASIAN" | "NONEASTASIAN"
-        Language => LANGUAGE
-            Along with Charset option, these options may be used to define
+        Context => CONTEXT
+            Along with Charset option, this may be used to define
             language/region context. Currently available contexts are
-            "EASTASIAN" and "NONEASTASIAN".
+            "EASTASIAN" and "NONEASTASIAN". Default context is
+            "NONEASTASIAN".
 
         HangulAsAL => "YES" | "NO"
             Treat hangul syllables and conjoining jamos as alphabetic
-            characters (AL).
+            characters (AL). Default is "NO".
+
+        Language => LANGUAGE
+            Along with Charset option, this may be used to define
+            language/region context. See Context option.
+
+        LegacyCM => "YES" | "NO"
+            Treat combining characters lead by SPACE as an isolated
+            combining character. As of Unicode 5.0, such use of SPACE is not
+            recommended. Default is "YES".
 
         MaxColumns => NUMBER
-            Maximum number of columns line may include, in other words,
-            length of line.
+            Maximum number of columns line may include not counting trailing
+            spaces and newline sequence. In other words, maximum length of
+            line. Default is 76.
 
         NSKanaAsID => "YES" | "NO"
-            Treat hiragana/katakana non-starters and prolonged signs (NS) as
-            ideographic characters (ID). This feature is optional in [JIS X
-            4051].
+            Treat hiragana/katakana small letters and prolonged signs (NS)
+            as ideographic characters (ID). This feature is optional in [JIS
+            X 4051]. Default is "NO".
 
         OutputCharset => CHARSET
             Character set that is used to encode result of break(). If a
@@ -47,7 +57,7 @@ DESCRIPTION
             string. Default is "UTF-8".
 
     break
-        Break string and returns it.
+        Instance method. Break string and returns it.
 
   Configuration Files
     Built-in defaults of option parameters for "new" method can be
@@ -77,8 +87,11 @@ DESCRIPTION
 
     *   Characters assigned to SG or XX are resolved to AL.
 
+CAVEAT
+    *To be written*.
+
 BUGS
-    Slightly slow. This is pre-alpha release for proof-of-concept.
+    Please report bugs or buggy behaviors to developer. See "AUTHOR".
 
 VERSION
     Consult $VERSION variable.
@@ -104,7 +117,7 @@ REFERENCES
         Unicode Line Breaking Algorithm*, Revision 22.
         <http://unicode.org/reports/tr14/>.
 
-AUTHORS
+AUTHOR
     Copyright (C) 2009 Hatuka*nezumi - IKEDA Soji <hatuka(at)nezumi.nu>.
 
     This program is free software; you can redistribute it and/or modify it

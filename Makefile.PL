@@ -9,7 +9,7 @@ WriteMakefile(
 	'PREREQ_PM'	=> {
 	    'Encode'		=> 1.98,
 	    'MIME::Charset'	=> '1.006.2',
-	    'Test'		=> 0,
+	    'Test::More'	=> 0,
 	},
 );
 

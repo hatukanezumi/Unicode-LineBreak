@@ -38,6 +38,8 @@ Following settings are specific to this module.
 
 =item Language
 
+=item LegacyCM
+
 =item MaxColumns
 
 =item NSKanaAsID
@@ -64,6 +66,7 @@ L<Unicode::LineBreak>
 # $Config->{Context} = '';
 # $Config->{HangulAsAL} = 'NO';
 # $Config->{Language} = 'XX';
+# $Config->{LegacyCM} = 'YES';
 # $Config->{MaxColumns} = 76;
 # $Config->{NSKanaAsID} = 'NO';
 

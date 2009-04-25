@@ -3,6 +3,8 @@ Changes
 data/data2pl.pl
 data/EastAsianWidth.custom
 data/LineBreak.custom
+data/Makefile
+data/map2pl.pl
 data/Rules
 data/rules2pl.pl
 GPL
@@ -15,7 +17,10 @@ MANIFEST			This list of files
 META.yml
 README
 t/01break.t
+t/02hangul.t
+t/03ns.t
 t/pod.t
+t/t.pl
 testin/ar.in
 testin/ar.out
 testin/el.in
@@ -24,8 +29,12 @@ testin/fr.in
 testin/fr.out
 testin/ja-a.in
 testin/ja-a.out
+testin/ja-k.in
+testin/ja-k.ns.out
+testin/ja-k.out
 testin/ja.in
 testin/ja.out
+testin/ko.al.out
 testin/ko.in
 testin/ko.out
 testin/ru.in
