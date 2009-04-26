@@ -9,7 +9,7 @@ SYNOPSIS
 DESCRIPTION
     Unicode::LineBreak performs Line Breaking Algorithm described in Unicode
     Standards Annex #14 [UAX #14]. East_Asian_Width informative properties
-    [UAX #11] will be concerned to determin breaking points.
+    [UAX #11] will be concerned to determin breaking positions.
 
     NOTE: Current release of this module is pre-alpha just for
     proof-of-concept.
@@ -17,6 +17,26 @@ DESCRIPTION
   Public Interface
     new STRING, [OPTIONS, ...]
         Constructor. Following OPTIONS may be specified.
+
+        Breaking => METHOD
+            *Not yet implemented*. Specify the method to format broken
+            lines.
+
+            "DEFAULT"
+                Default method. Insert newline at arbitrary breaking
+                positions.
+
+            "NEWLINE"
+                Remove SPACEs leading newline sequences, and append newline
+                at end of text if it does not exist.
+
+            "TRIM"
+                Remove SPACEs leading newline sequences.
+
+            Subroutine reference
+                See "Costomizing Line Breaking Behavior".
+
+            See also Newline option.
 
         Charset => CHARSET
             Character set that is used to encode string STRING. Default is
@@ -46,6 +66,11 @@ DESCRIPTION
             spaces and newline sequence. In other words, maximum length of
             line. Default is 76.
 
+        Newline => STRING
+            *Not yet implemented*. Replace newline sequences with Unicode
+            string STRING. If "undef" is specified, newline sequences will
+            not be modified. Default is "undef".
+
         NSKanaAsID => "YES" | "NO"
             Treat hiragana/katakana small letters and prolonged signs (NS)
             as ideographic characters (ID). This feature is optional in [JIS
@@ -59,6 +84,40 @@ DESCRIPTION
     break
         Instance method. Break string and returns it.
 
+  Customizing Line Breaking Behavior
+    If you specify subroutine reference as a value of Breaking option, it
+    should accept three arguments: Instance of LineBreak object, ACTION and
+    STRING. ACTION is a string to determine the context that subroutine is
+    called in. STRING is a fragment of text leading or trailing breaking
+    position.
+
+        ACTION| When Fired            | Value of STRING
+        ------+-----------------------+---------------------------------
+        "sot" | Beginning of text     | Fragment of first line
+        "sop" | After mandatory break | Fragment of next line
+        "sol" | After arbitrary break | Fragment at sequel of line
+        "eol" | Arabitrary break      | Leading SPACEs at breaking position
+        "eop" | Mandatory break       | Leading SPACEs and newline
+        "eot" | End of text           | Leading SPACEs (and newline)
+        ----------------------------------------------------------------
+
+    Subroutine should return modified text fragment or may return "undef" to
+    express that no modification occurred. Note that modification in the
+    context of "sot", "sop" or "sol" may affect decision of successive
+    breaking positions while in the others won't.
+
+    Following table describes built-in behavior by Breaking options.
+
+              | "DEFAULT"       | "TRIM"            | "NEWLINE"
+        ------+-----------------+-------------------+-------------------
+        "sot" | do nothing      | do nothing        | do nothing
+        "sop" | do nothing      | do nothing        | do nothing
+        "sol" | do nothing      | do nothing        | do nothing
+        "eol" | append newline  | replace by newline| replace by newline
+        "eop" | do nothing      | replace by newline| replace by newline
+        "eot" | do nothing      | remove SPACEs     | replace by newline
+        ----------------------------------------------------------------
+
   Configuration Files
     Built-in defaults of option parameters for "new" method can be
     overridden by configuration files: MIME/Charset/Defaults.pm and
@@ -69,7 +128,7 @@ DESCRIPTION
     Character properties based on by this module are defined by Unicode
     Standards version 5.1.0.
 
-    This module implements UAX14-C2.
+    This module is intended to implement UAX14-C2.
 
     *   Hiragana/katakana small letters and prolonged signs may be treated
         as either NS or ID by choice (See [JIS X 4051] 6.1.1).
@@ -99,9 +158,6 @@ VERSION
     Development versions of this module may be found at
     <http://hatuka.nezumi.nu/repos/Unicode-LineBreak/>.
 
-SEE ALSO
-    Text::Wrap.
-
 REFERENCES
     [JIS X 4051]
         JIS X 4051:2004 *日本語文書の組版方法* (*Formatting Rules
@@ -116,6 +172,9 @@ REFERENCES
         A. Freytag and A. Heninger (2008). *Unicode Standard Annex #14:
         Unicode Line Breaking Algorithm*, Revision 22.
         <http://unicode.org/reports/tr14/>.
+
+SEE ALSO
+    Text::Wrap.
 
 AUTHOR
     Copyright (C) 2009 Hatuka*nezumi - IKEDA Soji <hatuka(at)nezumi.nu>.

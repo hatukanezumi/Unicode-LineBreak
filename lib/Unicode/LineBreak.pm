@@ -19,7 +19,7 @@ Unicode::LineBreak - UAX #14 Unicode Line Breaking Algorithm
 
 Unicode::LineBreak performs Line Breaking Algorithm described in
 Unicode Standards Annex #14 [UAX #14].  East_Asian_Width informative
-properties [UAX #11] will be concerned to determin breaking points.
+properties [UAX #11] will be concerned to determin breaking positions.
 
 B<NOTE>: Current release of this module is pre-alpha just for proof-of-concept.
 
@@ -43,7 +43,7 @@ use MIME::Charset qw(:info);
 ### Globals
 
 ### The package version, both in 1.23 style *and* usable by MakeMaker:
-$VERSION = '0.001_02';
+$VERSION = '0.001_03';
 
 ### Public Configuration Attributes
 our $Config = {
@@ -95,6 +95,34 @@ Constructor.  Following OPTIONS may be specified.
 
 =over 4
 
+=item Breaking => METHOD
+
+I<Not yet implemented>.
+Specify the method to format broken lines.
+
+=over 4
+
+=item C<"DEFAULT">
+
+Default method.  Insert newline at arbitrary breaking positions.
+
+=item C<"NEWLINE">
+
+Remove SPACEs leading newline sequences, and append newline at end of text
+if it does not exist.
+
+=item C<"TRIM">
+
+Remove SPACEs leading newline sequences.
+
+=item Subroutine reference
+
+See L</"Costomizing Line Breaking Behavior">.
+
+=back
+
+See also Newline option.
+
 =item Charset => CHARSET
 
 Character set that is used to encode string STRING.
@@ -129,6 +157,13 @@ Default is C<"YES">.
 Maximum number of columns line may include not counting trailing spaces and
 newline sequence.  In other words, maximum length of line.
 Default is C<76>.
+
+=item Newline => STRING
+
+I<Not yet implemented>.
+Replace newline sequences with Unicode string STRING.
+If C<undef> is specified, newline sequences will not be modified.
+Default is C<undef>.
 
 =item NSKanaAsID => C<"YES"> | C<"NO">
 
@@ -202,7 +237,7 @@ sub config {
     # Some flags
     $self->{_ns_kana_as_id} = uc($params{NSKanaAsID} || $Config->{NSKanaAsID});
     $self->{_hangul_as_al} = uc($params{HangulAsAL} || $Config->{HangulAsAL});
-    $self->{_break_sequence} = "\n";
+    $self->{_newline} = "\n";
 
     ## Customize Line Breaking Classes.
 
@@ -236,30 +271,38 @@ sub break {
     return '' unless defined $str and length $str;
 
     my $result = '';
-    my ($l_frag, $l_len) = ('', 0);
-    my ($b_frag, $b_spc, $b_cls) = ('', '', undef);
+    my ($l_frg, $l_spc, $l_len) = ('', '', 0);
+    my ($b_frg, $b_spc, $b_cls) = ('', '', undef);
+    my $sot_done = 0;
+    my $sop_done = 1;
+
     pos($str) = 0;
     while (1) {
-	my ($a_frag, $a_spc, $a_cls);
+	my ($a_frg, $a_spc, $a_cls);
+
+	## Chop off unbreakable fragment from text as long as possible.
 
 	# LB3: × eot
 	if ($str =~ /\G\z/cgs) {
 	    $b_cls = 'eot';
-	    ($a_frag, $a_spc, $a_cls) = ('', '', undef);
-	# LB5, LB6: × (BK | CR LF | CR | LF | NL) !
+	    ($a_frg, $a_spc, $a_cls) = ('', '', undef);
+	# LB5, LB6: × SP* (BK | CR LF | CR | LF | NL) !
 	} elsif ($str =~
 		 /\G(?:$s->{lb_BK}|
 		     $s->{lb_CR}$s->{lb_LF}|
 		     $s->{lb_CR}|
 		     $s->{lb_LF}|
 		     $s->{lb_NL})/cgsx) {
-	    $b_frag .= $b_spc.$&; #FIXME: Process mandatory break.
-	    $b_spc = '';
-	    $b_cls = 'BK';
-	    ($a_frag, $a_spc, $a_cls) = ('', '', undef);
+	    $b_spc .= $&; #XXX $b_spc = SP* (BK etc.)
+	    $b_cls = 'eop';
+	    # LB3, LB5, LB6: × SP* (BK etc.) eot
+	    if ($str =~ /\G\z/cgs) {
+		$b_cls = 'eot';
+	    }
+	    ($a_frg, $a_spc, $a_cls) = ('', '', undef);
 	# LB7, LB8: × (ZW | SP)* ZW 
 	} elsif ($str =~ /\G(?:$s->{lb_ZW}|$s->{lb_SP})*$s->{lb_ZW}/cgs) {
-	    $b_frag .= $b_spc.$&;
+	    $b_frg .= $b_spc.$&;
 	    $b_spc = '';
 	    $b_cls = 'ZW';
 	    next;
@@ -278,7 +321,7 @@ sub break {
 		      $s->{lb_JL}* $s->{lb_JV}+ $s->{lb_JT}* |
 		      $s->{lb_JL}+ | $s->{lb_JT}+)
 		     $s->{lb_CM}*) ($s->{lb_SP}*)/cgsx) {
-	    ($a_frag, $a_spc) = ($1, $2);
+	    ($a_frg, $a_spc) = ($1, $2);
 	    if ($s->{_hangul_as_al} eq 'YES') {
 		$a_cls = 'AL';
 	    } else {
@@ -287,10 +330,10 @@ sub break {
 	# LB7, LB9: Treat X CM* SP* as if it were X SP*
 	# where X is anything except BK, CR, LF, NL, SP or ZW
 	} elsif ($str =~ /\G(.$s->{lb_CM}*)($s->{lb_SP}*)/cgs) {
-	    ($a_frag, $a_spc) = ($1, $2);
+	    ($a_frg, $a_spc) = ($1, $2);
 
 	    # LB1: Assign a line breaking class to each characters.
-	    $a_cls = &_bsearch($Unicode::LineBreak::lb_MAP, $a_frag) || 'XX';
+	    $a_cls = &_bsearch($Unicode::LineBreak::lb_MAP, $a_frg) || 'XX';
 	    $a_cls = {
 		'SAcm' => 'CM',
 		'SAal' => 'AL',
@@ -303,10 +346,11 @@ sub break {
 	    if ($a_cls eq 'CM') {
 		# LB7, Legacy-CM: Treat SP CM+ SP* as if it were ID SP*
 		# See [UAX #14] 9.1.
-		if ($s->{_legacy_cm} and $b_spc =~ s/.$//os) {
-		    $a_frag = $&.$a_frag;
+		if ($s->{_legacy_cm} and
+		    defined $b_cls and $b_spc =~ s/.$//os) {
+		    $a_frg = $&.$a_frg;
 		    $a_cls = 'ID';
-		    $b_cls = undef unless length $b_frag.$b_spc; # clear
+		    $b_cls = undef unless length $b_frg.$b_spc; # clear
 		# LB7, LB10: Treat CM+ SP* as if it were AL SP*
 		} else {
 		    $a_cls = 'AL';
@@ -315,18 +359,19 @@ sub break {
 	} else {
 	    croak pos($str).": This should not happen: ask the developer.";
 	}
-
 	# LB2: sot ×
 	unless ($b_cls) {
-	    ($b_frag, $b_spc, $b_cls) =	($a_frag, $a_spc, $a_cls);
+	    ($b_frg, $b_spc, $b_cls) =	($a_frg, $a_spc, $a_cls);
 	    next;
 	}
+
+	## Determin line breaking action by classes of adjacent characters.
 
 	my $action;
 	if ($b_cls eq 'eot') {
 	    $action = 'EOT';
 	# LB4, LB5: (BK | CR LF | CR | LF | NL) !
-	} elsif ($b_cls eq 'BK') {
+	} elsif ($b_cls eq 'eop') {
 	    $action = 'MANDATORY';
 	# LB11 - LB29 and LB31: Tailorable rules (except LB11).
 	} else {
@@ -339,33 +384,58 @@ sub break {
 	    $action = 'PROHIBITED' if $action eq 'INDIRECT' and !length $b_spc;
 
 	    if ($action eq 'PROHIBITED') {
-		$b_frag .= $b_spc.$a_frag;
+		$b_frg .= $b_spc.$a_frg;
 		$b_spc = $a_spc;
 		$b_cls = $a_cls;
 		next;
 	    }
 	}
 
-	if ($s->{_max_columns} < $l_len + $s->_strwidth($b_frag)) {
-            #FIXME: Process arbitrary break
-	    $result .= $l_frag."\n" if length $l_frag;
-	    $l_frag = $b_frag.$b_spc;
-	    $l_len = $s->_strwidth($b_frag.$b_spc);
-	} else {
-	    $l_frag .= $b_frag.$b_spc;
-	    $l_len += $s->_strwidth($b_frag.$b_spc);
+	## Examine line breaking action
+
+	if (!$sot_done) {
+	    # Process start of text.
+	    $b_frg = $s->_break('sot', $b_frg);
+	    $sot_done = 1;
+	    $sop_done = 1;
+	} elsif (!$sop_done) {
+	    # Process start of paragraph.
+	    $b_frg = $s->_break('sop', $b_frg);
+	    $sop_done = 1;
 	}
-	($b_frag, $b_spc, $b_cls) = ($a_frag, $a_spc, $a_cls);
+	
+	my $l_newlen = $s->_strwidth($l_len, $l_frg, $l_spc, $b_frg);
+	if ($s->{_max_columns} < $l_newlen) {
+            # Process arbitrary break.
+	    if (length $l_frg.$l_spc) {
+		$result .= $l_frg.$s->_break('eol', $l_spc);
+		$b_frg = $s->_break('sol', $b_frg);
+	    }
+	    $l_frg = $b_frg;
+	    $l_len = $s->_strwidth(0, '', '', $b_frg);
+	    $l_spc = $b_spc;
+	} else {
+	    $l_frg .= $l_spc.$b_frg;
+	    $l_len = $l_newlen;
+	    $l_spc = $b_spc;
+	}
+	($b_frg, $b_spc, $b_cls) = ($a_frg, $a_spc, $a_cls);
 
 	if ($action eq 'MANDATORY') {
-	    $result .= $l_frag;
-	    $l_frag = '';
+	    # Process mandatory break.
+	    $result .= $l_frg.$s->_break('eop', $l_spc);
+	    $sop_done = 0;
+	    $l_frg = '';
 	    $l_len = 0;
+	    $l_spc = '';
 	} elsif ($action eq 'EOT') {
-	    $result .= $l_frag;
+	    # Process end of text.
+	    $result .= $l_frg.$s->_break('eot', $l_spc);
 	    last;
 	}
     }
+
+    ## Output
 
     if ($s->{_output_charset} eq '_UNICODE_') {
 	return $result;
@@ -374,21 +444,106 @@ sub break {
     }
 }
 
+=head2 Customizing Line Breaking Behavior
+
+If you specify subroutine reference as a value of Breaking option,
+it should accept three arguments: Instance of LineBreak object, ACTION and
+STRING.
+ACTION is a string to determine the context that subroutine is called in.
+STRING is a fragment of text leading or trailing breaking position.
+
+    ACTION| When Fired            | Value of STRING
+    ------+-----------------------+---------------------------------
+    "sot" | Beginning of text     | Fragment of first line
+    "sop" | After mandatory break | Fragment of next line
+    "sol" | After arbitrary break | Fragment at sequel of line
+    "eol" | Arabitrary break      | Leading SPACEs at breaking position
+    "eop" | Mandatory break       | Leading SPACEs and newline
+    "eot" | End of text           | Leading SPACEs (and newline)
+    ----------------------------------------------------------------
+
+Subroutine should return modified text fragment or may return
+C<undef> to express that no modification occurred.
+Note that modification in the context of C<"sot">, C<"sop"> or C<"sol"> may
+affect decision of successive breaking positions while in the others won't.
+
+Following table describes built-in behavior by Breaking options.
+
+          | "DEFAULT"       | "TRIM"            | "NEWLINE"
+    ------+-----------------+-------------------+-------------------
+    "sot" | do nothing      | do nothing        | do nothing
+    "sop" | do nothing      | do nothing        | do nothing
+    "sol" | do nothing      | do nothing        | do nothing
+    "eol" | append newline  | replace by newline| replace by newline
+    "eop" | do nothing      | replace by newline| replace by newline
+    "eot" | do nothing      | remove SPACEs     | replace by newline
+    ----------------------------------------------------------------
+
+=cut
+
+my $break_func_default = sub {
+    my $self = shift;
+    my $action = shift;
+    my $str = shift;
+
+    if ($action eq 'sot' or      # Start of text.
+	$action eq 'sop' or      # New line after Mandatory break.
+	$action eq 'sol') {      # New line after Arbtrary break.
+	return $str;
+    } elsif ($action eq 'eol') { # Arabitrary break.
+	return $str.$self->{_newline};
+    } elsif ($action eq 'eop') { # Mandatory break.
+	return $str;
+    } elsif ($action eq 'eot') { # End of text.
+	return $str;
+    } else {
+	croak "Unknown line breaking action: $action";
+    }
+};
+
+sub _break {
+    my $self = shift;
+    my $action = shift || '';
+    my $spc = shift;
+
+    my $func = $self->{_break_func} || $break_func_default;
+    my $result;
+    my $err = $@;
+    eval {
+	$result = &{$func}($self, $action, $spc);
+    };
+    if ($@) {
+	carp $@;
+	$result = $spc;
+    } elsif (!defined $result) {
+	$result = $spc;
+    }
+    $@ = $err;
+    return $result;
+}
+
+
 # Helper functions.
 
-# self->_strwidth STR
-# Coliculate the number of columns that string STR will occupy.
+# self->_strwidth(LEN, PRE, SPC, STR)
+# Increment number of columns by that newly added string will occupy.
+# LEN is the columns of string PRE.
+# SPC is a sequence of SPACE inserted between PRE and STR.
+# Returns recalculated number of columns of PRE.SPC.STR.
 # TODO: Adjust widths of hangul conjoining jamos.
 sub _strwidth {
     my $self = shift;
+    my $len = shift;
+    my $pre = shift;
+    my $spc = shift;
     my $str = shift;
-    my $result = 0;
+    my $result = $len;
 
-    return 0 unless defined $str and length $str;
+    return $len unless defined $str and length $str;
     my $i;
-    for ($i = 0; $i < length($str); $i++) {
+    for ($i = 0; $i < length($spc.$str); $i++) {
 	my $width = &_bsearch($Unicode::LineBreak::ea_MAP,
-			      substr($str, $i, 1));
+			      substr($spc.$str, $i, 1));
 	if ($width eq 'F' or $width eq 'W') {
 	    $result += 2;
         } elsif ($self->{_context} eq 'EASTASIAN' and $width eq 'A') {
@@ -430,6 +585,7 @@ sub _bsearch {
     return undef;
 }
 
+
 =head2 Configuration Files
 
 Built-in defaults of option parameters for L<"new"> method
@@ -442,7 +598,7 @@ For more details read F<Unicode/LineBreak/Defaults.pm.sample>.
 Character properties based on by this module are defined by
 Unicode Standards version 5.1.0.
 
-This module implements UAX14-C2.
+This module is intended to implement UAX14-C2.
 
 =over 4
 
@@ -490,10 +646,6 @@ Consult $VERSION variable.
 Development versions of this module may be found at 
 L<http://hatuka.nezumi.nu/repos/Unicode-LineBreak/>.
 
-=head1 SEE ALSO
-
-L<Text::Wrap>.
-
 =head1 REFERENCES
 
 =over 4
@@ -527,6 +679,10 @@ I<Unicode Standard Annex #14: Unicode Line Breaking Algorithm>, Revision 22.
 L<http://unicode.org/reports/tr14/>.
 
 =back
+
+=head1 SEE ALSO
+
+L<Text::Wrap>.
 
 =head1 AUTHOR
 
