@@ -5,11 +5,16 @@ $Unicode::LineBreak::Config = {
     Detect7bit => 'YES',
     Mapping => 'EXTENDED',
     Replacement => 'DEFAULT',
+    Breaking => 'DEFAULT',
     Charset => 'UTF-8',
+    Context => '',
     HangulAsAL => 'NO',
-    OutputCharset => 'UTF-8',
-    Break => "\n",
+    Language => 'XX',
+    LegacyCM => "YES",
     MaxColumns => 76,
+    Newline => "\n",
+    NSKanaAsID => "NO",
+    OutputCharset => 'UTF-8',
 };
 
 sub dotest {
@@ -19,8 +24,8 @@ sub dotest {
     open IN, "<testin/$in.in" or die "open: $!";
     my $instring = join '', <IN>;
     close IN;
-    my $lb = Unicode::LineBreak->new($instring, @_);
-    $instring = $lb->break();
+    my $lb = Unicode::LineBreak->new(@_);
+    $instring = $lb->break($instring);
     #open XXX, ">testin/$out.xxx";
     #print XXX $instring;
     #close XXX;

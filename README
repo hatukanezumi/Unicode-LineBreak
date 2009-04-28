@@ -15,108 +15,144 @@ DESCRIPTION
     proof-of-concept.
 
   Public Interface
-    new STRING, [OPTIONS, ...]
-        Constructor. Following OPTIONS may be specified.
+    new ([KEY => VALUE, ...])
+        Constructor. About KEY => VALUE pairs see "Options".
 
-        Breaking => METHOD
-            *Not yet implemented*. Specify the method to format broken
-            lines.
+    $self->config (KEY)
+    $self->config (KEY => VALUE, ...)
+        Instance method. Get or update configuration. About KEY => VALUE
+        pairs see "Options".
 
-            "DEFAULT"
-                Default method. Insert newline at arbitrary breaking
-                positions.
-
-            "NEWLINE"
-                Remove SPACEs leading newline sequences, and append newline
-                at end of text if it does not exist.
-
-            "TRIM"
-                Remove SPACEs leading newline sequences.
-
-            Subroutine reference
-                See "Costomizing Line Breaking Behavior".
-
-            See also Newline option.
-
-        Charset => CHARSET
-            Character set that is used to encode string STRING. Default is
-            "UTF-8".
-
-        Context => CONTEXT
-            Along with Charset option, this may be used to define
-            language/region context. Currently available contexts are
-            "EASTASIAN" and "NONEASTASIAN". Default context is
-            "NONEASTASIAN".
-
-        HangulAsAL => "YES" | "NO"
-            Treat hangul syllables and conjoining jamos as alphabetic
-            characters (AL). Default is "NO".
-
-        Language => LANGUAGE
-            Along with Charset option, this may be used to define
-            language/region context. See Context option.
-
-        LegacyCM => "YES" | "NO"
-            Treat combining characters lead by SPACE as an isolated
-            combining character. As of Unicode 5.0, such use of SPACE is not
-            recommended. Default is "YES".
-
-        MaxColumns => NUMBER
-            Maximum number of columns line may include not counting trailing
-            spaces and newline sequence. In other words, maximum length of
-            line. Default is 76.
-
-        Newline => STRING
-            *Not yet implemented*. Replace newline sequences with Unicode
-            string STRING. If "undef" is specified, newline sequences will
-            not be modified. Default is "undef".
-
-        NSKanaAsID => "YES" | "NO"
-            Treat hiragana/katakana small letters and prolonged signs (NS)
-            as ideographic characters (ID). This feature is optional in [JIS
-            X 4051]. Default is "NO".
-
-        OutputCharset => CHARSET
-            Character set that is used to encode result of break(). If a
-            special value "_UNICODE_" is specified, result will be Unicode
-            string. Default is "UTF-8".
-
-    break
+    $self->break
         Instance method. Break string and returns it.
+
+  Options
+    new and config methods accept following pairs.
+
+    Breaking => METHOD
+        Specify the method to format broken lines.
+
+        "DEFAULT"
+            Default method. Just only insert newline at arbitrary breaking
+            positions.
+
+        "FIXED"
+            Same as "NEWLINE" below except that lines preceded by """">
+            won't be broken.
+
+        "FLOWED"
+            Flowed formatting defined in RFC 3676.
+
+        "NEWLINE"
+            Insert or replace newline sequences by that specified by Newline
+            option, remove SPACEs leading newline sequences or end-of-text.
+            Then append newline at end of text if it does not exist.
+
+        "RFC2646"
+            (Obsoleted) flowed formatting defined in RFC 2646. Using
+            "FLOWED" method is encouraged.
+
+        "TRIM"
+            Insert newline at arbitrary breaking positions. Remove SPACEs
+            leading newline sequences.
+
+        Subroutine reference
+            See "Costomizing Line Breaking Behavior".
+
+        See also Newline option.
+
+    Charset => CHARSET
+        Character set that is used to encode string STRING. Default is
+        "UTF-8".
+
+    Context => CONTEXT
+        Along with Charset option, this may be used to define
+        language/region context. Currently available contexts are
+        "EASTASIAN" and "NONEASTASIAN". Default context is "NONEASTASIAN".
+
+    HangulAsAL => "YES" | "NO"
+        Treat hangul syllables and conjoining jamos as alphabetic characters
+        (AL). Default is "NO".
+
+    Language => LANGUAGE
+        Along with Charset option, this may be used to define
+        language/region context. See Context option.
+
+    LegacyCM => "YES" | "NO"
+        Treat combining characters lead by SPACE as an isolated combining
+        character. As of Unicode 5.0, such use of SPACE is not recommended.
+        Default is "YES".
+
+    MaxColumns => NUMBER
+        Maximum number of columns line may include not counting trailing
+        spaces and newline sequence. In other words, maximum length of line.
+        Default is 76.
+
+    Newline => STRING
+        Unicode string to be used for newline sequence. Default is "\n".
+
+    NSKanaAsID => """SPEC..."""
+        Treat non-starters (NS) as normal ideographic characters (ID) based
+        on classification specified by SPEC. SPEC may include following
+        substrings.
+
+        "ALL"
+            All of characters below.
+
+        "ITERATION MARKS"
+            Ideographic iteration marks.
+
+            N.B. They are neither hiragana nor katakana.
+
+        "KANA SMALL LETTERS", "PROLONGED SOUND MARKS"
+            Hiragana or katakana small letters and prolonged sound marks.
+
+            N.B. These letters are optionally treated either as non-starter
+            or as normal ideographic in JIS X 4051 (See [JIS X 4051] 6.1.1).
+
+        "MASU MARK"
+            MASU MARK.
+
+            N.B. Although this character is not kana, it is usually regarded
+            as abbreviation to sequence of hiragana "ます" or katakana
+            "マス", MA and SU.
+
+            N.B. This character is classified as NS by [UAX #14] while
+            normal ideographic by [JIS X 4051].
+
+        "NO"
+            Default. None of above are treated as ID characters.
+
+    OutputCharset => CHARSET
+        Character set that is used to encode result of break(). If a special
+        value "_UNICODE_" is specified, result will be Unicode string.
+        Default is "UTF-8".
 
   Customizing Line Breaking Behavior
     If you specify subroutine reference as a value of Breaking option, it
     should accept three arguments: Instance of LineBreak object, ACTION and
     STRING. ACTION is a string to determine the context that subroutine is
-    called in. STRING is a fragment of text leading or trailing breaking
-    position.
+    called in. STRING is a fragment of Unicode string leading or trailing
+    breaking position.
 
-        ACTION| When Fired            | Value of STRING
-        ------+-----------------------+---------------------------------
-        "sot" | Beginning of text     | Fragment of first line
-        "sop" | After mandatory break | Fragment of next line
-        "sol" | After arbitrary break | Fragment at sequel of line
-        "eol" | Arabitrary break      | Leading SPACEs at breaking position
-        "eop" | Mandatory break       | Leading SPACEs and newline
-        "eot" | End of text           | Leading SPACEs (and newline)
-        ----------------------------------------------------------------
+        ACTION|When Fired           |Value of STRING
+        -----------------------------------------------------------------
+        "sot" |Beginning of text    |Fragment of first line
+        "sop" |After mandatory break|Fragment of next line
+        "sol" |After arbitrary break|Fragment on sequel of line
+        "eol" |Arabitrary break     |SPACEs leading breaking position
+        "eop" |Mandatory break      |Newline and its leading SPACEs
+        "eot" |End of text          |SPACEs (and newline) at end of
+              |                     |text
+        -----------------------------------------------------------------
 
     Subroutine should return modified text fragment or may return "undef" to
     express that no modification occurred. Note that modification in the
     context of "sot", "sop" or "sol" may affect decision of successive
     breaking positions while in the others won't.
 
-    Following table describes built-in behavior by Breaking options.
-
-              | "DEFAULT"       | "TRIM"            | "NEWLINE"
-        ------+-----------------+-------------------+-------------------
-        "sot" | do nothing      | do nothing        | do nothing
-        "sop" | do nothing      | do nothing        | do nothing
-        "sol" | do nothing      | do nothing        | do nothing
-        "eol" | append newline  | replace by newline| replace by newline
-        "eop" | do nothing      | replace by newline| replace by newline
-        "eot" | do nothing      | remove SPACEs     | replace by newline
-        ----------------------------------------------------------------
+  Customizing Character Properties
+    *To be written*.
 
   Configuration Files
     Built-in defaults of option parameters for "new" method can be
@@ -130,8 +166,8 @@ DESCRIPTION
 
     This module is intended to implement UAX14-C2.
 
-    *   Hiragana/katakana small letters and prolonged signs may be treated
-        as either NS or ID by choice (See [JIS X 4051] 6.1.1).
+    *   Some ideographic characters may be treated either as NS or as ID by
+        choice (See [JIS X 4051]).
 
     *   Hangul syllables and conjoining jamos may be treated as either
         H2/H3/JL/JT/JV or AL by choice.

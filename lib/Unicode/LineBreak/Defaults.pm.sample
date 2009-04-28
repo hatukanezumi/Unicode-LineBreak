@@ -30,6 +30,8 @@ Following settings are specific to this module.
 
 =over 4
 
+=item Breaking
+
 =item Charset
 
 =item Context
@@ -41,6 +43,8 @@ Following settings are specific to this module.
 =item LegacyCM
 
 =item MaxColumns
+
+=item Newline
 
 =item NSKanaAsID
 

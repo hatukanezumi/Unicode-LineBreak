@@ -40,7 +40,10 @@ LineBreak.custom: $(UNICODEDATA) $(LINEBREAK)
 	  $(UNICODEDATA); \
 	  echo ''; \
 	  echo '## NS characters optionally treated as ID (see JIS X 4051, 6.1.1 note 8).'; \
-	  sed -ne '/LETTER SMALL/s/;NS /;NSid /p' \
-	      -e '/PROLONGED SOUND MARK/s/;NS /;NSid /p' $(LINEBREAK) \
+	  sed -ne '/LETTER SMALL/s/;NS /;NSidKana /p' \
+	      -e '/PROLONGED SOUND MARK/s/;NS /;NSidLong /p' \
+	      -e '/ITERATION MARK/s/;NS /;NSidIter /p' \
+	      -e '/MASU MARK/s/;NS /;NSidMasu /p' \
+	  $(LINEBREAK) \
 	) > $@
 
