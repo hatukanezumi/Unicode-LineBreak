@@ -11,6 +11,7 @@ GPL
 lib/Unicode/LineBreak.pm
 lib/Unicode/LineBreak/Data.pm
 lib/Unicode/LineBreak/Defaults.pm.sample
+lib/Unicode/LineBreak/JA_JP.pod
 lib/Unicode/LineBreak/Rules.pm
 Makefile.PL
 MANIFEST			This list of files

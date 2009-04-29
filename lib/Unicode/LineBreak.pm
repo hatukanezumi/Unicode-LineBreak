@@ -21,7 +21,7 @@ Unicode::LineBreak performs Line Breaking Algorithm described in
 Unicode Standards Annex #14 [UAX #14].  East_Asian_Width informative
 properties [UAX #11] will be concerned to determin breaking positions.
 
-B<NOTE>: Current release of this module is pre-alpha just for proof-of-concept.
+B<NOTE>: This is alpha release just for proof-of-concept.
 
 =cut
 
@@ -90,6 +90,7 @@ my $EASTASIAN_LANGUAGES = qr{
 # "sot" | do nothing      | do nothing        | do nothing
 # "sop" | do nothing      | do nothing        | do nothing
 # "sol" | do nothing      | do nothing        | do nothing
+# ""    | do nothing      | do nothing        | do nothing
 # "eol" | append newline  | replace by newline| replace by newline
 # "eop" | do nothing      | replace by newline| remove SPACEs
 # "eot" | do nothing      | replace by newline| remove SPACEs
@@ -220,8 +221,11 @@ sub config {
     # Breaking method.
     $self->{Breaking} ||= $Config->{Breaking};
     unless (ref $self->{Breaking}) {
-	$self->{Breaking} =
-	    $BREAK_FUNCS{uc $self->{Breaking}} || $BREAK_FUNCS{'DEFAULT'};
+	$self->{Breaking} = uc $self->{Breaking};
+	$self->{_breaking} =
+	    $BREAK_FUNCS{$self->{Breaking}} || $BREAK_FUNCS{'DEFAULT'};
+    } else {
+	$self->{_breaking} = $self->{Breaking};
     }
 
     # Character set and language assumed.
@@ -289,22 +293,14 @@ sub config {
 
 sub lb_cm { &lb_CM.&lb_SAcm }
 sub lb_SA { &lb_SAal.&lb_SAcm }
-my $test_hangul_block = qr{
-    \G
-	(?:\p{lb_JL}* \p{lb_H3} \p{lb_JT}* |
-	 \p{lb_JL}* \p{lb_H2} \p{lb_JV}* \p{lb_JT}* |
-	 \p{lb_JL}* \p{lb_JV}+ \p{lb_JT}* |
-	 \p{lb_JL}+ | \p{lb_JT}+
-	 )
-    }ox;
 
 
 =over 4
 
-=item $self->break
+=item $self->break(STRING)
 
 Instance method.
-Break string and returns it.
+Break string STRING and returns it.
 
 =back
 
@@ -315,51 +311,55 @@ sub break {
     my $str = shift;
     return '' unless defined $str and length $str;
 
+    ## Decode string.
     $str = $s->{_charset}->decode($str)
 	unless Encode::is_utf8($str);
 
+    ## Initialize status.
     my $result = '';
     my ($l_frg, $l_spc, $l_len) = ('', '', 0);
     my ($b_frg, $b_spc, $b_cls) = ('', '', undef);
     my $sot_done = 0;
     my $sop_done = 1;
-
     pos($str) = 0;
+
     while (1) {
 	my ($a_frg, $a_spc, $a_cls);
 
 	## Chop off unbreakable fragment from text as long as possible.
 
 	# LB3: × eot
-	if ($str =~ /\G\z/cgs) {
+	if ($str =~ /\G\z/cgos) {
 	    $b_cls = 'eot';
 	    ($a_frg, $a_spc, $a_cls) = ('', '', undef);
-	# LB5, LB6: × SP* (BK | CR LF | CR | LF | NL) !
+	# LB4, LB5, LB6: × SP* (BK | CR LF | CR | LF | NL) !
 	} elsif ($str =~
-		 /\G(\p{lb_BK} |
-		     \p{lb_CR}\p{lb_LF} | \p{lb_CR} | \p{lb_LF} |
-		     \p{lb_NL})/cgsx) {
+		 /\G(\p{lb_SP}*
+		     (?:\p{lb_BK} |
+		      \p{lb_CR}\p{lb_LF} | \p{lb_CR} | \p{lb_LF} |
+		      \p{lb_NL}))/cgosx) {
 	    $b_spc .= $1; # $b_spc = SP* (BK etc.)
-	    $b_cls = 'eop';
-	    # LB3, LB5, LB6: × SP* (BK etc.) eot
-	    if ($str =~ /\G\z/cgs) {
+	    # LB3: × eot
+	    if ($str =~ /\G\z/cgos) {
 		$b_cls = 'eot';
+	    } else {
+		$b_cls = 'eop';
 	    }
 	    ($a_frg, $a_spc, $a_cls) = ('', '', undef);
 	# LB7, LB8: × (ZW | SP)* ZW 
-	} elsif ($str =~ /\G(\p{lb_ZW}|\p{lb_SP})*\p{lb_ZW}/cgs) {
+	} elsif ($str =~ /\G((?:\p{lb_ZW} | \p{lb_SP})* \p{lb_ZW})/cgox) {
 	    $b_frg .= $b_spc.$1;
 	    $b_spc = '';
 	    $b_cls = 'ZW';
 	    next;
 	# LB7: × SP+
-	} elsif ($str =~ /\G(\p{lb_SP}+)/cgs) {
+	} elsif ($str =~ /\G(\p{lb_SP}+)/cgos) {
 	    $b_spc .= $1;
 	    $b_cls ||= 'WJ'; # in case of --- (sot | BK etc. | ZW) × SP+
 	    next;
 	# LB7, LB9: Treat X CM* SP* as if it were X SP*
 	# where X is anything except BK, CR, LF, NL, SP or ZW
-	} elsif ($str =~ /\G(.\p{lb_cm}*)(\p{lb_SP}*)/cgs) {
+	} elsif ($str =~ /\G(. \p{lb_cm}*) (\p{lb_SP}*)/cgosx) {
 	    ($a_frg, $a_spc) = ($1, $2);
 
 	    # LB1: Assign a line breaking class to each characters.
@@ -446,7 +446,8 @@ sub break {
 	if ($s->{MaxColumns} and $s->{MaxColumns} < $l_newlen) {
             # Process arbitrary break.
 	    if (length $l_frg.$l_spc) {
-		$result .= $l_frg.$s->_break('eol', $l_spc);
+		$result .= $s->_break('', $l_frg);
+		$result .= $s->_break('eol', $l_spc);
 		$b_frg = $s->_break('sol', $b_frg);
 	    }
 	    $l_frg = $b_frg;
@@ -461,19 +462,21 @@ sub break {
 
 	if ($action eq 'MANDATORY') {
 	    # Process mandatory break.
-	    $result .= $l_frg.$s->_break('eop', $l_spc);
+	    $result .= $s->_break('', $l_frg);
+	    $result .= $s->_break('eop', $l_spc);
 	    $sop_done = 0;
 	    $l_frg = '';
 	    $l_len = 0;
 	    $l_spc = '';
 	} elsif ($action eq 'EOT') {
 	    # Process end of text.
-	    $result .= $l_frg.$s->_break('eot', $l_spc);
+	    $result .= $s->_break('', $l_frg);
+	    $result .= $s->_break('eot', $l_spc);
 	    last;
 	}
     }
 
-    ## Output
+    ## Encode result.
 
     if ($s->{OutputCharset} eq '_UNICODE_') {
 	return $result;
@@ -572,41 +575,42 @@ Default is C<76>.
 Unicode string to be used for newline sequence.
 Default is C<"\n">.
 
-=item NSKanaAsID => C<">SPEC...C<">
+=item NSKanaAsID => C<">CLASS...C<">
 
-Treat non-starters (NS) as normal ideographic characters (ID)
-based on classification specified by SPEC.
-SPEC may include following substrings.
+Treat some non-starters (NS) as normal ideographic characters (ID)
+based on classification specified by CLASS.
+CLASS may include following substrings.
 
 =over 4
 
 =item C<"ALL">
 
 All of characters below.
+Synonym is C<"YES">.
 
 =item C<"ITERATION MARKS">
 
 Ideographic iteration marks.
 
-N.B. They are neither hiragana nor katakana.
+N.B. Some of them are neither hiragana nor katakana.
 
 =item C<"KANA SMALL LETTERS">, C<"PROLONGED SOUND MARKS">
 
 Hiragana or katakana small letters and prolonged sound marks.
 
-N.B. These letters are optionally treated either as non-starter or as normal
-ideographic in JIS X 4051 (See [JIS X 4051] 6.1.1).
+N.B. These letters are optionally treated either as non-starter or
+as normal ideographic.  See [JIS X 4051] 6.1.1.
 
 =item C<"MASU MARK">
 
-MASU MARK.
+U+303C MASU MARK.
 
 N.B. Although this character is not kana, it is usually regarded as
 abbreviation to sequence of hiragana C<"ます"> or katakana C<"マス">,
 MA and SU.
 
-N.B. This character is classified as NS by [UAX #14]
-while normal ideographic by [JIS X 4051].
+N.B. This character is classified as Non-starter (NS) by [UAX #14]
+and as Class 13 (corresponding to ID) by [JIS X 4051].
 
 =item C<"NO">
 
@@ -619,23 +623,26 @@ None of above are treated as ID characters.
 
 Character set that is used to encode result of break().
 If a special value C<"_UNICODE_"> is specified, result will be Unicode string.
-Default is C<"UTF-8">.
+Default is the value of Charset option.
 
 =back
 
 =head2 Customizing Line Breaking Behavior
 
 If you specify subroutine reference as a value of Breaking option,
-it should accept three arguments: Instance of LineBreak object, ACTION and
-STRING.
-ACTION is a string to determine the context that subroutine is called in.
-STRING is a fragment of Unicode string leading or trailing breaking position.
+it should accept three arguments: Instance of LineBreak object, type of
+event and a string.
+Type of event is string to determine the context that subroutine is
+called in.
+String is a fragment of Unicode string leading or trailing breaking position.
 
-    ACTION|When Fired           |Value of STRING
+    EVENT |When Fired           |Value of STRING
     -----------------------------------------------------------------
     "sot" |Beginning of text    |Fragment of first line
     "sop" |After mandatory break|Fragment of next line
     "sol" |After arbitrary break|Fragment on sequel of line
+    ""    |Just before any break|Complete line without trailing
+          |                     |SPACEs
     "eol" |Arabitrary break     |SPACEs leading breaking position
     "eop" |Mandatory break      |Newline and its leading SPACEs
     "eot" |End of text          |SPACEs (and newline) at end of
@@ -657,7 +664,7 @@ sub _break {
     my $result;
     my $err = $@;
     eval {
-	$result = &{$self->{Breaking}}($self, $action, $str);
+	$result = &{$self->{_breaking}}($self, $action, $str);
     };
     if ($@) {
 	carp $@;
@@ -680,27 +687,35 @@ I<To be written>.
 # LEN is the columns of string PRE.
 # SPC is a sequence of SPACE inserted between PRE and STR.
 # Returns recalculated number of columns of PRE.SPC.STR.
-# TODO: Adjust widths of hangul conjoining jamos.
 sub _strwidth {
     my $self = shift;
     my $len = shift;
     my $pre = shift;
     my $spc = shift;
     my $str = shift;
+    return $len unless defined $str and length $str;
+
     my $result = $len;
 
-    return $len unless defined $str and length $str;
     my $width;
     my $spcstr = $spc.$str;
     pos($spcstr) = 0;
     while (1) {
-	if ($spcstr =~ /\G\z/cgs) {
+	if ($spcstr =~ /\G\z/cgos) {
 	    last;
-	# Hangul syllable block:
+	# LB26: Korean syllable blocks
 	#   (JL* H3 JT* | JL* H2 JV* JT* | JL* JV+ JT* | JL+ | JT+)
 	# N.B. [UAX #14] allows some morbid "syllable blocks" such as
 	#   JL CM JV JT
-	} elsif ($spcstr =~ /$test_hangul_block/cg) {
+	# which might be broken into JL CM and rest.
+	} elsif ($spcstr =~ /
+		 \G
+		 (?:\p{lb_JL}* \p{lb_H3} \p{lb_JT}* |
+		  \p{lb_JL}* \p{lb_H2} \p{lb_JV}* \p{lb_JT}* |
+		  \p{lb_JL}* \p{lb_JV}+ \p{lb_JT}* |
+		  \p{lb_JL}+ | \p{lb_JT}+
+		  )
+		 /cgox) {
 	    $width = 'W';
 	} else {
 	    $spcstr =~ /\G(.)/gos;
