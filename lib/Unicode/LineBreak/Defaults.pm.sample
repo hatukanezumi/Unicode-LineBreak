@@ -13,32 +13,15 @@ to activate custom settings.
 
 =head1 DESCRIPTION
 
-Following settings are derived from MIME/Charset/Defaults.pm,
-but you may override them for this module locally.
+Following settings are available.
 
 =over 4
-
-=item Detect7bit
-
-=item Mapping
-
-=item Replacement
-
-=back
-
-Following settings are specific to this module.
-
-=over 4
-
-=item Breaking
-
-=item Charset
 
 =item Context
 
-=item HangulAsAL
+=item Format
 
-=item Language
+=item HangulAsAL
 
 =item LegacyCM
 
@@ -47,6 +30,8 @@ Following settings are specific to this module.
 =item Newline
 
 =item NSKanaAsID
+
+=item SizingMethod
 
 =back
 
@@ -60,18 +45,14 @@ L<Unicode::LineBreak>
 # Add your own settings below.
 #--------------------------------------------------------------------------#
 
-## Default settings on MIME::Charset are:
-# $Config->{Detect7bit} = 'YES';
-# $Config->{Mapping} = 'EXTENDED';
-# $Config->{Replacement} = 'DEFAULT';
-
 ## Default settings on current release are:
-# $Config->{Charset} = 'UTF-8';
-# $Config->{Context} = '';
+# $Config->{Context} = 'NONEASTASIAN';
+# $Config->{Format} = 'DEFAULT';
 # $Config->{HangulAsAL} = 'NO';
-# $Config->{Language} = 'XX';
 # $Config->{LegacyCM} = 'YES';
 # $Config->{MaxColumns} = 76;
+# $Config->{Newline} = "\n";
 # $Config->{NSKanaAsID} = 'NO';
+# $Config->{SizingMethod} = 'DEFAULT';
 
 1;

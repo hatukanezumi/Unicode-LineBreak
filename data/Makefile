@@ -23,10 +23,16 @@ all: ../lib/Unicode/LineBreak/Data.pm ../lib/Unicode/LineBreak/Rules.pm
 ../lib/Unicode/LineBreak/Rules.pm: Rules rules2pl.pl
 	perl rules2pl.pl $< > $@
 
-EastAsianWidth.custom: $(UNICODEDATA)
+EastAsianWidth.custom: $(UNICODEDATA) $(EASTASIANWIDTH)
 	( \
 	  echo '## Zero-width characters.'; \
-	  perl -ne '@_=split(/;/,$$_); print "$$_[0];z # $$_[1]\n" if $$_[2]=~/M.|Cc|Cf|Zl|Zp/' $< \
+	  perl -ne '@_=split(/;/,$$_); print "$$_[0];z # $$_[1]\n" if $$_[2]=~/M.|Cc|Cf|Zl|Zp/' $(UNICODEDATA); \
+	  echo ''; \
+	  echo '## Ambiguous width alphabetics.'; \
+	  perl -ne '/# LATIN (CAPITAL|SMALL) (LETTER|LIGATURE)/ && s/;A /;AnLat / && print;' \
+	  -e '/# GREEK (CAPITAL|SMALL) (LETTER|LIGATURE)/ && s/;A /;AnGre / && print;' \
+	  -e '/# CYRILLIC (CAPITAL|SMALL) (LETTER|LIGATURE)/ && s/;A /;AnCyr / && print;' \
+	  $(EASTASIANWIDTH); \
 	) > $@
 
 LineBreak.custom: $(UNICODEDATA) $(LINEBREAK)

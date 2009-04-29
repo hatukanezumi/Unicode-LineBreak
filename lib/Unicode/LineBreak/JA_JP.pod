@@ -12,8 +12,8 @@ Unicode::LineBreak::JA_JP - UAX #14 ユニコード行分割アルゴリズム
 
 =head1 DESCRIPTION
 
-Unicode::LineBreak は、ユニコード標準附属書14 [UAX #14] で述べるユニコード行分割アルゴリズムを実行する。
-分割位置を決定する際に East_Asian_Width 参考属性 [UAX #11] も考慮する。
+Unicode::LineBreak は、ユニコード標準の附属書14 [UAX #14] で述べるユニコード行分割アルゴリズムを実行する。
+分割位置を決定する際に、附属書11 [UAX #11] で定義される East_Asian_Width 参考属性も考慮する。
 
 B<NOTE>: This is alpha release just for proof-of-concept.
 
@@ -26,7 +26,7 @@ B<NOTE>: This is alpha release just for proof-of-concept.
 
 =item new ([KEY => VALUE, ...])
 
-コンストラクタ。
+I<コンストラクタ>。
 KEY => VALUE の対については L</オプション> を参照。
 
 =back
@@ -40,7 +40,7 @@ KEY => VALUE の対については L</オプション> を参照。
 
 =item $self->config (KEY => VALUE, ...)
 
-インスタンスメソッド。
+I<インスタンスメソッド>。
 設定を取得または変更する。
 KEY => VALUE の対については L</オプション> を参照。
 
@@ -51,13 +51,23 @@ KEY => VALUE の対については L</オプション> を参照。
 
 =over 4
 
-=item $self->break(STRING)
+=item $self->break (STRING)
 
-インスタンスメソッド。
-文字列 STRING を分割し、それを返す。
+I<インスタンスメソッド>。
+ユニコード文字列 STRING を分割し、それを返す。
 
 =back
 
+=cut
+
+=over 4
+
+=item getcontext ([Charset => CHARSET], [Language => LANGUAGE])
+
+I<関数>。
+キャラクタセット CHARSET および言語コード I<LANGUAGE> から、それを使う言語/地域の文脈を得る。
+
+=back
 
 =cut
 
@@ -67,7 +77,13 @@ L<new>、L<config> の両メソッドには以下の対を指定できる。
 
 =over 4
 
-=item Breaking => METHOD
+=item Context => CONTEXT
+
+言語/地域の文脈を指定する。
+現在使える文脈は C<"EASTASIAN"> か C<"NONEASTASIAN"> である。
+初期の文脈は C<"NONEASTASIAN"> である。
+
+=item Format => METHOD
 
 分割した行を整形する方法を指定する。
 
@@ -78,25 +94,11 @@ L<new>、L<config> の両メソッドには以下の対を指定できる。
 初期の方法。
 任意分割の位置に改行を挿入するだけ。
 
-=item C<"FIXED">
-
-Same as C<"NEWLINE"> below except that lines preceded by C<">"> won't
-be broken.
-
-=item C<"FLOWED">
-
-Flowed formatting defined in RFC 3676.
-
 =item C<"NEWLINE">
 
 Newline オプションで指定したもので改行の文字列を置き換えるか、挿入する。
 改行の前とテキスト終端の空白文字を除去する。
 テキスト終端に改行がなければ追加する。
-
-=item C<"RFC2646">
-
-(Obsoleted) flowed formatting defined in RFC 2646.
-Using C<"FLOWED"> method is encouraged.
 
 =item C<"TRIM">
 
@@ -111,28 +113,10 @@ L</"行分割動作のカスタマイズ"> 参照。
 
 Newline オプションも参照。
 
-=item Charset => CHARSET
-
-文字列を符号化しているキャラクタセット。
-初期値は C<"UTF-8">。
-
-=item Context => CONTEXT
-
-Along with Charset option, this may be used to define language/region
-context.
-Currently available contexts are C<"EASTASIAN"> and C<"NONEASTASIAN">.
-Default context is C<"NONEASTASIAN">.
-
 =item HangulAsAL => C<"YES"> | C<"NO">
 
 ハングル音節とハングル連結チャモ〔conjoining jamo〕を音素文字的〔alphabetic〕(AL) に扱う。
 初期値は C<"NO">。
-
-=item Language => LANGUAGE
-
-Along with Charset option, this may be used to define language/region
-context.
-See Context option.
 
 =item LegacyCM => C<"YES"> | C<"NO">
 
@@ -189,17 +173,35 @@ U+303C ます記号。
 
 =back
 
-=item OutputCharset => CHARSET
+=item SizingMethod => METHOD
 
-break() の結果を符号化するキャラクタセット。
-特殊値 C<"_UNICODE_"> を指定すると、結果はユニコード文字列となる。
-初期値は Charset オプションの値。
+文字列の長さを算出する方法を指定する。
+以下のオプションが使える。
+
+=over 4
+
+=item C<"DEFAULT">
+
+初期の方法。
+
+=item C<"NARROWAL">
+
+ラテン、ギリシア、キリルの各用字系では、特定の文字が曖昧 (A) の East_Asian_Width 属性を持っている。このため、こういった文字は C<"EASTASIAN"> 文脈で広い文字として扱われる。
+このオプションで、そのような文字を狭い文字として扱える。
+
+=item サブルーチンへの参照
+
+L</"行分割動作のカスタマイズ"> を参照。
+
+=back
 
 =back
 
 =head2 行分割動作のカスタマイズ
 
-Breaking オプションにサブルーチンへの参照を指定する場合、そのサブルーチンは 3 つの引数を取れなければならない。オブジェクトのインスタンス、事象の種類、文字列である。
+=head3 行の整形
+
+C<Format> オプションにサブルーチンへの参照を指定する場合、そのサブルーチンは 3 つの引数を取らなければならない。オブジェクトのインスタンス、事象の種類、文字列である。
 事象の種類は文字列で、サブルーチンが呼ばれた文脈を表す。
 文字列は分割位置の前または後のユニコード文字列の断片である。
 
@@ -220,17 +222,25 @@ Breaking オプションにサブルーチンへの参照を指定する場合�
 
 =cut
 
-=head2 Customizing Character Properties
+=head3 文字列長の算出
 
-I<To be written>.
+C<Size> オプションにサブルーチンへの参照を指定する場合、そのサブルーチンは 5 つの引数を取らなければならない。オブジェクトのインスタンス、元の文字列の長さ (LEN とする)、元のユニコード文字列 (PRE)、追加される空白文字 (SPC)、追加されるユニコード文字列 (STR) である。
 
+サブルーチンは C<PRE.SPC.STR> の長さを算出して返さなければならない。
 
 =cut
 
-=head2 Configuration Files
+=head3 文字の分類と行分割の基本規則
+
+文字の分類と行分割の基本的な規則は L<Unicode::LineBreak::Data> と L<Unicode::LineBreak::Rules> で定義している。
+これらをカスタマイズしたい場合は、ソースパッケージの F<data> ディレクトリの中を見ること。
+
+=cut
+
+=head2 設定ファイル
 
 L</new> メソッドおよび L</config> メソッドのオプション引数の組み込み初期値は、 設定ファイルで上書きできる。
-F<MIME/Charset/Defaults.pm> と F<Unicode/LineBreak/Defaults.pm>。
+F<Unicode/LineBreak/Defaults.pm>。
 詳細は F<Unicode/LineBreak/Defaults.pm.sample> を読んでほしい。
 
 =head2 標準への適合性
@@ -243,30 +253,28 @@ F<MIME/Charset/Defaults.pm> と F<Unicode/LineBreak/Defaults.pm>。
 
 =item *
 
-Some ideographic characters may be treated either as NS or as ID by choice
-(See [JIS X 4051]).
+一部の表語文字的な文字を NS として扱うか ID として扱うかを選べる。
 
 =item *
 
-Hangul syllables and conjoining jamos may be treated as
-either H2/H3/JL/JT/JV or AL by choice.
+ハングル音節およびハングル連結チャモを ID として扱うか AL として扱うかを選べる。
 
 =item *
 
-Characters assigned to AI may be resolved to either AL or ID by choice.
+AI に分類される文字を AL と ID のどちらに解決するかを選べる。
 
 =item *
 
-Character(s) assigned to CB are not resolved.
+CB に分類される文字は解決しない。
 
 =item *
 
-Characters assigned to SA are resolved to AL,
-except that characters that have General_Category Mn or Mc be resolved to CM.
+SA に分類される文字は AL に解決する。
+ただし、General_Category 属性が Mn か Mc である文字は CM に解決する。
 
 =item *
 
-Characters assigned to SG or XX are resolved to AL.
+SG や XX に分類される文字は AL に解決する。
 
 =back
 
