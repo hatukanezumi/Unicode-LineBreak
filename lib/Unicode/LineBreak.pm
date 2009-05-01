@@ -22,8 +22,6 @@ Unicode Standards Annex #14 [UAX #14].
 East_Asian_Width informative properties defined by Annex #11 [UAX #11] will
 be concerned to determin breaking positions.
 
-B<NOTE>: This is alpha release just for proof-of-concept.
-
 =cut
 
 ### Pragmas:
@@ -45,7 +43,7 @@ use MIME::Charset;
 ### Globals
 
 ### The package version, both in 1.23 style *and* usable by MakeMaker:
-our $VERSION = '0.001_03';
+our $VERSION = '0.001_10';
 
 ### Public Configuration Attributes
 our $Config = {
@@ -793,10 +791,6 @@ except that characters that have General_Category Mn or Mc be resolved to CM.
 Characters assigned to SG or XX are resolved to AL.
 
 =back
-
-=head1 CAVEAT
-
-I<To be written>.
 
 =head1 BUGS
 

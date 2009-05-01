@@ -1,0 +1,178 @@
+=encoding utf8
+
+=head1 NAME
+
+Text::LineFold - プレインテキストの行折り
+
+=head1 SYNOPSIS
+
+    use Text::LineFold;
+    $lf = Text::LineFold->new();
+    
+    $folded = $lf->fold($string, 'PLAIN');
+    $unfolded = $lf->unfold($string, 'FIXED');
+
+=head1 DESCRIPTION
+
+Text::LineFold は、プレインテキストの行折りをしたり行折りを戻したりする。
+電子メールメッセージを主眼に置いている。
+
+
+=cut
+
+=head2 公開インタフェース
+
+=over 4
+
+=item new ([KEY => VALUE, ...])
+
+I<コンストラクタ>。
+KEY => VALUE の対については config メソッドを参照。
+
+=back
+
+
+=cut
+
+=over 4
+
+=item $self->config (KEY)
+
+=item $self->config ([KEY => VAL, ...])
+
+I<インスタンスメソッド>。
+設定を取得または更新する。以下の KEY => VALUE 対を指定できる。
+
+=over 4
+
+=item Charset => CHARSET
+
+入力文字列を符号化しているキャラクタセット。
+文字列または L<MIME::Charset> オブジェクトのインスタンス。
+初期値は C<"UTF-8">。
+
+=item Language => LANGUAGE
+
+Charset オプションとともに、言語/地域の文脈を決めるのに使える。
+初期値は C<"XX">。
+L<Unicode::LineBreak/Context> オプションも参照。
+
+=item OutputCharset => CHARSET
+
+fold()/unfold() の結果を符号化するキャラクタセット。
+文字列または L<MIME::Charset> オブジェクトのインスタンス。
+特殊値 C<"_UNICODE_"> を指定すると、結果は Unicode 文字列となる。
+初期値は Charset オプションの値。
+
+=item HangulAsAL
+
+=item LegacyCM
+
+=item MaxColumns
+
+=item Newline
+
+=item NSKanaAsID
+
+=item SizingMethod
+
+L<Unicode::LineBreak/Options> を参照。
+
+=back
+
+=back
+
+
+=cut
+
+=over 4
+
+=item $self->fold (STRING, METHOD)
+
+I<インスタンスメソッド>。
+文字列 STRING を行折りする。
+
+METHOD 引数には以下のオプションを指定できる。
+
+=over 4
+
+=item C<"FIXED">
+
+C<"E<gt>"> で始まる行は行折りしない。
+段落は空行で分かたれる。
+
+=item C<"FLOWED">
+
+RFC 3676 で定義される C<"Format=Flowed; DelSp=Yes"> 形式。
+
+=item C<"PLAIN">
+
+初期の方法。
+
+=back
+
+どのオプションでも、行末の余分な空白文字を除去し、
+改行の文字列を Newline オプションで指定したものに置き換え、
+テキスト末尾に改行がなければ追加する。
+
+=back
+
+=cut
+
+=over 4
+
+=item $self->unfold (STRING, METHOD)
+
+I<未実装>:
+文字列 STRING の行折りされた段落をつなぎ直してそれを返す。
+
+METHOD 引数には以下のオプションを指定できる。
+
+=over 4
+
+=item C<"FIXED">
+
+初期の方法。
+C<"E<gt>"> で始まる行はつなぎ直さない。
+空行を段落の区切りとみなす。
+
+=item C<"FLOWED">
+
+RFC 3676 で定義される C<"Format=Flowed; DelSp=Yes"> 形式をつなぎ直す。
+
+=item C<"OBSFLOWED">
+
+RFC 2646 で定義される C<"Format=Flowed"> 形式をできるだけうまくつなぎ直す。
+
+=back
+
+=back
+
+=cut
+
+=head1 BUGS
+
+バグやバグのような動作は開発者に教えてください。L</AUTHOR> 参照。
+
+=head1 VERSION
+
+$VERSION 変数を見てほしい。
+
+このモジュールの開発版が
+L<http://hatuka.nezumi.nu/repos/Unicode-LineBreak/>
+にある。
+
+=head1 SEE ALSO
+
+L<Unicode::LineBreak>, L<Text::Wrap>.
+
+=head1 AUTHOR
+
+Copyright (C) 2009 Hatuka*nezumi - IKEDA Soji <hatuka(at)nezumi.nu>.
+
+This program is free software; you can redistribute it and/or modify it 
+under the same terms as Perl itself.
+
+
+=cut
+

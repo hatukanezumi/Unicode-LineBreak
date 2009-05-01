@@ -1,6 +1,6 @@
 use strict;
 use Test::More;
-require "t/t.pl";
+require "t/lb.pl";
 
 BEGIN { plan tests => 2 }
 

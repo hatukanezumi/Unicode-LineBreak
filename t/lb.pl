@@ -6,16 +6,13 @@ $Unicode::LineBreak::Config = {
     Detect7bit => 'YES',
     Mapping => 'EXTENDED',
     Replacement => 'DEFAULT',
-    Charset => 'UTF-8',
     Context => '',
     Format => 'DEFAULT',
     HangulAsAL => 'NO',
-    Language => 'XX',
     LegacyCM => "YES",
     MaxColumns => 76,
     Newline => "\n",
     NSKanaAsID => "NO",
-    OutputCharset => 'UTF-8',
     SizingMethod => "DEFAULT",
 };
 
@@ -29,7 +26,7 @@ sub dotest {
     my $lb = Unicode::LineBreak->new(@_);
     my $broken = encode_utf8($lb->break($instring));
     #open XXX, ">testin/$out.xxx";
-    #print XXX $instring;
+    #print XXX $broken;
     #close XXX;
 
     open OUT, "<testin/$out.out" or die "open: $!";
