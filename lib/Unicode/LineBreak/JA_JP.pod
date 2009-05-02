@@ -15,7 +15,17 @@ Unicode::LineBreak::JA_JP - UAX #14 Unicode 行分割アルゴリズム
 Unicode::LineBreak は、Unicode 標準の附属書14 [UAX #14] で述べる Unicode 行分割アルゴリズムを実行する。
 分割位置を決定する際に、附属書11 [UAX #11] で定義される East_Asian_Width 参考特性も考慮する。
 
-=cut
+=head2 用語
+
+便宜的に以下の用語を使う。
+
+B<強制分割>〔mandatory break〕は、基本規則で定められており、周囲の文字に関係なく義務的に実行される行分割動作。
+B<任意分割>は、基本規則で認められており、ユーザが実行すると決めた場合に行われる行分割動作。
+[UAX #14] で定義される任意分割にはB<直接分割>〔direct break〕とB<間接分割>〔indirect break〕とがある。
+
+B<音素文字的な文字>〔alphabetic characters〕は、通常、他の文字が分割の機会を与えないかぎり、文字同士の間で行分割できない文字。
+B<表語文字的な文字>〔ideographic characters〕は、通常、その前後で行分割できる文字。
+これらの用語は文字学の観点からは不正確である。音素文字的な文字には「アルファベット」に分類されない文字も含む。表語文字的な文字には漢字以外の文字、さらには一部の表音文字体系の文字をも含む。
 
 =head2 公開インタフェース
 
@@ -26,13 +36,6 @@ Unicode::LineBreak は、Unicode 標準の附属書14 [UAX #14] で述べる Uni
 I<コンストラクタ>。
 KEY => VALUE の対については L</オプション> を参照。
 
-=back
-
-
-=cut
-
-=over 4
-
 =item $self->config (KEY)
 
 =item $self->config (KEY => VALUE, ...)
@@ -41,36 +44,56 @@ I<インスタンスメソッド>。
 設定を取得または変更する。
 KEY => VALUE の対については L</オプション> を参照。
 
-=back
-
-
-=cut
-
-=over 4
-
 =item $self->break (STRING)
 
 I<インスタンスメソッド>。
 Unicode 文字列 STRING を分割し、それを返す。
 
-=back
-
-=cut
-
-=over 4
-
 =item getcontext ([Charset => CHARSET], [Language => LANGUAGE])
 
 I<関数>。
-キャラクタセット CHARSET および言語コード I<LANGUAGE> から、それを使う言語/地域の文脈を得る。
+キャラクタセット CHARSET および言語コード LANGUAGE から、それを使う言語/地域の文脈を得る。
+
+=item $self->getlbclass (STRING)
+
+I<インスタンスメソッド>。
+Unicode 文字列 STRING の最初の文字の行分割特性を得る。
+
+=item $self->getlbrule (BEFORE, AFTER)
+
+I<インスタンスメソッド>。
+分類 BEFORE と分類 AFTER の間での行分割規則を得る。
+以下のいずれかの値が返る。
+
+=over 4
+
+=item C<"MANDATORY">
+
+強制分割。
+
+=item C<"DIRECT">
+
+直接分割も間接分割も認める。
+
+=item C<"INDIRECT">
+
+間接分割を認めるが、直接分割は禁じる。
+
+=item C<"PROHIBITED">
+
+分割を禁じる。
 
 =back
 
-=cut
+B<注>:
+このメソッドは
+BK、CR、LF、NL、SP、CM の各分類に関わる規則については適切な値を返せない。
+
+=back
 
 =head2 オプション
 
-L<new>、L<config> の両メソッドには以下の対を指定できる。
+L</new>、L</config> の両メソッドには以下の対を指定できる。
 
 =over 4
 
@@ -112,7 +135,7 @@ Newline オプションも参照。
 
 =item HangulAsAL => C<"YES"> | C<"NO">
 
-ハングル音節とハングル連結チャモ〔conjoining jamo〕を音素文字的〔alphabetic〕(AL) に扱う。
+ハングル音節とハングル連結チャモ〔conjoining jamo〕を音素文字的な文字 (AL) に扱う。
 初期値は C<"NO">。
 
 =item LegacyCM => C<"YES"> | C<"NO">
@@ -133,7 +156,7 @@ Unicode 5.0 版からは、空白文字のこのような使いかたは推奨�
 
 =item NSKanaAsID => C<">CLASS...C<">
 
-CLASS で指定した分類に基づき、一部の行頭禁則文字 (NS) を通常の表語文字的〔ideographic〕な文字 (ID) と扱う。
+CLASS で指定した分類に基づき、一部の行頭禁則文字 (NS) を通常の表語文字的な文字 (ID) と扱う。
 CLASS には以下の部分文字列を含められる。
 
 =over 4
@@ -217,24 +240,21 @@ C<Format> オプションにサブルーチンへの参照を指定する場合�
 なお、C<"sot">、C<"sop">、C<"sol"> の文脈での修正はその後の分割位置の決定に影響するが、ほかの文脈での修正は影響しない。
 
 
-=cut
-
 =head3 文字列長の算出
 
 C<SizingMethod> オプションにサブルーチンへの参照を指定する場合、そのサブルーチンは 5 つの引数を取らなければならない。オブジェクトのインスタンス、元の文字列の長さ (LEN とする)、元の Unicode 文字列 (PRE)、追加される空白文字 (SPC)、追加される Unicode 文字列 (STR)。
 
 サブルーチンは C<PRE.SPC.STR> の長さを算出して返さなければならない。
+長さは整数でなくてもよい。長さの単位は随意に選べるが、MaxColumns オプションのそれと一致させなければならない。
 
-=cut
 
 =head3 文字の分類と行分割の基本規則
 
 文字の分類と行分割の基本的な規則は L<Unicode::LineBreak::Data> と L<Unicode::LineBreak::Rules> で定義している。
 これらをカスタマイズしたい場合は、ソースパッケージの F<data> ディレクトリの中を見ること。
 
-=cut
 
-=head2 設定ファイル
+=head3 設定ファイル
 
 L</new> メソッドおよび L</config> メソッドのオプション引数の組み込み初期値は、 設定ファイルで上書きできる。
 F<Unicode/LineBreak/Defaults.pm>。
@@ -323,7 +343,7 @@ L<http://unicode.org/reports/tr14/>.
 
 =head1 SEE ALSO
 
-L<Text::Wrap>.
+L<Text::LineFold::JA_JP>, L<Text::Wrap>.
 
 =head1 AUTHOR
 
@@ -331,7 +351,3 @@ Copyright (C) 2009 Hatuka*nezumi - IKEDA Soji <hatuka(at)nezumi.nu>.
 
 This program is free software; you can redistribute it and/or modify it 
 under the same terms as Perl itself.
-
-
-=cut
-

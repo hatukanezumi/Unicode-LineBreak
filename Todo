@@ -1,0 +1,25 @@
+* Unicode::LineBreak: Handling URN-like sequences (URLs, DOI identifiers,
+  e-mail addresses...).
+- May inhibit breaking midst of URL-like string.
+- Some standards such as "Chicago Manual of Style" recommends to break
+  _before_ SOLIDUS in URL.
+
+* Text::LineFold: (obsoleted) RFC 2646 folding and unfolding.
+
+* Unicode::LineBreak: Interface to custom SA (Sourth-East Asian complex
+  context) breaking rules.
+
+* ``Hunging punctuation'' (ぶら下げ組み; burasage-gumi) mainly for Japanese
+  texts.
+- Punctuations may protrude into the right -- bottom, in vertical line --
+  margin.
+- It is usually applied to IDEOGRAPHIC FULL STOP and IDEOGRAPHIC COMMA.
+  It is rarely applied to other punctuations; FULL STOP and COMMA.
+- ``Half-''hunging, regarding ideographic punctuations as narrow only at
+  end of line, might be either allowed or inhibited by typesetting rules,
+  whether (full-)hunging was allowed or not.
+- I. FULL STOP is more often inhibited to be narrow than I. COMMA.
+- Wide (including fullwidth) parentheses may or may not ``half''-hung by
+  rules, however, they shouldn't ``full''-hung anyway.
+
+$$

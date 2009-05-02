@@ -15,10 +15,8 @@ Text::LineFold - プレインテキストの行折り
 =head1 DESCRIPTION
 
 Text::LineFold は、プレインテキストの行折りをしたり行折りを戻したりする。
-電子メールメッセージを主眼に置いている。
+電子メールメッセージを主眼に置いており、RFC 3676 の flowed 形式にも対応する。
 
-
-=cut
 
 =head2 公開インタフェース
 
@@ -28,13 +26,6 @@ Text::LineFold は、プレインテキストの行折りをしたり行折り�
 
 I<コンストラクタ>。
 KEY => VALUE の対については config メソッドを参照。
-
-=back
-
-
-=cut
-
-=over 4
 
 =item $self->config (KEY)
 
@@ -76,16 +67,9 @@ fold()/unfold() の結果を符号化するキャラクタセット。
 
 =item SizingMethod
 
-L<Unicode::LineBreak/Options> を参照。
+L<Unicode::LineBreak::JA_JP/オプション> を参照。
 
 =back
-
-=back
-
-
-=cut
-
-=over 4
 
 =item $self->fold (STRING, METHOD)
 
@@ -115,15 +99,8 @@ RFC 3676 で定義される C<"Format=Flowed; DelSp=Yes"> 形式。
 改行の文字列を Newline オプションで指定したものに置き換え、
 テキスト末尾に改行がなければ追加する。
 
-=back
-
-=cut
-
-=over 4
-
 =item $self->unfold (STRING, METHOD)
 
-I<未実装>:
 文字列 STRING の行折りされた段落をつなぎ直してそれを返す。
 
 METHOD 引数には以下のオプションを指定できる。
@@ -140,15 +117,18 @@ C<"E<gt>"> で始まる行はつなぎ直さない。
 
 RFC 3676 で定義される C<"Format=Flowed; DelSp=Yes"> 形式をつなぎ直す。
 
+=begin comment
+
 =item C<"OBSFLOWED">
 
-RFC 2646 で定義される C<"Format=Flowed"> 形式をできるだけうまくつなぎ直す。
+RFC 2646 (廃止) で定義される C<"Format=Flowed"> 形式をできるだけうまくつなぎ直す。
+
+=end comment
 
 =back
 
 =back
 
-=cut
 
 =head1 BUGS
 
@@ -164,7 +144,7 @@ L<http://hatuka.nezumi.nu/repos/Unicode-LineBreak/>
 
 =head1 SEE ALSO
 
-L<Unicode::LineBreak>, L<Text::Wrap>.
+L<Unicode::LineBreak::JA_JP>, L<Text::Wrap>.
 
 =head1 AUTHOR
 
@@ -172,7 +152,3 @@ Copyright (C) 2009 Hatuka*nezumi - IKEDA Soji <hatuka(at)nezumi.nu>.
 
 This program is free software; you can redistribute it and/or modify it 
 under the same terms as Perl itself.
-
-
-=cut
-

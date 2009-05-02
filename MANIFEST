@@ -14,6 +14,7 @@ lib/Unicode/LineBreak/Data.pm
 lib/Unicode/LineBreak/Defaults.pm.sample
 lib/Unicode/LineBreak/JA_JP.pod
 lib/Unicode/LineBreak/Rules.pm
+lib/Unicode/LineBreak/Version.pm
 Makefile.PL
 MANIFEST			This list of files
 META.yml
@@ -53,3 +54,4 @@ testin/th.in
 testin/th.out
 testin/zh.in
 testin/zh.out
+Todo

@@ -22,6 +22,27 @@ Unicode Standards Annex #14 [UAX #14].
 East_Asian_Width informative properties defined by Annex #11 [UAX #11] will
 be concerned to determin breaking positions.
 
+=head2 Terminology
+
+Following terms are used for convenience.
+
+B<Mandatory break> is obligatory line breaking behavior defined by core
+rules and performed regardless of surrounding characters.
+B<Arbitrary break> is line breaking behavior that is allowed by core rules
+and chosen by user to perform it.
+Arabitrary break includes B<direct break> and B<indirect break>
+defined by [UAX #14].
+
+B<Alphabetic characters> are characters usually no line breaks are allowed
+between pairs of them, except that other characters provide break
+oppotunities.
+B<Ideographic characters> are characters that usually allow line breaks
+both before and after themselves.
+These term are inaccurate from the point of view of grammatology:
+Alphabetic characters may include characters not categorized to "alphabet".
+Ideographic characters may include characters other than Han ideographs,
+moreover, characters of phonetic scripts.
+
 =cut
 
 ### Pragmas:
@@ -59,6 +80,7 @@ our $Config = {
 eval { require Unicode::LineBreak::Defaults; };
 
 ### Privates
+require Unicode::LineBreak::Version;
 require Unicode::LineBreak::Rules;
 require Unicode::LineBreak::Data;
 
@@ -305,24 +327,7 @@ sub break {
 	    ($a_frg, $a_spc) = ($1, $2);
 
 	    # LB1: Assign a line breaking class to each characters.
-	    $a_cls = &_bsearch($Unicode::LineBreak::lb_MAP, $a_frg) || 'XX';
-	    $a_cls = {
-		'SAal' => 'AL',
-		'SAcm' => 'CM',
-		'SG' => 'AL',
-		'XX' => 'AL',
-		'AI' => ($s->{Context} eq 'EASTASIAN'? 'ID': 'AL'),
-		'NSidIter' => ($s->{NSKanaAsID} =~ /ITER/? 'ID': 'NS'),
-		'NSidKana' => ($s->{NSKanaAsID} =~ /SMALL/? 'ID': 'NS'),
-		'NSidLong' => ($s->{NSKanaAsID} =~ /LONG/? 'ID': 'NS'),
-		'NSidMasu' => ($s->{NSKanaAsID} =~ /MASU/? 'ID': 'NS'),
-		'H2' => ($s->{HangulAsAL} eq 'YES'? 'AL': 'H2'),
-		'H3' => ($s->{HangulAsAL} eq 'YES'? 'AL': 'H3'),
-		'JL' => ($s->{HangulAsAL} eq 'YES'? 'AL': 'JL'),
-		'JV' => ($s->{HangulAsAL} eq 'YES'? 'AL': 'JV'),
-		'JT' => ($s->{HangulAsAL} eq 'YES'? 'AL': 'JT'),
-	    }->{$a_cls} || $a_cls;
-
+	    $a_cls = $s->getlbclass($a_frg);
 	    if ($a_cls eq 'CM') {
 		# LB7, Legacy-CM: Treat SP CM+ SP* as if it were ID SP*
 		# See [UAX #14] 9.1.
@@ -355,9 +360,7 @@ sub break {
 	    $action = 'MANDATORY';
 	# LB11 - LB29 and LB31: Tailorable rules (except LB11).
 	} else {
-	    my $b_idx = $Unicode::LineBreak::lb_IDX{$b_cls};
-	    my $a_idx = $Unicode::LineBreak::lb_IDX{$a_cls};
-	    $action = $Unicode::LineBreak::RULES_MAP->[$b_idx]->[$a_idx];
+	    $action = $s->getlbrule($b_cls, $a_cls);
 	    # LB31: ALL ÷ ALL
 	    $action ||=	'DIRECT';
 	    # Resolve indirect break.
@@ -459,9 +462,95 @@ sub getcontext {
     $context;
 }
 
+=over 4
+
+=item $self->getlbclass (STRING)
+
+I<Instance method>.
+Get line breaking property of the first character of Unicode string STRING.
+
+=back
+
+=cut
+
+sub getlbclass {
+    my $self = shift;
+    my $str = shift;
+
+    my $cls = &_bsearch($Unicode::LineBreak::lb_MAP, $str) || 'XX';
+    return {
+	'SAal' => 'AL',
+	'SAcm' => 'CM',
+	'SG' => 'AL',
+	'XX' => 'AL',
+	'AI' => ($self->{Context} eq 'EASTASIAN'? 'ID': 'AL'),
+	'NSidIter' => ($self->{NSKanaAsID} =~ /ITER/? 'ID': 'NS'),
+	'NSidKana' => ($self->{NSKanaAsID} =~ /SMALL/? 'ID': 'NS'),
+	'NSidLong' => ($self->{NSKanaAsID} =~ /LONG/? 'ID': 'NS'),
+	'NSidMasu' => ($self->{NSKanaAsID} =~ /MASU/? 'ID': 'NS'),
+	'H2' => ($self->{HangulAsAL} eq 'YES'? 'AL': 'H2'),
+	'H3' => ($self->{HangulAsAL} eq 'YES'? 'AL': 'H3'),
+	'JL' => ($self->{HangulAsAL} eq 'YES'? 'AL': 'JL'),
+	'JV' => ($self->{HangulAsAL} eq 'YES'? 'AL': 'JV'),
+	'JT' => ($self->{HangulAsAL} eq 'YES'? 'AL': 'JT'),
+    }->{$cls} || $cls;
+}
+
+=over 4
+
+=item $self->getlbrule (BEFORE, AFTER)
+
+Get line breaking rule between class BEFORE and class AFTER.
+One of following values will be returned.
+
+=over 4
+
+=item C<"MANDATORY">
+
+Mandatory break.
+
+=item C<"DIRECT">
+
+Direct break or indirect break is allowed.
+
+=item C<"INDIRECT">
+
+Indirect break is allowed, but direct break is prohibited.
+
+=item C<"PROHIBITED">
+
+Prohibited.
+
+=back
+
+B<Note>:
+This method won't give appropriate value related to classes
+BK, CR, LF, NL, SP and CM.
+
+=back
+
+=cut
+
+sub getlbrule {
+    my $self = shift;
+    my $b_cls = shift;
+    my $a_cls = shift;
+
+    my $b_idx = $Unicode::LineBreak::lb_IDX{$b_cls};
+    my $a_idx = $Unicode::LineBreak::lb_IDX{$a_cls};
+    my $row;
+    my $action;
+    if (defined($row = $Unicode::LineBreak::RULES_MAP->[$b_idx]) and
+	defined($action = $row->[$a_idx])) {
+	return $action;
+    } else {
+	return undef;
+    }
+}
+
 =head2 Options
 
-L<new> and L<config> methods accept following pairs.
+L</new> and L</config> methods accept following pairs.
 
 =over 4
 
@@ -652,6 +741,7 @@ original size of string (say LEN), origianl Unicode string (PRE),
 additional SPACEs (SPC) and Unicode string (STR).
 
 Subroutine should return calculated size of C<PRE.SPC.STR>.
+The size must not be a integer.  Unit of the size may be freely chosen, however, it should be same as that of MaxColumns option.
 
 =cut
 
@@ -748,7 +838,7 @@ sub _bsearch {
 }
 
 
-=head2 Configuration Files
+=head3 Configuration File
 
 Built-in defaults of option parameters for L<"new"> method
 can be overridden by configuration files:
@@ -839,7 +929,7 @@ L<http://unicode.org/reports/tr14/>.
 
 =head1 SEE ALSO
 
-L<Text::Wrap>.
+L<Text::LineFold>, L<Text::Wrap>.
 
 =head1 AUTHOR
 

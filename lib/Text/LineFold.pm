@@ -20,7 +20,8 @@ Text::LineFold - Line Folding for Plain Text
 =head1 DESCRIPTION
 
 Text::LineFold folds or unfolds lines of plain text.
-It mainly focuses on plain text e-mail messages.
+As it mainly focuses on plain text e-mail messages,
+RFC 3676 flowed format is also supported.
 
 =cut
 
@@ -32,7 +33,7 @@ use vars qw($VERSION @EXPORT_OK @ISA $Config);
 use Exporter;
 
 ### Inheritance:
-@ISA = qw(Exporter Unicode::LineBreak);
+our @ISA = qw(Exporter Unicode::LineBreak);
 
 ### Other modules:
 use Carp qw(croak carp);
@@ -43,11 +44,11 @@ use Unicode::LineBreak qw(getcontext);
 ### Globals
 
 ### The package version, both in 1.23 style *and* usable by MakeMaker:
-$VERSION = '0.001_10';
+our $VERSION = '0.001_10';
 
 ### Public Configuration Attributes
 our $Config = {
-    %{$Unicode::LineBreak::Config},
+    ### %{$Unicode::LineBreak::Config},
     Charset => 'UTF-8',
     Language => 'XX',
     OutputCharset => undef,
@@ -213,7 +214,7 @@ sub config {
 		return $self->SUPER::config($o);
             }
         }
-	croak "No such option: $_[0]";
+	carp "No such option: $_[0]";
     }
 
     # Set config.
@@ -263,7 +264,7 @@ sub config {
 
 =item $self->fold (STRING, METHOD)
 
-I<Instance methods>.
+I<Instance method>.
 fold() folds lines of string STRING and returns it.
 
 Following options may be specified for METHOD argument.
@@ -293,23 +294,32 @@ and newline is appended at end of text if it does not exist.
 
 =cut
 
+# Special breaking characters: VT, FF, NEL, LS, PS
+my $special_break = qr/([\x{000B}\x{000C}\x{0085}\x{2028}\x{2029}])/os;
+
 sub fold {
     my $self = shift;
     my $str = shift;
     return '' unless defined $str and length $str;
     my $method = uc(shift || '');
 
-    ## Decode string.
-    $str = $self->{_charset}->decode($str) unless is_utf8($str);
-
     ## Get format method.
     $self->SUPER::config(Format => $FORMAT_FUNCS{$method} ||
 				   $FORMAT_FUNCS{'PLAIN'});
+    ## Decode string.
+    $str = $self->{_charset}->decode($str) unless is_utf8($str);
 
-    my $result = $self->break($str);
+    ## Do folding.
+    my $result = '';
+    foreach my $s (split $special_break, $str) {
+	if ($s =~ $special_break) {
+	    $result .= $s;
+	} else {
+	    $result .= $self->break($str);
+	}
+    }
 
     ## Encode result.
-
     if ($self->{OutputCharset} eq '_UNICODE_') {
         return $result;
     } else {
@@ -321,7 +331,6 @@ sub fold {
 
 =item $self->unfold (STRING, METHOD)
 
-I<Not yet implemented>:
 Conjunct folded paragraphs of string STRING and returns it.
 
 Following options may be specified for METHOD argument.
@@ -332,19 +341,138 @@ Following options may be specified for METHOD argument.
 
 Default method.
 Lines preceded by C<"E<gt>"> won't be conjuncted.
-Treate empty line as paragraph separator.
+Treat empty line as paragraph separator.
 
 =item C<"FLOWED">
 
 Unfold C<"Format=Flowed; DelSp=Yes"> formatting defined by RFC 3676.
 
+=begin comment
+
 =item C<"OBSFLOWED">
 
-Unfold C<"Format=Flowed> formatting defined by RFC 2646 as well as possible.
+Unfold C<"Format=Flowed> formatting defined by (obsoleted) RFC 2646
+as well as possible.
+
+=end comment
 
 =back
 
 =back
+
+=cut
+
+sub unfold {
+    my $self = shift;
+    my $str = shift;
+    return '' unless defined $str and length $str;
+
+    ## Get format method.
+    my $method = uc(shift || 'FIXED');
+    $method = 'FIXED' unless $method =~ /^(?:FIXED|FLOWED|OBSFLOWED)$/;
+
+    ## Decode string and canonizalize newline.
+    $str = $self->{_charset}->decode($str) unless is_utf8($str);
+    $str =~ s/\r\n|\r/\n/g;
+
+    ## Do unfolding.
+    my $result = '';
+    foreach my $s (split $special_break, $str) {
+	if ($s eq '') {
+	    next;
+	} elsif ($s =~ $special_break) {
+	    $result .= $s;
+	    next;
+	} elsif ($method eq 'FIXED') {
+	    pos($s) = 0;
+	    while ($s !~ /\G\z/cg) {
+		if ($s =~ /\G\n/cg) {
+		    $result .= $self->{Newline};
+		} elsif ($s =~ /\G(.+)\n\n/cg) {
+		    $result .= $1.$self->{Newline};
+		} elsif ($s =~ /\G(>.*)\n/cg) {
+		    $result .= $1.$self->{Newline};
+		} elsif ($s =~ /\G(.+)\n(?=>)/cg) {
+		    $result .= $1.$self->{Newline};
+		} elsif ($s =~ /\G(.+?)( *)\n(?=(.))/cg) {
+		    my ($l, $s, $n) = ($1, $2, $3);
+		    $result .= $l;
+		    if ($n eq ' ') {
+			$result .= $self->{Newline};
+		    } elsif (length $s) {
+			$result .= $s;
+		    } elsif (length $l) {
+			my ($b_cls, $a_cls);
+			my $i = length $l;
+			do {
+			    $i--;
+			    $b_cls = $self->getlbclass(substr($l, $i));
+			} while ($b_cls eq 'CM' and 0 < $i);
+			$b_cls = 'AL' if $b_cls eq 'CM' or $b_cls eq 'SP';
+			$a_cls = $self->getlbclass($n);
+			$a_cls = 'AL' if $a_cls eq 'CM';
+
+			if ($self->getlbrule($b_cls, $a_cls) eq 'INDIRECT') {
+			    $result .= ' ';
+			}
+		    }
+		} elsif ($s =~ /\G(.+)\n/cg) {
+		    $result .= $1.$self->{Newline};
+		} elsif ($s =~ /\G(.+)/cg) {
+		    $result .= $1.$self->{Newline};
+		    last;
+		}
+	    }
+	} elsif ($method eq 'FLOWED' or $method eq 'OBSFLOWED') {
+	    my $prefix = undef;
+	    pos($s) = 0;
+	    while ($s !~ /\G\z/cg) {
+		if ($s =~ /\G(>+) ?(.*?)( ?)\n/cg) {
+		    my ($p, $l, $s) = ($1, $2, $3);
+		    unless (defined $prefix) {
+			$result .= $p.' '.$l;
+		    } elsif ($p ne $prefix) {
+			$result .= $self->{Newline};
+			$result .= $p.' '.$l;
+		    } else {
+			$result .= $l;
+		    }
+		    unless (length $s) {
+			$result .= $self->{Newline};
+			$prefix = undef;
+		    } else {
+			$prefix = $p;
+		    }
+		} elsif ($s =~ /\G ?(.*?)( ?)\n/cg) {
+		    my ($l, $s) = ($1, $2);
+		    unless (defined $prefix) {
+			$result .= $l;
+		    } elsif ('' ne $prefix) {
+			$result .= $self->{Newline};
+			$result .= $l;
+		    } else {
+			$result .= $l;
+		    }
+		    unless (length $s) {
+			$result .= $self->{Newline};
+			$prefix = undef;
+		    } else {
+			$prefix = '';
+		    }
+		} elsif ($s =~ /\G ?(.*)/cg) {
+		    $result .= $1.$self->{Newline};
+		    last;
+		}
+	    }
+	}
+    }
+    ## Encode result.
+    if ($self->{OutputCharset} eq '_UNICODE_') {
+        return $result;
+    } else {
+        return $self->{_charset}->encode($result);
+    }
+}
 
 =head1 BUGS
 
