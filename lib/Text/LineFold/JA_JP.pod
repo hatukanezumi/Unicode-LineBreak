@@ -2,7 +2,7 @@
 
 =head1 NAME
 
-Text::LineFold - プレインテキストの行折り
+Text::LineFold::JA_JP - プレインテキストの行折り
 
 =head1 SYNOPSIS
 

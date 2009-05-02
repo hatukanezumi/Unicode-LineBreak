@@ -44,7 +44,7 @@ use Unicode::LineBreak qw(getcontext);
 ### Globals
 
 ### The package version, both in 1.23 style *and* usable by MakeMaker:
-our $VERSION = '0.001_10';
+our $VERSION = '0.001_11';
 
 ### Public Configuration Attributes
 our $Config = {

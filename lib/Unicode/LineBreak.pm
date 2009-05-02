@@ -64,7 +64,7 @@ use MIME::Charset;
 ### Globals
 
 ### The package version, both in 1.23 style *and* usable by MakeMaker:
-our $VERSION = '0.001_10';
+our $VERSION = '0.001_11';
 
 ### Public Configuration Attributes
 our $Config = {
@@ -698,8 +698,8 @@ String is a fragment of Unicode string leading or trailing breaking position.
     "sot" |Beginning of text    |Fragment of first line
     "sop" |After mandatory break|Fragment of next line
     "sol" |After arbitrary break|Fragment on sequel of line
-    ""    |Just before any break|Complete line without trailing
-          |                     |SPACEs
+    ""    |Just before any      |Complete line without trailing
+          |breaks               |SPACEs
     "eol" |Arabitrary break     |SPACEs leading breaking position
     "eop" |Mandatory break      |Newline and its leading SPACEs
     "eot" |End of text          |SPACEs (and newline) at end of
