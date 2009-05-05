@@ -17,6 +17,12 @@ Following settings are available.
 
 =over 4
 
+=item CharactersMax
+
+=item ColumnsMin
+
+=item ColumnsMax
+
 =item Context
 
 =item Format
@@ -24,10 +30,6 @@ Following settings are available.
 =item HangulAsAL
 
 =item LegacyCM
-
-=item MinColumns
-
-=item MaxColumns
 
 =item Newline
 
@@ -52,12 +54,13 @@ L<Unicode::LineBreak>
 #--------------------------------------------------------------------------#
 
 ## Default settings on current release are:
+# $Config->{CharactersMax} = 998;
+# $Config->{ColumnsMin} = 0;
+# $Config->{ColumnsMax} = 76;
 # $Config->{Context} = 'NONEASTASIAN';
 # $Config->{Format} = 'DEFAULT';
 # $Config->{HangulAsAL} = 'NO';
 # $Config->{LegacyCM} = 'YES';
-# $Config->{MinColumns} = 0;
-# $Config->{MaxColumns} = 76;
 # $Config->{Newline} = "\n";
 # $Config->{NSKanaAsID} = 'NO';
 # $Config->{SizingMethod} = 'DEFAULT';

@@ -63,19 +63,19 @@ my %FORMAT_FUNCS = (
 	my $str = shift;
 	if ($action =~ /^so[tp]/) {
 	    $self->{_} = {};
-	    $self->{_}->{MaxColumns} = $self->{MaxColumns};
-	    $self->config(MaxColumns => 0) if $str =~ /^>/;
+	    $self->{_}->{ColumnsMax} = $self->{ColumnsMax};
+	    $self->config(ColumnsMax => 0) if $str =~ /^>/;
 	} elsif ($action eq "") {
 	    $self->{_}->{line} = $str;
 	} elsif ($action eq "eol") {
 	    return $self->{Newline};
 	} elsif ($action =~ /^eo/) {
-	    if (length $self->{_}->{line} and $self->{MaxColumns}) {
+	    if (length $self->{_}->{line} and $self->{ColumnsMax}) {
 		$str = $self->{Newline}.$self->{Newline};
 	    } else {
 		$str = $self->{Newline};
 	    }
-	    $self->config(MaxColumns => $self->{_}->{MaxColumns});
+	    $self->config(ColumnsMax => $self->{_}->{ColumnsMax});
 	    delete $self->{_};
 	    return $str;
 	}
@@ -175,13 +175,15 @@ It may be string or instance of L<MIME::Charset> object.
 If a special value C<"_UNICODE_"> is specified, result will be Unicode string.
 Default is the value of Charset option.
 
+=item CharactersMax
+
+=item ColumnsMin
+
+=item ColumnsMax
+
 =item HangulAsAL
 
 =item LegacyCM
-
-=item MinColumns
-
-=item MaxColumns
 
 =item Newline
 
@@ -205,8 +207,9 @@ sub config {
     my $self = shift;
     my %params = @_;
     my @opts = qw{Charset Language OutputCharset};
-    my @lbopts = qw{HangulAsAL LegacyCM MinColumns MaxColumns Newline
-			NSKanaAsID SizingMethod UrgentBreaking UserBreaking};
+    my @lbopts = qw{CharactersMax ColumnsMin ColumnsMax
+			HangulAsAL LegacyCM Newline NSKanaAsID
+			SizingMethod UrgentBreaking UserBreaking};
 
     # Get config.
     if (scalar @_ == 1) {

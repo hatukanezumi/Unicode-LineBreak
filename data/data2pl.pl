@@ -22,6 +22,18 @@ foreach my $n (1, 0) {
 		my $p = $PROP_EXCEPTIONS{$c} || $prop;
 		$PROPS{$p} ||= [];
 		push @{$PROPS{$p}}, $c;
+		if ($p =~ /H3|H2|JL|JV|JT/) {
+		    $PROPS{'hangul'} ||= [];
+		    push @{$PROPS{'hangul'}}, $c;
+		}
+		if ($p =~ /CM|SAcm/) {
+		    $PROPS{'cm'} ||= [];
+		    push @{$PROPS{'cm'}}, $c;
+		}
+		if ($p =~ /SAal|SAcm/) {
+		    $PROPS{'SA'} ||= [];
+		    push @{$PROPS{'SA'}}, $c;
+		}
 	    }
 	}
 	#print STDERR "$start..$end\n";
@@ -34,6 +46,7 @@ foreach my $n (1, 0) {
 my $cat = $ARGV[2] || die;
 foreach my $p (sort keys %PROPS) {
     print "sub ${cat}_$p {\n";
+    #print "print STDERR \"${cat}_$p\\n\";\n";
     print "    return <<'END';\n";
     my ($start, $end) = ();
     foreach my $c (sort {$a <=> $b} @{$PROPS{$p}}) {

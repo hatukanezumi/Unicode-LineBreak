@@ -59,13 +59,15 @@ fold()/unfold() の結果を符号化するキャラクタセット。
 特殊値 C<"_UNICODE_"> を指定すると、結果は Unicode 文字列となる。
 初期値は Charset オプションの値。
 
+=item CharactersMax
+
+=item ColumnsMin
+
+=item ColumnsMax
+
 =item HangulAsAL
 
 =item LegacyCM
-
-=item MinColumns
-
-=item MaxColumns
 
 =item Newline
 
