@@ -1,12 +1,21 @@
+0.001_20  Xxx Mar XX 2009
+	* 0.001beta2.  Added urgent/custom breaking features.
+
 0.001_11  Sat Mar 02 2009
-* 0.001beta.  Added Text::LineFold module.
+	* 0.001beta.  Added Text::LineFold module.
 
 0.001_03  Wed Apr 29 2009
-* alpha.
+	* alpha.
 
 0.001_02  Sun Apr 26 2009
-* pre-alpha.
+	* pre-alpha.
 
 0.001_01  Sat Apr 18 2009
-* pre-alpha.
+	* pre-alpha.
 
+	Local Variables:
+	mode: change-log
+	change-log-default-name: "Changes"
+	tab-width: 2
+	left-margin: 2
+	End:

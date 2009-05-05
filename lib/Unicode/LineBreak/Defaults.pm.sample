@@ -25,6 +25,8 @@ Following settings are available.
 
 =item LegacyCM
 
+=item MinColumns
+
 =item MaxColumns
 
 =item Newline
@@ -32,6 +34,10 @@ Following settings are available.
 =item NSKanaAsID
 
 =item SizingMethod
+
+=item UrgentBreaking
+
+=item UserBreaking
 
 =back
 
@@ -50,9 +56,12 @@ L<Unicode::LineBreak>
 # $Config->{Format} = 'DEFAULT';
 # $Config->{HangulAsAL} = 'NO';
 # $Config->{LegacyCM} = 'YES';
+# $Config->{MinColumns} = 0;
 # $Config->{MaxColumns} = 76;
 # $Config->{Newline} = "\n";
 # $Config->{NSKanaAsID} = 'NO';
 # $Config->{SizingMethod} = 'DEFAULT';
+# $Config->{UrgentBreaking} = 'NONBREAK';
+# $Config->{UserBreaking} = [];
 
 1;

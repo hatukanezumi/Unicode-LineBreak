@@ -47,6 +47,36 @@ our %lb_IDX = (
     'XX' => 35,
 );
 
+our %lb_tailorable = (
+    'OP' => 1,
+    'CL' => 1,
+    'QU' => 1,
+    'GL' => 1,
+    'NS' => 1,
+    'EX' => 1,
+    'SY' => 1,
+    'IS' => 1,
+    'PR' => 1,
+    'PO' => 1,
+    'NU' => 1,
+    'AL' => 1,
+    'ID' => 1,
+    'IN' => 1,
+    'HY' => 1,
+    'BA' => 1,
+    'BB' => 1,
+    'B2' => 1,
+    'CB' => 1,
+    'ZW' => 1,
+    'WJ' => 1,
+    'H2' => 1,
+    'H3' => 1,
+    'JL' => 1,
+    'JV' => 1,
+    'JT' => 1,
+    'CM' => 1
+);
+
 use constant M => 'MANDATORY';
 use constant D => 'DIRECT';
 use constant I => 'INDIRECT';

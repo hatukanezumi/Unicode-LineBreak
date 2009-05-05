@@ -3,17 +3,17 @@ use Encode qw(decode_utf8 encode_utf8);
 use Unicode::LineBreak;
 
 $Unicode::LineBreak::Config = {
-    Detect7bit => 'YES',
-    Mapping => 'EXTENDED',
-    Replacement => 'DEFAULT',
-    Context => '',
+    Context => 'NONEASTASIAN',
     Format => 'DEFAULT',
     HangulAsAL => 'NO',
     LegacyCM => "YES",
+    MinColumns => 0,
     MaxColumns => 76,
     Newline => "\n",
     NSKanaAsID => "NO",
     SizingMethod => "DEFAULT",
+    UrgentBreaking => 'NONBREAK',
+    UserBreaking => [],
 };
 
 sub dotest {

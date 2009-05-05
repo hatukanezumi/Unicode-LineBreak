@@ -106,7 +106,13 @@ EOF
 }
 print ");\n\n";
 
-    print <<"EOF";
+print "our %lb_tailorable = (\n";
+foreach my $c (grep !/$OMIT/, @CLASSES) {
+    print "    '$c' => 1,\n";
+}
+print "    'CM' => 1\n);\n\n";
+
+print <<"EOF";
 use constant M => 'MANDATORY';
 use constant D => 'DIRECT';
 use constant I => 'INDIRECT';

@@ -1,3 +1,7 @@
+#-*- perl -*-
+
+$VERSION = '0.001_20';
+
 =encoding utf8
 
 =head1 NAME
@@ -59,6 +63,8 @@ fold()/unfold() の結果を符号化するキャラクタセット。
 
 =item LegacyCM
 
+=item MinColumns
+
 =item MaxColumns
 
 =item Newline
@@ -66,6 +72,10 @@ fold()/unfold() の結果を符号化するキャラクタセット。
 =item NSKanaAsID
 
 =item SizingMethod
+
+=item UrgentBreaking
+
+=item UserBreaking
 
 L<Unicode::LineBreak::JA_JP/オプション> を参照。
 
