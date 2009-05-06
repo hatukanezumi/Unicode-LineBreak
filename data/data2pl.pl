@@ -44,7 +44,10 @@ foreach my $n (1, 0) {
 #print STDERR "WRITE\n";
 
 my $cat = $ARGV[2] || die;
-foreach my $p (sort keys %PROPS) {
+shift @ARGV; shift @ARGV; shift @ARGV;
+my @props = @ARGV;
+@props = sort keys %PROPS unless scalar @props;
+foreach my $p (@props) {
     print "sub ${cat}_$p {\n";
     #print "print STDERR \"${cat}_$p\\n\";\n";
     print "    return <<'END';\n";

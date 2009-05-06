@@ -3,6 +3,7 @@ Changes
 data/data2pl.pl
 data/EastAsianWidth.custom
 data/LineBreak.custom
+data/Makefile
 data/map2pl.pl
 data/Rules
 data/rules2pl.pl
@@ -23,11 +24,16 @@ t/01break.t
 t/02hangul.t
 t/03ns.t
 t/04fold.t
+t/05urgent.t
 t/lb.pl
 t/lf.pl
 t/pod.t
 testin/ar.in
 testin/ar.out
+testin/aristophanes.chars.out
+testin/aristophanes.force.out
+testin/aristophanes.in
+testin/aristophanes.out
 testin/el.in
 testin/el.out
 testin/fr.fixed.out

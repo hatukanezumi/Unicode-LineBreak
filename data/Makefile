@@ -23,7 +23,8 @@ $(DATA_PM): $(EASTASIANWIDTH) $(LINEBREAK) EastAsianWidth.custom LineBreak.custo
 	  echo ''; \
 	  echo '=cut'; \
 	  echo ''; \
-	  perl data2pl.pl $(LINEBREAK) LineBreak.custom lb; \
+	  perl data2pl.pl $(LINEBREAK) LineBreak.custom lb \
+			  BK CR H2 H3 JL JT JV LF NL SP ZW cm hangul; \
 	  perl map2pl.pl $(EASTASIANWIDTH) EastAsianWidth.custom ea; \
 	  perl map2pl.pl $(LINEBREAK) LineBreak.custom lb; \
 	  echo '1;' \

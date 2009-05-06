@@ -10,8 +10,7 @@
 	- Punctuations may protrude into the right -- bottom, in vertical
 	  line -- margin.
 	- It is usually applied to IDEOGRAPHIC FULL STOP and
-	  IDEOGRAPHIC COMMA.  It is rarely applied to other punctuations;
-	  FULL STOP and COMMA.
+	  IDEOGRAPHIC COMMA.  It is rarely applied to FULL STOP and COMMA.
 	- ``Half-''hunging, regarding ideographic punctuations as narrow
 	  only at end of line, might be either allowed or inhibited by
 	  typesetting rules, whether (full-)hunging was allowed or not.
