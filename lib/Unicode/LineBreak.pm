@@ -159,22 +159,25 @@ my %URGENT_BREAKING_FUNCS = (
     my $pre = shift;
     my $spc = shift;
     my $str = shift;
+    return $len unless length $spc or length $str;
 
     my @result = ();
     my $buf = '';
     my $width;
-    my $spcstr = $spc.$str;
     my $c;
-    pos($spcstr) = 0;
+
+    $len = &{$self->{_sizing_func}}($self, $len, $pre, $spc, '')
+	if length $spc;
+    pos($str) = 0;
     while (1) {
-        if ($spcstr =~ /\G\z/cgos) {
+        if ($str =~ /\G\z/cgos) {
 	    push @result, $buf if length $buf;
             last;
-        } elsif ($spcstr =~ /$test_hangul/cg) {
+        } elsif ($str =~ /$test_hangul/cg) {
 	    $c = $1;
             $width = 'W';
         } else {
-            $spcstr =~ /\G(.)/cgos;
+            $str =~ /\G(.)/cgos;
 	    $c = $1;
             $width = &_bsearch($Unicode::LineBreak::ea_MAP, $c);
             $width = {
@@ -526,27 +529,36 @@ sub break {
 	    # LB31: ALL ÷ ALL
 	    $action ||= 'DIRECT';
 
-	    # Prohibited break.
+	    # Check prohibited break.
 	    if ($action eq 'PROHIBITED' or
 		$action eq 'INDIRECT' and !length $b_spc) {
-		# When $b_frg will exceed CharactersMax, try urgent breaking.
+
+		# When conjunction of $b_frg and $a_frg is expected to exceed
+		# CharactersMax, try urgent breaking.
 		my $bsa = $b_frg.$b_spc.$a_frg;
 		if ($s->{CharactersMax} < length $bsa) {
-		    my @c = $s->_urgent_break($l_len, $l_frg, $l_spc,
-					      $a_cls, $bsa, $a_spc);
-		    # If any of broken fragments exceed CharactersMax,
-		    # force breaking them.
+		    my @c = $s->_urgent_break(0, '', '', $a_cls, $bsa, $a_spc);
+
+		    # If any of urgently broken fragments still exceed
+		    # CharactersMax, force chop them.
 		    my @cc = ();
 		    foreach my $c (@c) {
 			my ($cls, $str, $spc, $urg) = @{$c};
 			while ($s->{CharactersMax} < length $str) {
 			    my $b = substr($str, 0, $s->{CharactersMax});
 			    $str = substr($str, $s->{CharactersMax});
-			    $str = $1.$str if $b =~ s/(.\p{lb_cm}+)$//os;
+			    $str = $1.$str
+				if $str =~ /^\p{lb_cm}/ and 
+				$b =~ s/(.\p{lb_cm}*)$//os;
 			    push @cc, ['XX', $b, '', 1] if length $b;
 			}
 			push @cc, [$cls, $str, $spc, $urg];
 		    }
+		    # As $a_frg might be an imcomplete fragment,
+		    # its end need not perform urgent break.
+		    $cc[$#cc]->[3] = 0 if scalar @cc;
+
+		    # Shift back broken fragments then retry.
 		    unshift @custom, @cc;
 		    if (scalar @custom) {
 			($b_cls, $b_frg, $b_spc, $b_urg) = @{shift @custom};
@@ -579,31 +591,38 @@ sub break {
 	    $sop_done = 1;
 	}
 	
+	# Check if arbitrary break will be needed.
 	my $l_newlen =
 	    &{$s->{_sizing_func}}($s, $l_len, $l_frg, $l_spc, $b_frg);
 	if ($s->{ColumnsMax} and $s->{ColumnsMax} < $l_newlen) {
 	    $l_newlen = &{$s->{_sizing_func}}($s, 0, '', '', $b_frg); 
 
-	    # When arbitrary break will generate very short line or
-	    # $b_frg will exceed ColumnsMax, try urgent breaking.
-	    if (!$b_urg and
-		($l_len and $l_len < $s->{ColumnsMin} or
-		 $s->{ColumnsMax} < $l_newlen)
-		) {
-		unshift @custom, [$a_cls, $a_frg, $a_spc, $a_urg]
-		    if defined $a_cls;
-		unshift @custom, $s->_urgent_break($l_len, $l_frg, $l_spc,
-						   $b_cls, $b_frg, $b_spc);
-		if (scalar @custom) {
-		    ($b_cls, $b_frg, $b_spc, $b_urg) = @{shift @custom};
-		    goto END_OF_LINE if $b_cls =~ /^eo/;
-		} else {
-		    ($b_cls, $b_frg, $b_spc, $b_urg) = (undef, '', '', 0);
+	    # When arbitrary break is expected to generate very short line,
+	    # or when $b_frg will exceed ColumnsMax, try urgent breaking.
+	    unless ($b_urg) {
+		my @c = ();
+		if ($l_len and $l_len < $s->{ColumnsMin}) {
+		    @c = $s->_urgent_break($l_len, $l_frg, $l_spc,
+					   $b_cls, $b_frg, $b_spc);
+		} elsif ($s->{ColumnsMax} < $l_newlen) {
+		    @c = $s->_urgent_break(0, '', '',
+					   $b_cls, $b_frg, $b_spc);
 		}
-		next;
+		if (scalar @c) {
+		    push @c, [$a_cls, $a_frg, $a_spc, $a_urg]
+			if defined $a_cls;
+		    unshift @custom, @c;
+		    if (scalar @custom) {
+			($b_cls, $b_frg, $b_spc, $b_urg) = @{shift @custom};
+			goto END_OF_LINE if $b_cls =~ /^eo/;
+		    } else {
+			($b_cls, $b_frg, $b_spc, $b_urg) = (undef, '', '', 0);
+		    }
+		    next;
+		}
 	    }
 
-	    # Process arbitrary break.
+	    # Otherwise, process arbitrary break.
 	    if (length $l_frg.$l_spc) {
 		$result .= $s->_break('', $l_frg);
 		$result .= $s->_break('eol', $l_spc);
@@ -1124,8 +1143,10 @@ sub _strwidth {
     my $pre = shift;
     my $spc = shift;
     my $str = shift;
-    my $narrowal;
-    return $len unless defined $str and length $str;
+    my $narrowal = shift;
+    $spc = '' unless defined $spc;
+    $str = '' unless defined $str;
+    return $len unless length $spc or length $str;
 
     my $result = $len;
 

@@ -3,7 +3,7 @@ Changes
 data/data2pl.pl
 data/EastAsianWidth.custom
 data/LineBreak.custom
-data/Makefile
+data/makefile
 data/map2pl.pl
 data/Rules
 data/rules2pl.pl
@@ -30,7 +30,8 @@ t/lf.pl
 t/pod.t
 testin/ar.in
 testin/ar.out
-testin/aristophanes.chars.out
+testin/aristophanes.CharactersMax.out
+testin/aristophanes.ColumnsMin.out
 testin/aristophanes.force.out
 testin/aristophanes.in
 testin/aristophanes.out
