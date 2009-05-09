@@ -29,6 +29,8 @@ t/06context.t
 t/lb.pl
 t/lf.pl
 t/pod.t
+testin/amitagyong.in
+testin/amitagyong.out
 testin/ar.in
 testin/ar.out
 testin/ecclesiazusae.CharactersMax.out

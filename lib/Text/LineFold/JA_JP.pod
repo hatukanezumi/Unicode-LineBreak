@@ -1,6 +1,6 @@
 #-*- perl -*-
 
-$VERSION = '0.001_20';
+$VERSION = '0.001';
 
 =encoding utf8
 

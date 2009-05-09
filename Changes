@@ -1,5 +1,7 @@
-0.001_20  Xxx Mar XX 2009
-	* 0.001beta2.  Added urgent/custom breaking features.
+0.001  Sat Mar 09 2009
+	* 0.001 release.
+	- Added urgent/custom breaking features.
+	- Added tests.
 
 0.001_11  Sat Mar 02 2009
 	* 0.001beta.  Added Text::LineFold module.
