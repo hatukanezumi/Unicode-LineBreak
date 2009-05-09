@@ -1,7 +1,5 @@
 #-*- perl -*-
 
-$VERSION = '0.001';
-
 =encoding utf8
 
 =head1 NAME
