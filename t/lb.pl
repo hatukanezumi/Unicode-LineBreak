@@ -26,13 +26,16 @@ sub dotest {
     close IN;
     my $lb = Unicode::LineBreak->new(@_);
     my $broken = encode_utf8($lb->break($instring));
-    #open XXX, ">testin/$out.xxx";
-    #print XXX $broken;
-    #close XXX;
 
-    open OUT, "<testin/$out.out" or die "open: $!";
-    my $outstring = join '', <OUT>;
-    close OUT;
+    my $outstring = '';
+    if (open OUT, "<testin/$out.out") {
+	$outstring = join '', <OUT>;
+	close OUT;
+    } else {
+	open XXX, ">testin/$out.xxx";
+	print XXX $broken;
+	close XXX;
+    }
 
     is($broken, $outstring);
 }    

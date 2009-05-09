@@ -396,119 +396,139 @@ sub break {
 
     pos($str) = 0;
     while (1) {
-	### Chop off unbreakable fragment from text as long as possible.
-
-	## Use custom buffer at first.
-	if (scalar(@custom)) {
-	    ($a_cls, $a_frg, $a_spc, $a_urg) = @{shift @custom};
-	    goto LB10; # Need not apply LB9.
-	}
-
-	## Then, go ahead reading input.
-
-	# - End of text
-	# - Mandatory breaks
-
-	# LB3: ! eot
-	if ($str =~ /\G\z/cgos) {
-	    $b_cls = 'eot';
-	    goto END_OF_LINE;
-	}
-	# LB4, LB5, LB6: × SP* (BK | CR LF | CR | LF | NL) !
-	if ($str =~
-	    /\G(\p{lb_SP}*
-		(?:\p{lb_BK} |
-		 \p{lb_CR}\p{lb_LF} | \p{lb_CR} | \p{lb_LF} |
-		 \p{lb_NL}))/cgosx) {
-	    $b_spc .= $1; # $b_spc = SP* (BK etc.)
-	    # LB3: ! eot
-	    if ($str =~ /\G\z/cgos) {
-		$b_cls = 'eot';
-	    } else {
-		$b_cls = 'eop';
+      CHARACTER_PAIR:
+	while (1) {
+	    if (!defined $b_cls and defined $a_cls) {
+		($b_cls, $b_frg, $b_spc, $b_urg) =
+		    ($a_cls, $a_frg, $a_spc, $a_urg);
 	    }
-	    goto END_OF_LINE;
-	}
-
-	# - Explicit breaks and non-breaks
-
-	# LB7, LB8: × (ZW | SP)* ZW 
-	if ($str =~ /\G((?:\p{lb_ZW} | \p{lb_SP})* \p{lb_ZW})/cgox) {
-	    $b_frg .= $b_spc.$1;
-	    $b_spc = '';
-	    $b_cls = 'ZW';
-	    next;
-	}
-	# LB7: × SP+
-	if ($str =~ /\G(\p{lb_SP}+)/cgos) {
-	    $b_spc .= $1;
-	    $b_cls ||= 'WJ'; # in case of --- (sot | BK etc. | ZW) × SP+
-	    next;
-	}
-
-	# - Rules for other line breaking classes
-
-	# Fill custom buffer
-	if (scalar(@c = $s->_test_custom(\$str))) {
-	    push @custom, @c;
-	    next;
-	}
-	# LB1: Assign a line breaking class to each characters.
-	if ($str =~ /\G(\P{lb_hangul})/cgos) {
-	    ($a_frg, $a_spc, $a_urg) = ($1, '', 0);
-	    $a_cls = $s->getlbclass($a_frg);
-	    goto LB9;
-	}
-	# LB26, LB27: Treat
-	#   (JL* H3 JT* | JL* H2 JV* JT* | JL* JV+ JT* | JL+ | JT+)
-	# as if it were ID (or AL).
-	if ($str =~ /$test_hangul/cg) {
-	    ($a_frg, $a_spc, $a_urg) = ($1, '', 0);
-	    $a_cls = ($s->{HangulAsAL} eq 'YES')? 'AL': 'ID';
-	    goto LB9;
-	}
-
-	# Something goes wrong...
-	croak "break: ".pos($str).": This should not happen: ask developer";
-
-	# - Combining marks
-
-      LB9:
-	# LB7, LB9: Treat X CM+ SP* as if it were X SP*
-	# where X is anything except BK, CR, LF, NL, SP or ZW
-	if ($str =~ /\G(\p{lb_cm}+)/cgo) {
-	    $a_frg .= $1;
-	}
-	if ($str =~ /\G(\p{lb_SP}+)/cgo) {
-	    $a_spc = $1;
-	}
-      LB10:
-	# LB7, Legacy-CM: Treat SP CM+ SP* as if it were ID SP*
-	# cf. [UAX #14] 9.1.
-	# LB7, LB10: Treat CM+ SP* as if it were AL SP*
-	if ($a_cls eq 'CM') {
-	    if ($s->{LegacyCM} eq 'YES' and
-		defined $b_cls and $b_spc =~ s/(\p{lb_SP})$//os) {
-		$a_frg = $1.$a_frg;
-		$a_cls = 'ID';
-		# clear
-		$b_cls = undef unless length $b_frg or length $b_spc;
-	    } else {
-		$a_cls = 'AL';
-	    }
-	}
-
-	# - Start and end of text
-	# - Mandatory break
-
-	# LB2: sot ×
-	unless ($b_cls) {
-	    ($b_cls,$b_frg,$b_spc,$b_urg) = ($a_cls,$a_frg,$a_spc,$a_urg);
-	    next unless $b_cls =~ /^eo/;
-
-	  END_OF_LINE:
 	    ($a_cls, $a_frg, $a_spc, $a_urg) = (undef, '', '', 0);
-	}
+	    last CHARACTER_PAIR if defined $b_cls and $b_cls =~ /^eo/;
+
+	    ### Chop off unbreakable fragment from text as long as possible.
+
+	    ## Use custom buffer at first.
+	    if (!scalar(@custom)) {
+		## Then, go ahead reading input.
+
+		#
+		# Append SP/ZW/eop to ``before'' buffer.
+		#
+
+		while (1) {
+		    # - End of text
+
+		  LB3: # ! eot
+		    if ($str =~ /\G\z/cgos) {
+			$b_cls = 'eot';
+			last CHARACTER_PAIR;
+		    }
+
+		    # - Explicit breaks and non-breaks
+
+		  LB7_1: # × SP+
+		    if ($str =~ /\G(\p{lb_SP}+)/cgos) {
+			$b_spc .= $1;
+			$b_cls ||= 'WJ'; # in case of (sot | BK etc.) × SP+
+		    }
+
+		    # - Mandatory breaks
+
+		  LB4567: # × SP* (BK | CR LF | CR | LF | NL) !
+		    if ($str =~
+			/\G((?:\p{lb_BK} |
+			     \p{lb_CR} \p{lb_LF} | \p{lb_CR} | \p{lb_LF} |
+			     \p{lb_NL}))/cgosx) {
+			$b_spc .= $1; # $b_spc = SP* (BK etc.)
+			# LB3: ! eot
+			if ($str =~ /\G\z/cgos) {
+			    $b_cls = 'eot';
+			} else {
+			    $b_cls = 'eop';
+			}
+		    }
+		    last CHARACTER_PAIR if defined $b_cls and $b_cls =~ /^eo/;
+
+		    # - Explicit breaks and non-breaks
+
+		  LB7_2: # × SP* ZW+ 
+		    if ($str =~ /\G(\p{lb_ZW}+)/cgo) {
+			$b_frg .= $b_spc.$1;
+			$b_spc = '';
+			$b_cls = 'ZW';
+			next;
+		    }
+		    last;
+		}
+
+		#
+		# Fill custom buffer and retry
+		#
+		if (scalar(@c = $s->_test_custom(\$str))) {
+		    push @custom, @c;
+		    next;
+		}
+
+		#
+		# Then fill ``after'' buffer.
+		#
+
+		# - Rules for other line breaking classes
+
+	      LB1: # Assign a line breaking class to each characters.
+		($a_spc, $a_urg) = ('', 0);
+		if ($str =~ /\G(?=(.))/cgos) { # look ahead one character.
+		    $a_frg = $1;
+		    $a_cls = $s->getlbclass($a_frg);
+		    unless ($a_cls =~ /JL|H3|H2|JV|JT/) {
+			pos($str) = pos($str) + 1;
+		    # LB26, LB27: Treat
+		    #   (JL* H3 JT* | JL* H2 JV* JT* | JL* JV+ JT* | JL+ | JT+)
+		    # as if it were ID.
+		    } elsif ($str =~ /$test_hangul/cg) {
+			$a_frg = $1;
+			#XXX $a_cls = ($s->{HangulAsAL} eq 'YES')? 'AL': 'ID';
+			$a_cls = 'ID';
+		    # Something goes wrong...
+		    } else {
+			croak "break: ".pos($str)." (not hangul cluster): ".
+			    "This should not happen: ask developer";
+		    }
+		} else {
+		    croak "break: ".pos($str)." (eot): ".
+			"This should not happen: ask developer";
+		}
+
+		# - Combining marks
+
+	      LB9:
+		# LB7, LB9: Treat X CM+ SP* as if it were X SP*
+		# where X is anything except BK, CR, LF, NL, SP or ZW
+		$a_frg .= $1 if $str =~ /\G(\p{lb_cm}+)/cgo;
+		$a_spc = $1 if $str =~ /\G(\p{lb_SP}+)/cgo;
+	      LB10:
+		# Legacy-CM: Treat SP CM+ as if it were ID.  cf. [UAX #14] 9.1.
+		# LB10: Treat CM+ as if it were AL
+		if ($a_cls eq 'CM') {
+		    if ($s->{LegacyCM} eq 'YES' and
+			defined $b_cls and $b_spc =~ s/(\p{lb_SP})$//os) {
+			$a_frg = $1.$a_frg;
+			$a_cls = 'ID';
+			# clear
+			$b_cls = undef unless length $b_frg or length $b_spc;
+		    } else {
+			$a_cls = 'AL';
+		    }
+		}
+	    } else {
+		($a_cls, $a_frg, $a_spc, $a_urg) = @{shift @custom};
+	    }
+
+	    # - Start of text
+
+	  LB2: # sot ×
+	    last if defined $b_cls;
+	} # CHARACTER_PAIR: while (1)
 
 	## Determin line breaking action by classes of adjacent characters.
 	## "EOT" is used only internally.
@@ -562,7 +582,7 @@ sub break {
 		    unshift @custom, @cc;
 		    if (scalar @custom) {
 			($b_cls, $b_frg, $b_spc, $b_urg) = @{shift @custom};
-			goto END_OF_LINE if $b_cls =~ /^eo/;
+			#XXX maybe eop/eot
 		    } else {
 			($b_cls, $b_frg, $b_spc, $b_urg) = (undef, '', '', 0);
 		    }
@@ -571,8 +591,7 @@ sub break {
 		# Otherwise, conjunct fragments then read more.
 		$b_frg .= $b_spc.$a_frg;
 		$b_spc = $a_spc;
-		$b_cls = $a_cls;
-		goto END_OF_LINE if $b_cls =~ /^eo/;
+		$b_cls = $a_cls; #XXX maybe eop/eot
 		next;
 	    }
 	}
@@ -614,7 +633,7 @@ sub break {
 		    unshift @custom, @c;
 		    if (scalar @custom) {
 			($b_cls, $b_frg, $b_spc, $b_urg) = @{shift @custom};
-			goto END_OF_LINE if $b_cls =~ /^eo/;
+			#XXX maybe eop/eot
 		    } else {
 			($b_cls, $b_frg, $b_spc, $b_urg) = (undef, '', '', 0);
 		    }
