@@ -1,5 +1,6 @@
 ## 
 
+MODULE_VERSION = 0.002
 UNICODE_VERSION = 5.1.0
 
 UNICODEDATA = UnicodeData-$(UNICODE_VERSION).txt
@@ -45,6 +46,9 @@ $(VERSION_PM): $(DATA_PM) $(RULES_PM)
           echo ''; \
           echo '=cut'; \
           echo ''; \
+	  echo -n 'our $$VERSION = '"'"$(MODULE_VERSION).; \
+	  echo -n $(UNICODE_VERSION) | perl -pe 's/\.//g'; \
+	  echo "';"; \
 	  echo 'our $$UNICODE_VERSION = '"'"$(UNICODE_VERSION)"';"; \
 	  echo ''; \
 	  echo '1;' \
@@ -72,7 +76,7 @@ LineBreak.custom: $(UNICODEDATA) $(LINEBREAK)
 	  -e 'if ($$SA{$$_[0]}) { if ($$_[2]=~/Mc|Mn/) { print "$$_[0];SAcm # $$_[1]\n" } else { print "$$_[0];SAal # $$_[1]\n" } }' \
 	  $(UNICODEDATA); \
 	  echo ''; \
-	  echo '## NS characters optionally treated as ID (see JIS X 4051, 6.1.1 note 8).'; \
+	  echo '## NS characters optionally treated as ID.'; \
 	  sed -ne '/LETTER SMALL/s/;NS /;NSidKana /p' \
 	      -e '/PROLONGED SOUND MARK/s/;NS /;NSidLong /p' \
 	      -e '/ITERATION MARK/s/;NS /;NSidIter /p' \

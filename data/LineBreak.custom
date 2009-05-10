@@ -451,7 +451,7 @@
 19DE;SAal # NEW TAI LUE SIGN LAE
 19DF;SAal # NEW TAI LUE SIGN LAEV
 
-## NS characters optionally treated as ID (see JIS X 4051, 6.1.1 note 8).
+## NS characters optionally treated as ID.
 3005;NSidIter # IDEOGRAPHIC ITERATION MARK
 303B;NSidIter # VERTICAL IDEOGRAPHIC ITERATION MARK
 303C;NSidMasu # MASU MARK

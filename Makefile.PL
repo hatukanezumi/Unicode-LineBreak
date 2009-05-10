@@ -3,7 +3,7 @@ use ExtUtils::MakeMaker;
 WriteMakefile(
 	'NAME'		=> 'Unicode::LineBreak',
 	'ABSTRACT_FROM'	=> 'lib/Unicode/LineBreak.pm',
-	'VERSION_FROM'	=> 'lib/Unicode/LineBreak.pm',
+	'VERSION_FROM'	=> 'lib/Unicode/LineBreak/Version.pm',
 	'AUTHOR'	=> q{Hatuka*nezumi - IKEDA Soji <hatuka@nezumi.nu>},
 	'LICENSE'	=> 'perl',
 	'PREREQ_PM'	=> {

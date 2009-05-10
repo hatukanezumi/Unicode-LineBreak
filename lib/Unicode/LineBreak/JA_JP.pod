@@ -340,10 +340,18 @@ L</UserBreaking> オプションの要素に [REGEX, SUBREF] の配列参照を�
 
 =head3 文字列長の算出
 
-L</SizingMethod> オプションにサブルーチンへの参照を指定する場合、そのサブルーチンは 5 つの引数を取らなければならない。オブジェクトのインスタンス、元の文字列の長さ (LEN とする)、元の Unicode 文字列 (PRE)、追加される空白文字 (SPC)、追加される Unicode 文字列 (STR)。
+L</SizingMethod> オプションにサブルーチンへの参照を指定する場合、そのサブルーチンは 5 つか 6 つの引数を取らなければならない。
 
-サブルーチンは C<PRE.SPC.STR> の長さを算出して返さなければならない。
+    COLS = &subroutine(SELF, LEN, PRE, SPC, STR);
+
+    CHARS = &subroutine(SELF, LEN, PRE, SPC, STR, MAX);
+
+SELF はオブジェクトのインスタンス、LEN は先行する文字列の長さ、PRE は先行する Unicode 文字列、SPC は追加される空白文字、STR は処理する Unicode 文字列。
+
+ひとつめの形式では、サブルーチンは C<PRE.SPC.STR> の長さを算出して返さなければならない。
 長さは整数でなくてもよい。長さの単位は随意に選べるが、L</ColumnsMin> オプションおよび L</ColumnsMax> オプションのそれと一致させなければならない。
+
+ふたつめの形式では、サブルーチンは STR の部分文字列のI<Unicode 文字列の数>の最大値を返さなければならない。部分文字列 SUBSTR は PRE.SPC.SUBSTR の桁数が MAX を超えないように取る。この形式は L<UrgentBreaking> を C<"FORCE"> に設定した場合に使う。後の形式を実装したくなければ、C<undef> を返さなければならない。
 
 
 =head3 文字の分類と行分割の基本規則
@@ -399,7 +407,7 @@ SG や XX に分類される文字は AL に解決する。
 
 =head1 VERSION
 
-$VERSION 変数を参照してほしい。
+L<Unicode::LineBreak::Version> を参照。
 
 このモジュールの開発版が
 L<http://hatuka.nezumi.nu/repos/Unicode-LineBreak/>
