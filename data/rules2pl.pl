@@ -113,10 +113,10 @@ print ");\n\n";
 #XXXprint "    'CM' => 1\n);\n\n";
 
 print <<"EOF";
-use constant M => 'MANDATORY';
-use constant D => 'DIRECT';
-use constant I => 'INDIRECT';
-use constant P => 'PROHIBITED';
+use constant M => 2;
+use constant D => 1;
+use constant I => -1;
+use constant P => -2;
 EOF
 print "\n";
 

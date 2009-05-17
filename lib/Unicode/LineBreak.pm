@@ -42,7 +42,7 @@ both before and after themselves.
 These terms are inaccurate from the point of view by grammatology.
 
 B<Number of columns> of a string is not always equal to the number of characters it contains:
-Each of characters is either B<wide>, B<narrow> or non-spacing.
+Each of characters is either B<wide>, B<narrow> or non-spacing;
 They occupy 2, 1 or 0 columns, respectively.
 Several characters may be both wide and narrow by the contexts they are used.
 Characters may have more various widths by customization.
@@ -51,11 +51,13 @@ Characters may have more various widths by customization.
 
 ### Pragmas:
 use strict;
+use warnings;
 use vars qw($VERSION @EXPORT_OK @ISA $Config);
 
 ### Exporting:
 use Exporter;
-our @EXPORT_OK = qw(getcontext);
+our @EXPORT_OK = qw(getcontext MANDATORY DIRECT INDIRECT PROHIBITED);
+our %EXPORT_TAGS = ('all' => [@EXPORT_OK]);
 
 ### Inheritance:
 our @ISA = qw(Exporter);
@@ -69,6 +71,14 @@ use MIME::Charset;
 
 ### The package version
 require Unicode::LineBreak::Version;
+
+eval {
+    require XSLoader;
+    XSLoader::load('Unicode::LineBreak', $VERSION);
+};
+if ($@) {
+    require Unicode::LineBreak::NoXS;
+}
 
 ### Public Configuration Attributes
 our $Config = {
@@ -89,7 +99,17 @@ eval { require Unicode::LineBreak::Defaults; };
 
 ### Privates
 require Unicode::LineBreak::Rules;
+_loadrule($Unicode::LineBreak::RULES_MAP);
 require Unicode::LineBreak::Data;
+_loadmap(0, $Unicode::LineBreak::lb_MAP);
+_loadmap(1, $Unicode::LineBreak::ea_MAP);
+
+use constant EOT => 100;
+use constant MANDATORY => 2;
+use constant DIRECT => 1;
+use constant INDIRECT => -1;
+use constant PROHIBITED => -2;
+use constant URGENT => 200;
 
 my $EASTASIAN_CHARSETS = qr{
     ^BIG5 |
@@ -199,7 +219,7 @@ my %USER_BREAKING_FUNCS = (
 );
 
 
-=head2 公開インタフェース
+=head2 Public Interface
 
 =over 4
 
@@ -381,27 +401,27 @@ sub break {
 	} # CHARACTER_PAIR: while (1)
 
 	## Determin line breaking action by classes of adjacent characters.
-	## "EOT" is used only internally.
+	## EOT is used only internally.
 
 	my $action;
 	# End of text.
 	if ($b_cls eq 'eot') {
-	    $action = 'EOT';
+	    $action = EOT;
         # Mandatory break.
 	} elsif ($b_cls eq 'eop') {
-	    $action = 'MANDATORY';
+	    $action = MANDATORY;
 	# Broken by urgent breaking or custom breaking.
 	} elsif ($b_urg) {
-	    $action = 'URGENT';
+	    $action = URGENT;
 	# LB11 - LB29 and LB31: Tailorable rules (except LB11, LB12).
 	} else {
 	    $action = $s->getlbrule($b_cls, $a_cls);
 	    # LB31: ALL ÷ ALL
-	    $action ||= 'DIRECT';
+	    $action ||= DIRECT;
 
 	    # Check prohibited break.
-	    if ($action eq 'PROHIBITED' or
-		$action eq 'INDIRECT' and !length $b_spc) {
+	    if ($action == PROHIBITED or
+		$action == INDIRECT and !length $b_spc) {
 
 		# When conjunction of $b_frg and $a_frg is expected to exceed
 		# CharactersMax, try urgent breaking.
@@ -452,7 +472,7 @@ sub break {
 		$b_spc = $a_spc;
 		$b_cls = $a_cls; #XXX maybe eop/eot
 		next;
-	    } # if ($action eq 'PROHIBITED' or ...)
+	    } # if ($action == PROHIBITED or ...)
 	} # if ($b_cls eq 'eot')
 	# After all, possible actions are EOT, MANDATORY and other arbitrary.
 
@@ -521,7 +541,7 @@ sub break {
 	} # if ($s->{ColumnsMax} and ...)
 
 	# Mandatory break or end-of-text.
-	if ($action eq 'MANDATORY') {
+	if ($action == MANDATORY) {
 	    # Process mandatory break.
 	    $result .= $s->_break('', $l_frg);
 	    $result .= $s->_break('eop', $l_spc);
@@ -529,7 +549,7 @@ sub break {
 	    $l_frg = '';
 	    $l_len = 0;
 	    $l_spc = '';
-	} elsif ($action eq 'EOT') {
+	} elsif ($action == EOT) {
 	    # Process end of text.
 	    $result .= $s->_break('', $l_frg);
 	    $result .= $s->_break('eot', $l_spc);
@@ -663,6 +683,32 @@ sub config {
     push @v, 'MASU MARK'                if $v eq 'ALL' or $v =~ /MASU/i;
     $self->{'NSKanaAsID'} = join(',', @v) || 'NO';
 
+    ## Customization
+
+    $self->{_custom_lb_map} = {
+	'SAal' => 'AL',
+	'SAcm' => 'CM',
+	'SG' => 'AL',
+	'XX' => 'AL',
+	'AI' => ($self->{Context} eq 'EASTASIAN'? 'ID': 'AL'),
+	'NSidIter' => ($self->{NSKanaAsID} =~ /ITER/? 'ID': 'NS'),
+	'NSidKana' => ($self->{NSKanaAsID} =~ /SMALL/? 'ID': 'NS'),
+	'NSidLong' => ($self->{NSKanaAsID} =~ /LONG/? 'ID': 'NS'),
+	'NSidMasu' => ($self->{NSKanaAsID} =~ /MASU/? 'ID': 'NS'),
+	# Following won't be used in break().
+	'H2' => ($self->{HangulAsAL} eq 'YES'? 'AL': 'H2'),
+	'H3' => ($self->{HangulAsAL} eq 'YES'? 'AL': 'H3'),
+	'JL' => ($self->{HangulAsAL} eq 'YES'? 'AL': 'JL'),
+	'JV' => ($self->{HangulAsAL} eq 'YES'? 'AL': 'JV'),
+	'JT' => ($self->{HangulAsAL} eq 'YES'? 'AL': 'JT'),
+    };
+
+    $self->{_custom_ea_map} = {
+	'AnLat' => ($self->{SizingMethod} eq 'NARROWAL'? 'Na': 'A'),
+	'AnGre' => ($self->{SizingMethod} eq 'NARROWAL'? 'Na': 'A'),
+	'AnCyr' => ($self->{SizingMethod} eq 'NARROWAL'? 'Na': 'A'),
+    };
+
     # Other options
     foreach $o (qw{CharactersMax ColumnsMin ColumnsMax Newline}) {
 	$self->{$o} = $Config->{$o} unless defined $self->{$o};
@@ -724,24 +770,8 @@ sub getlbclass {
     my $self = shift;
     my $str = shift;
 
-    my $cls = &_bsearch($Unicode::LineBreak::lb_MAP, $str) || 'XX';
-    return {
-	'SAal' => 'AL',
-	'SAcm' => 'CM',
-	'SG' => 'AL',
-	'XX' => 'AL',
-	'AI' => ($self->{Context} eq 'EASTASIAN'? 'ID': 'AL'),
-	'NSidIter' => ($self->{NSKanaAsID} =~ /ITER/? 'ID': 'NS'),
-	'NSidKana' => ($self->{NSKanaAsID} =~ /SMALL/? 'ID': 'NS'),
-	'NSidLong' => ($self->{NSKanaAsID} =~ /LONG/? 'ID': 'NS'),
-	'NSidMasu' => ($self->{NSKanaAsID} =~ /MASU/? 'ID': 'NS'),
-	# Following won't be used in break().
-	'H2' => ($self->{HangulAsAL} eq 'YES'? 'AL': 'H2'),
-	'H3' => ($self->{HangulAsAL} eq 'YES'? 'AL': 'H3'),
-	'JL' => ($self->{HangulAsAL} eq 'YES'? 'AL': 'JL'),
-	'JV' => ($self->{HangulAsAL} eq 'YES'? 'AL': 'JV'),
-	'JT' => ($self->{HangulAsAL} eq 'YES'? 'AL': 'JT'),
-    }->{$cls} || $cls;
+    my $cls = &_bsearch(0, ord($str)) || 'XX';
+    return $self->{_custom_lb_map}->{$cls} || $cls;
 }
 
 =over 4
@@ -750,23 +780,23 @@ sub getlbclass {
 
 I<Instance method>.
 Get line breaking rule between class BEFORE and class AFTER.
-One of following values will be returned.
+One of following constants will be returned.
 
 =over 4
 
-=item C<"MANDATORY">
+=item C<MANDATORY>
 
 Mandatory break.
 
-=item C<"DIRECT">
+=item C<DIRECT>
 
 Both direct break and indirect break are allowed.
 
-=item C<"INDIRECT">
+=item C<INDIRECT>
 
 Indirect break is allowed, but direct break is prohibited.
 
-=item C<"PROHIBITED">
+=item C<PROHIBITED>
 
 Prohibited break.
 
@@ -787,14 +817,7 @@ sub getlbrule {
     my $b_idx = $Unicode::LineBreak::lb_IDX{shift || ''};
     my $a_idx = $Unicode::LineBreak::lb_IDX{shift || ''};
     return undef unless defined $b_idx and defined $a_idx;
-
-    my $row;
-    my $action;
-    if (defined($row = $Unicode::LineBreak::RULES_MAP->[$b_idx]) and
-	defined($action = $row->[$a_idx])) {
-	return $action;
-    }
-    undef;
+    _getlbrule($b_idx, $a_idx);
 }
 
 =head2 Options
@@ -883,7 +906,7 @@ Default is C<"\n">.
 
 =item NSKanaAsID => C<">CLASS...C<">
 
-Treat some non-starters (NS) as normal ideographic characters (ID)
+Treat some Nonstarters (NS) as normal ideographic characters (ID)
 based on classification specified by CLASS.
 CLASS may include following substrings.
 
@@ -920,7 +943,7 @@ N.B. Some of them are neither hiragana nor katakana.
 
 Hiragana or katakana small letters and prolonged sound marks.
 
-N.B. These letters are optionally treated either as non-starter or
+N.B. These letters are optionally treated either as Nonstarter or
 as normal ideographic.  See [JIS X 4051] 6.1.1.
 
 =item C<"MASU MARK">
@@ -931,7 +954,7 @@ N.B. Although this character is not kana, it is usually regarded as
 abbreviation to sequence of hiragana C<"ます"> or katakana C<"マス">,
 MA and SU.
 
-N.B. This character is classified as Non-starter (NS) by [UAX #14]
+N.B. This character is classified as Nonstarter (NS) by [UAX #14]
 and as Class 13 (corresponding to ID) by [JIS X 4051].
 
 =item C<"NO">
@@ -1208,15 +1231,12 @@ sub _strwidth {
 	    $width = 'W';
 	} elsif ($spcstr =~ /\G(.)/cgos) {
 	    $c = $1;
-	    $width = &_bsearch($Unicode::LineBreak::ea_MAP, $c);
-	    $width = {
-		'AnLat' => ($narrowal? 'Na': 'A'),
-		'AnGre' => ($narrowal? 'Na': 'A'),
-		'AnCyr' => ($narrowal? 'Na': 'A'),
-	    }->{$width} || $width;
+	    $width = &_bsearch(1, ord($c)) || 'A';
+	    $width = $self->{_custom_ea_map}->{$width} || $width;
 	} else {
 	    croak pos($spcstr).": This should not happen.  Ask developer.";
 	}
+
 	if ($width eq 'F' or $width eq 'W') {
 	    $width = 2;
 	} elsif ($self->{Context} eq 'EASTASIAN' and $width eq 'A') {
@@ -1243,41 +1263,6 @@ sub _strwidth {
 Classifications of character and core line breaking rules are defined by
 L<Unicode::LineBreak::Data> and L<Unicode::LineBreak::Rules>.
 If you wish to customize them, see F<data> directory of source package.
-
-=cut
-
-## Helper functions.
-
-# _bearch MAP, VAL
-# Examine binary search on property map table with following structure:
-# [
-#     [start, stop, property_value],
-#     ...
-# ]
-# where start and stop stands for a continuous range of UCS ordinal those
-# are assigned property_value.
-sub _bsearch {
-    my $map = shift;
-    my $val = ord shift;
-
-    my $top = 0;
-    my $bot = $#{$map};
-    my $cur;
-
-    while ($top <= $bot) {
-	$cur = $top + int(($bot - $top) / 2);
-	my $v = $map->[$cur];
-	if ($val < $v->[0]) {
-	    $bot = $cur - 1;
-	} elsif ($v->[1] < $val) {
-	    $top = $cur + 1;
-	} else {
-	    return $v->[2];
-	}
-    }
-    return undef;
-}
-
 
 =head3 Configuration File
 
