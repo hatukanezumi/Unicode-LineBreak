@@ -14,11 +14,14 @@ lib/Unicode/LineBreak.pm
 lib/Unicode/LineBreak/Data.pm
 lib/Unicode/LineBreak/Defaults.pm.sample
 lib/Unicode/LineBreak/JA_JP.pod
+lib/Unicode/LineBreak/NoXS.pm
 lib/Unicode/LineBreak/Rules.pm
 lib/Unicode/LineBreak/Version.pm
+LineBreak.xs
 Makefile.PL
 MANIFEST			This list of files
 META.yml
+ppport.h
 README
 t/01break.t
 t/02hangul.t
@@ -61,9 +64,9 @@ testin/ko.in
 testin/ko.out
 testin/ru.in
 testin/ru.out
-testin/titin.bz
 testin/th.in
 testin/th.out
+testin/titin.bz
 testin/zh.in
 testin/zh.out
 Todo

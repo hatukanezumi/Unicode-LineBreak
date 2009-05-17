@@ -5,7 +5,23 @@ Copyright (C) 2009 by Hatuka*nezumi - IKEDA Soji <hatuka(at)nezumi.nu>.
 This package is free software; you can redistribute it and/or modify it 
 under the same terms as Perl itself.
 
-                                   ***
+Install
+=======
+
+$ perl Makefile.PL
+$ make
+$ make test
+# make install
+
+If you don't wish to use XS module, do:
+
+$ perl Makefile.PL noxs
+$ make
+$ make test
+# make install
+
+Documentations
+==============
 
 Two main modules and some supporting program files are contained. For
 more details read following POD documentations:

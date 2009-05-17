@@ -47,10 +47,10 @@ our %lb_IDX = (
     'XX' => 35,
 );
 
-use constant M => 'MANDATORY';
-use constant D => 'DIRECT';
-use constant I => 'INDIRECT';
-use constant P => 'PROHIBITED';
+use constant M => 2;
+use constant D => 1;
+use constant I => -1;
+use constant P => -2;
 
 # Note: Rules for H2, H3, JL, JV, JT aren't used by break() method.
 our $RULES_MAP = [

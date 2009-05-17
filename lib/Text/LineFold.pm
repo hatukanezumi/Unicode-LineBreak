@@ -39,12 +39,12 @@ our @ISA = qw(Exporter Unicode::LineBreak);
 use Carp qw(croak carp);
 use Encode qw(is_utf8);
 use MIME::Charset;
-use Unicode::LineBreak qw(getcontext);
+use Unicode::LineBreak qw(getcontext INDIRECT);
 
 ### Globals
 
 ### The package version, both in 1.23 style *and* usable by MakeMaker:
-our $VERSION = '0.001';
+our $VERSION = '0.002';
 
 ### Public Configuration Attributes
 our $Config = {
@@ -421,7 +421,7 @@ sub unfold {
 			$a_cls = $self->getlbclass($n);
 			$a_cls = 'AL' if $a_cls eq 'CM';
 
-			if ($self->getlbrule($b_cls, $a_cls) eq 'INDIRECT') {
+			if ($self->getlbrule($b_cls, $a_cls) == INDIRECT) {
 			    $result .= ' ';
 			}
 		    }

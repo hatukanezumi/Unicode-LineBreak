@@ -1,6 +1,7 @@
-0.002.510  Xxx Xxx XX 2009
-	* data/rules2pl.pl: Remove hangul from RULE_MAP.
-	* lib/Unicode/LineBreak.pm: Added second format of SizinfMethd subroutines.
+0.002.510  Sun Mar 17 2009
+	* Partial XS support.
+	* lib/Unicode/LineBreak.pm: Added second format of SizinfMethd
+	  subroutines.
 	
 0.001.510  Sun Mar 10 2009
 	* No new features.  Small fixes on documentation.

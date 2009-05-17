@@ -20,10 +20,10 @@ sub do5tests {
     foreach my $method (qw(FIXED FLOWED)) {
 	my $outstring = $lf->unfold($folded{$method}, $method);
 	is($outstring, $instring);
+	#XXXopen XXX, ">testin/$out.".(lc $method).".xxx";
+	#XXXprint XXX $outstring;
+	#XXXclose XXX;
     }
-    #open XXX, ">testin/$out.xxx";
-    #print XXX $folded;
-    #close XXX;
 }    
 
 1;

@@ -1,4 +1,12 @@
+use 5.008;
 use ExtUtils::MakeMaker;
+
+my @noxs;
+if (scalar @ARGV and $ARGV[0] eq 'noxs') {
+    @noxs = ('XS' => {}, 'C' => []);
+} else {
+    @noxs = ();
+}
 
 WriteMakefile(
 	'NAME'		=> 'Unicode::LineBreak',
@@ -11,5 +19,13 @@ WriteMakefile(
 	    'MIME::Charset'	=> '1.006.2',
 	    'Test::More'	=> 0,
 	},
+	'LIBS'		=> [''], # e.g., '-lm'
+	'DEFINE'	=> '', # e.g., '-DHAVE_SOMETHING'
+	'INC'		=> '', # e.g., '-I/usr/include/other'
+	# Un-comment this if you add C files to link with later:
+	# 'OBJECT'	=> '$(O_FILES)', # link all the C files too
+	# My external library
+	# 'MYEXTLIB'	=> 'mylib/libmylib$(LIB_EXT)',
+	@noxs,
 );
 
