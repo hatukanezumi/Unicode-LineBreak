@@ -2,6 +2,7 @@ ARTISTIC
 Changes
 data/data2pl.pl
 data/EastAsianWidth.custom
+data/lbclasses.pl
 data/LineBreak.custom
 data/makefile
 data/map2pl.pl
@@ -11,6 +12,7 @@ GPL
 lib/Text/LineFold.pm
 lib/Text/LineFold/JA_JP.pod
 lib/Unicode/LineBreak.pm
+lib/Unicode/LineBreak/Constants.pm
 lib/Unicode/LineBreak/Data.pm
 lib/Unicode/LineBreak/Defaults.pm.sample
 lib/Unicode/LineBreak/JA_JP.pod

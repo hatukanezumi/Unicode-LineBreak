@@ -1,3 +1,6 @@
+X.XXX.510  Xxx Xxx XX XXXX
+	* Fix: Perl 5.6.x - skip tests with older POD::Simple.
+
 0.002.510  Sun Mar 17 2009
 	* Partial XS support.
 	* lib/Unicode/LineBreak.pm: Added second format of SizinfMethd

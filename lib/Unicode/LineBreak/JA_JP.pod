@@ -29,7 +29,7 @@ B<表語文字的な文字>〔ideographic characters〕は、通常、その前�
 これらの用語は文字学の観点からは不正確である。
 
 文字列のB<桁数>は、文字列に含まれる文字の数と等しいとはかぎらない。
-個々の文字はB<広い>〔wide〕か、B<狭い>〔narrow〕か、前進を伴わないかのいずれかであり、これらは各々 2 桁、1 桁、0 桁を占める。
+個々の文字はB<広い>〔wide〕か、B<狭い>〔narrow〕か、前進を伴わないかのいずれかであり、各々 2 桁、1 桁、0 桁を占める。
 若干の文字は、使われる文脈によって広くも狭くもなり得る。
 カスタマイズによって、文字はより多様な幅を持ちうる。
 
@@ -193,28 +193,18 @@ C<"YES"> も同じ。
 =item C<"ITERATION MARKS">
 
 表語文字的な繰り返し記号。
-
-=over 4
-
-=item U+3005 IDEOGRAPHIC ITERATION MARK
-
-=item U+303B VERTICAL IDEOGRAPHIC ITERATION MARK
-
-=item U+309D HIRAGANA ITERATION MARK
-
-=item U+309E HIRAGANA VOICED ITERATION MARK
-
-=item U+30FD KATAKANA ITERATION MARK
-
-=item U+30FE KATAKANA VOICED ITERATION MARK
-
-=back
+U+3005 繰返し記号、U+303B ゆすり点、U+309D 平仮名繰返し記号、U+309E 平仮名繰返し記号 (濁点)、U+30FD 片仮名繰返し記号、U+30FE 片仮名繰返し記号 (濁点)。
 
 注。仮名ではないものもある。
 
-=item C<"KANA SMALL LETTERS">, C<"PROLONGED SOUND MARKS">
+=item C<"KANA SMALL LETTERS">
 
-小書き仮名、長音記号。
+=item C<"PROLONGED SOUND MARKS">
+
+小書き仮名。
+
+長音記号。
+U+30FC 長音記号、U+FF70 長音記号 (代替名称)。
 
 注。これらの文字は行頭禁則文字と扱われることも、通常の表語文字的な文字と扱われることもある。[JIS X 4051] 6.1.1 参照。
 
@@ -307,6 +297,28 @@ URI を SOLIDUS (スラッシュ) の前で分割する。
 
 =back
 
+=head2 定数
+
+=over 4
+
+=item C<LB_I<??>>
+
+[UAX #14] で定義される 36 の行分割特性 (分類) を表す値。
+
+=item C<@LB_CLASSES>
+
+上記の分類の名前すべての配列。
+
+=item C<MANDATORY>, C<DIRECT>, C<INDIRECT>, C<PROHIBITED>
+
+行分割動作を表す 4 つの値。
+
+=item C<$UNICODE_VERSION>
+
+このモジュールが参照する Unicode 標準の版を示す文字列。
+
+=back
+
 =head2 行分割動作のカスタマイズ
 
 =head3 行の整形
@@ -361,10 +373,10 @@ L</SizingMethod> オプションにサブルーチンへの参照を指定する
 
 SELF はオブジェクトのインスタンス、LEN は先行する文字列の長さ、PRE は先行する Unicode 文字列、SPC は追加される空白文字、STR は処理する Unicode 文字列。
 
-ひとつめの形式では、サブルーチンは C<PRE.SPC.STR> の長さを算出して返さなければならない。
-長さは整数でなくてもよい。長さの単位は随意に選べるが、L</ColumnsMin> オプションおよび L</ColumnsMax> オプションのそれと一致させなければならない。
+ひとつめの形式では、サブルーチンは C<PRE.SPC.STR> の桁数を算出して返さなければならない。
+桁数は整数でなくてもよい。桁数の単位は随意に選べるが、L</ColumnsMin> オプションおよび L</ColumnsMax> オプションのそれと一致させなければならない。
 
-ふたつめの形式では、サブルーチンは STR の部分文字列のI<Unicode 文字の数>の最大値を返さなければならない。部分文字列 SUBSTR は PRE.SPC.SUBSTR の桁数が MAX を超えないように取る。この形式は L<UrgentBreaking> を C<"FORCE"> に設定した場合に使う。後の形式を実装したくなければ、C<undef> を返さなければならない。
+ふたつめの形式では、サブルーチンは STR の部分文字列の I<Unicode 文字の数>の最大値を返さなければならない。部分文字列 SUBSTR は PRE.SPC.SUBSTR の桁数が MAX を超えないように取る。この形式は L<UrgentBreaking> を C<"FORCE"> に設定した場合に使う。後の形式を実装したくなければ、C<undef> を返さなければならない。
 
 
 =head3 文字の分類と行分割の基本規則

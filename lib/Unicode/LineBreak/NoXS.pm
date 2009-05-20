@@ -40,9 +40,11 @@ sub _bsearch {
     return undef;
 }
 
-sub _getlbrule {
+sub getlbrule {
+    my $self = shift;
     my $b_idx = shift;
     my $a_idx = shift;
+    return undef unless defined $b_idx and defined $a_idx;
 
     my $row;
     my $action;

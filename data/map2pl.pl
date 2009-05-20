@@ -1,5 +1,14 @@
 #-*- perl -*-
 
+my $cat = $ARGV[3] || die;
+if ($cat eq 'lb') {
+    require "lbclasses.pl";
+    %CLASSES = map { ($_ => 1) } @CLASSES;
+} else {
+    @CLASSES = ();
+    %CLASSES = ();
+}
+
 my @PROPS;
 my %PROP_EXCEPTIONS;
 
@@ -21,6 +30,11 @@ foreach my $n (1, 0) {
 	    } else {
 		my $p = $PROP_EXCEPTIONS{$c} || $prop;
 		$PROPS[$c] = $p;
+
+		unless ($CLASSES{$p}) {
+		    push @CLASSES, $p;
+		    $CLASSES{$p} = 1;
+		}
 	    }
 	}
 	#print STDERR "$start..$end\n";
@@ -31,10 +45,9 @@ foreach my $n (1, 0) {
 #print STDERR "WRITE\n";
 
 print <<EOF;
-our \$$ARGV[2]_MAP = [
+our \$${cat}_MAP = [
 EOF
 
-my $cat = $ARGV[2] || die;
 my ($start, $end);
 my ($c, $p);
 for ($c = 0; $c <= $#PROPS; $c++) {
@@ -44,15 +57,21 @@ for ($c = 0; $c <= $#PROPS; $c++) {
 	$end = $c;
     } else {
 	if (defined $start and defined $end) {
-	    printf "    [0x%04X, 0x%04X, '%s'],\n", $start, $end, $p;
+	    printf "    [0x%04X, 0x%04X, %s_%s],\n", $start, $end, uc($cat), $p;
 	}
 
 	$start = $end = $c;
 	$p = $PROPS[$c];
     }
 }
-printf "    [0x%04X, 0x%04X, '%s'],\n", $start, $end, $p;
-print <<EOF;
-];
+printf "    [0x%04X, 0x%04X, %s_%s],\n", $start, $end, uc($cat), $p;
+print "];\n\n";
 
-EOF
+open CONSTANTS, ">", $ARGV[2] || die;
+print CONSTANTS "use constant {\n";
+my $i;
+for ($i = 0; $i < scalar @CLASSES; $i++) {
+    print CONSTANTS "    ".uc($cat)."_$CLASSES[$i] => $i,\n";
+}
+print CONSTANTS "};\n\n";
+

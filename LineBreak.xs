@@ -6,7 +6,7 @@
 typedef struct {
     unsigned int beg;
     unsigned int end;
-    char *prop;
+    size_t prop;
 } mapent_t;
 
 static mapent_t *MAPs[2] = { NULL, NULL };
@@ -14,14 +14,14 @@ static size_t MAPsizes[2] = { 0, 0};
 static int **RULE = NULL;
 static size_t RULEsiz = 0;
 
-char *_bsearch(mapent_t* map, size_t n, unsigned int c)
+size_t _bsearch(mapent_t* map, size_t n, unsigned int c)
 {
     mapent_t *top = map;
     mapent_t *bot = map + n - 1;
     mapent_t *cur;
 	
     if (!map || !n)
-	return NULL;
+	return -1;
     while (top <= bot) {
 	cur = top + (bot - top) / 2;
 	if (c < cur->beg)
@@ -31,10 +31,10 @@ char *_bsearch(mapent_t* map, size_t n, unsigned int c)
 	else
 	    return cur->prop;
     }
-    return NULL;
+    return -1;
 }
 
-int _getlbrule(size_t b_idx, size_t a_idx) {
+int getlbrule(size_t b_idx, size_t a_idx) {
     if (!RULE || !RULEsiz)
 	return 0;
     if (b_idx < 0 || RULEsiz <= b_idx || a_idx < 0 || RULEsiz <= a_idx)
@@ -52,7 +52,7 @@ _loadmap(idx, mapref)
 	size_t n, beg, end, MAPsiz;
 	AV * map;
 	AV * ent;
-	char * prop;
+	size_t prop;
 	mapent_t * MAP;
     CODE:
 	MAP = MAPs[idx];
@@ -72,7 +72,7 @@ _loadmap(idx, mapref)
 		ent = (AV *)SvRV(*av_fetch(map, n, 0));
 		beg = SvUV(*av_fetch(ent, 0, 0));
 		end = SvUV(*av_fetch(ent, 1, 0));
-		prop = (char *)SvRV(*av_fetch(ent, 2, 0));
+		prop = SvIV(*av_fetch(ent, 2, 0));
 		MAP[n].beg = beg;
 		MAP[n].end = end;
 		MAP[n].prop = prop;
@@ -120,14 +120,14 @@ _loadrule(tableref)
 	    }
 	}
 
-char *
+size_t
 _bsearch(idx, val)
 	size_t idx;
 	unsigned int val;
     INIT:
-	char *prop;
+	size_t prop;
 	prop = _bsearch(MAPs[idx], MAPsizes[idx], val);
-	if (prop == NULL)
+	if (prop == -1)
 	    XSRETURN_UNDEF;
     CODE:
 	RETVAL = prop;
@@ -135,12 +135,16 @@ _bsearch(idx, val)
 	RETVAL
 
 int
-_getlbrule(b_idx, a_idx)
+getlbrule(obj, b_idx, a_idx)
+	SV * obj;	
 	size_t b_idx;
 	size_t a_idx;
     INIT:
 	int prop;
-	prop = _getlbrule(b_idx, a_idx);
+
+	if (!SvOK(ST(1)) || !SvOK(ST(2)))
+	    XSRETURN_UNDEF;
+	prop = getlbrule(b_idx, a_idx);
 	if (!prop)
 	    XSRETURN_UNDEF;
     CODE:

@@ -1,5 +1,7 @@
 #-*- perl -*-
 
+my $cat = $ARGV[2] || die;
+
 my %PROPS;
 my %PROP_EXCEPTIONS;
 
@@ -43,7 +45,6 @@ foreach my $n (1, 0) {
 
 #print STDERR "WRITE\n";
 
-my $cat = $ARGV[2] || die;
 shift @ARGV; shift @ARGV; shift @ARGV;
 my @props = @ARGV;
 @props = sort keys %PROPS unless scalar @props;
