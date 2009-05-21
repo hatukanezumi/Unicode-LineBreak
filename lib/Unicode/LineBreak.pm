@@ -317,7 +317,10 @@ sub break {
 			$b_cls = LB_WJ # in case of (sot | BK etc.) × SP+
 			    unless defined $b_cls;
 
-			last if $str_len <= $pos;
+			if ($str_len <= $pos) {
+			    $b_cls = 'eot';
+			    last CHARACTER_PAIR;
+			}
 			$frg = substr($str, $pos, 1);
 			$cls = $s->getlbclass($frg);
 		    }
@@ -356,7 +359,10 @@ sub break {
 			    $b_spc = '';
 			    $b_cls = LB_ZW;
 
-			    last if $str_len <= $pos;
+			    if ($str_len <= $pos) {
+				$b_cls = 'eot';
+				last CHARACTER_PAIR;
+			    }
 			    $frg = substr($str, $pos, 1);
 			    $cls = $s->getlbclass($frg);
 			}
