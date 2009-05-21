@@ -393,7 +393,6 @@ sub break {
 		# LB9: Treat X CM+ as if it were X
 		# where X is anything except BK, CR, LF, NL, SP or ZW
 		$a_frg .= $1 if $str =~ /\G(\p{lb_cm}+)/cgo;
-		#XXX$a_spc = $1 if $str =~ /\G(\p{lb_SP}+)/cgo;
 
 		# Legacy-CM: Treat SP CM+ as if it were ID.  cf. [UAX #14] 9.1.
 		# LB10: Treat CM+ as if it were AL
@@ -403,7 +402,7 @@ sub break {
 			$s->getlbclass(substr($b_spc, -1)) == LB_SP) {
 			$a_frg = substr($b_spc, -1).$a_frg;
 			$a_cls = LB_ID;
-			# clear
+			# clear ``before'' buffer if it was empty.
 			$b_spc = substr($b_spc, 0, length($b_spc) - 1);
 			$b_cls = undef unless length $b_frg or length $b_spc;
 		    } else {
@@ -703,30 +702,22 @@ sub config {
     push @v, 'MASU MARK'                if $v eq 'ALL' or $v =~ /MASU/i;
     $self->{'NSKanaAsID'} = join(',', @v) || 'NO';
 
-    ## Customization
-
+    ## Customization of character properties.
     $self->{_custom_lb_map} = {
-	&LB_SAal => LB_AL,
-	&LB_SAcm => LB_CM,
-	&LB_SG => LB_AL,
-	&LB_XX => LB_AL,
-	&LB_AI => ($self->{Context} eq 'EASTASIAN'? LB_ID: LB_AL),
-	&LB_NSidIter => ($self->{NSKanaAsID} =~ /ITER/? LB_ID: LB_NS),
-	&LB_NSidKana => ($self->{NSKanaAsID} =~ /SMALL/? LB_ID: LB_NS),
-	&LB_NSidLong => ($self->{NSKanaAsID} =~ /LONG/? LB_ID: LB_NS),
-	&LB_NSidMasu => ($self->{NSKanaAsID} =~ /MASU/? LB_ID: LB_NS),
-	# Following won't be used in break().
-	#&LB_H2 => ($self->{HangulAsAL} eq 'YES'? LB_AL: LB_H2),
-	#&LB_H3 => ($self->{HangulAsAL} eq 'YES'? LB_AL: LB_H3),
-	#&LB_JL => ($self->{HangulAsAL} eq 'YES'? LB_AL: LB_JL),
-	#&LB_JV => ($self->{HangulAsAL} eq 'YES'? LB_AL: LB_JV),
-	#&LB_JT => ($self->{HangulAsAL} eq 'YES'? LB_AL: LB_JT),
+	LB_SAal() => LB_AL,
+	LB_SAcm() => LB_CM,
+	LB_SG() => LB_AL,
+	LB_XX() => LB_AL,
+	LB_AI() => ($self->{Context} eq 'EASTASIAN'? LB_ID: LB_AL),
+	LB_NSidIter() => ($self->{NSKanaAsID} =~ /ITER/? LB_ID: LB_NS),
+	LB_NSidKana() => ($self->{NSKanaAsID} =~ /SMALL/? LB_ID: LB_NS),
+	LB_NSidLong() => ($self->{NSKanaAsID} =~ /LONG/? LB_ID: LB_NS),
+	LB_NSidMasu() => ($self->{NSKanaAsID} =~ /MASU/? LB_ID: LB_NS),
     };
-
     $self->{_custom_ea_map} = {
-	&EA_AnLat => ($self->{SizingMethod} eq 'NARROWAL'? EA_Na: EA_A),
-	&EA_AnGre => ($self->{SizingMethod} eq 'NARROWAL'? EA_Na: EA_A),
-	&EA_AnCyr => ($self->{SizingMethod} eq 'NARROWAL'? EA_Na: EA_A),
+	EA_AnLat() => ($self->{SizingMethod} eq 'NARROWAL'? EA_Na: EA_A),
+	EA_AnGre() => ($self->{SizingMethod} eq 'NARROWAL'? EA_Na: EA_A),
+	EA_AnCyr() => ($self->{SizingMethod} eq 'NARROWAL'? EA_Na: EA_A),
     };
 
     # Other options
@@ -789,6 +780,7 @@ appropriate classes.
 sub getlbclass {
     my $self = shift;
     my $str = shift;
+    return undef unless defined $str and length $str;
 
     my $cls = &_bsearch(0, ord($str));
     $cls = LB_XX unless defined $cls;
@@ -1247,31 +1239,49 @@ sub _strwidth {
     }
 
     my $spcstr = $spc.$str;
+    my $length = length $spcstr;
     my $idx = 0;
-    my ($c, $width);
-    pos($spcstr) = 0;
+    my $pos = 0;
     while (1) {
-	if ($spcstr =~ /\G\z/cgos) {
+	my ($clen, $c, $cls, $nc, $ncls, $width);
+
+	if ($length <= $pos) {
 	    last;
-	} elsif ($spcstr =~ /$test_hangul/cg) {
-	    $c = $1;
+	}
+	$c = substr($spcstr, $pos, 1);
+	$cls = $self->getlbclass($c);
+	$clen = 1;
+
+	# Hangul syllable block
+	if ($cls == LB_H2 or $cls == LB_H3 or
+	    $cls == LB_JL or $cls == LB_JV or $cls == LB_JT) {
+	    while (1) {
+		$pos++;
+		last if $length <= $pos;
+		$nc = substr($spcstr, $pos, 1);
+		$ncls = $self->getlbclass($nc);
+		unless ($cls == LB_JL and ($ncls == LB_JL or $ncls == LB_JV or $ncls == LB_H2 or $ncls == LB_H3) or
+		    ($cls == LB_JV or $cls == LB_H2) and ($ncls == LB_JV or $ncls == LB_JT) or
+		    ($cls == LB_H3 or $cls == LB_JT) and $ncls == LB_JT) {
+		    last;
+		}
+		$cls = $ncls;
+		$clen++;
+	    } 
 	    $width = EA_W;
-	} elsif ($spcstr =~ /\G(.)/cgos) {
-	    $c = $1;
+	} else {
+	    $pos++;
 	    $width = &_bsearch(1, ord($c));
 	    $width = EA_A unless defined $width;
 	    my $w = $self->{_custom_ea_map}->{$width};
 	    $width = $w if defined $w;
-	} else {
-	    croak pos($spcstr).": This should not happen.  Ask developer.";
 	}
 
-	if ($width == EA_F or $width == EA_W) {
-	    $width = 2;
-	} elsif ($self->{Context} eq 'EASTASIAN' and $width == EA_A) {
-	    $width = 2;
-	} elsif ($width == EA_z) {
+	if ($width == EA_z) {
 	    $width = 0;
+	} elsif ($width == EA_F or $width == EA_W or
+	    $self->{Context} eq 'EASTASIAN' and $width == EA_A) {
+	    $width = 2;
 	} else {
 	    $width = 1;
 	}
@@ -1280,7 +1290,7 @@ sub _strwidth {
 	    $idx = 0 unless 0 < $idx;
 	    last;
 	}
-	$idx += length $c;
+	$idx += $clen;
 	$len += $width;
     }
 
