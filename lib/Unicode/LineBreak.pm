@@ -52,8 +52,7 @@ Characters may have more various widths by customization.
 ### Pragmas:
 use strict;
 use warnings;
-use vars qw($VERSION @EXPORT_OK @ISA
-	    $UNICODE_VERSION @LB_CLASSES $Config);
+use vars qw($VERSION @EXPORT_OK @ISA $UNICODE_VERSION @LB_CLASSES $Config);
 
 ### Exporting:
 use Exporter;
@@ -174,20 +173,6 @@ my %FORMAT_FUNCS = (
     },
 );
 
-# Learning pattern.
-# Korean syllable blocks
-#   (JL* H3 JT* | JL* H2 JV* JT* | JL* JV+ JT* | JL+ | JT+)
-# N.B. [UAX #14] allows some morbid "syllable blocks" such as
-#   JL CM JV JT
-# which might be broken to JL CM and rest.  cf. Unicode Standard
-# section 3.12 `Conjoining Jamo Behavior'.
-my $test_hangul = qr{
-    \G
-	(\p{lb_JL}*
-	 (?: \p{lb_H3} | \p{lb_H2} \p{lb_JV}* | \p{lb_JV}+) \p{lb_JT}* |
-	 \p{lb_JL}+ | \p{lb_JT}+)
-    }ox;
-
 # Built-in behavior by L</SizingMethod> options.
 my %SIZING_FUNCS = (
     'DEFAULT' => \&_strwidth,
@@ -290,12 +275,15 @@ sub break {
     my $sot_done = 0;
     my $sop_done = 1;
 
-    pos($str) = 0;
+    my $pos = 0;
+    my $str_len = length $str;
     while (1) {
 	### Chop off a pair of unbreakable character clusters from text.
 
       CHARACTER_PAIR:
 	while (1) {
+	    my ($frg, $cls);
+
 	    ($b_cls, $b_frg, $b_spc, $b_urg) = ($a_cls, $a_frg, $a_spc, $a_urg)
 		if !defined $b_cls and defined $a_cls;
 	    ($a_cls, $a_frg, $a_spc, $a_urg) = (undef, '', '', 0);
@@ -313,33 +301,47 @@ sub break {
 		    # - End of text
 
 		    # LB3: ! eot
-		    if ($str =~ /\G\z/cgos) {
+		    if ($str_len <= $pos) {
 			$b_cls = 'eot';
 			last CHARACTER_PAIR;
 		    }
+		    $frg = substr($str, $pos, 1);
+		    $cls = $s->getlbclass($frg);
 
 		    # - Explicit breaks and non-breaks
 
 		    # LB7(1): × SP+
-		    if ($str =~ /\G(\p{lb_SP}+)/cgos) {
-			$b_spc .= $1;
+		    while ($cls == LB_SP) {
+			$pos++;
+			$b_spc .= $frg;
 			$b_cls = LB_WJ # in case of (sot | BK etc.) × SP+
 			    unless defined $b_cls;
+
+			last if $str_len <= $pos;
+			$frg = substr($str, $pos, 1);
+			$cls = $s->getlbclass($frg);
 		    }
 
 		    # - Mandatory breaks
 
 		    # LB4 - LB7: × SP* (BK | CR LF | CR | LF | NL) !
-		    if ($str =~
-			/\G((?:\p{lb_BK} |
-			     \p{lb_CR} \p{lb_LF} | \p{lb_CR} | \p{lb_LF} |
-			     \p{lb_NL}))/cgosx) {
-			$b_spc .= $1; # $b_spc = SP* (BK etc.)
+		    if ($cls == LB_BK or $cls == LB_CR or $cls == LB_LF or
+			$cls == LB_NL) {
+			$pos++;
+			$b_spc .= $frg; # $b_spc = SP* (BK etc.)
+			$b_cls = 'eop';
+			if ($pos < $str_len and $cls == LB_CR) {
+			    $frg = substr($str, $pos, 1);
+			    $cls = $s->getlbclass($frg);
+			    if ($cls == LB_LF) {
+				$pos++;
+				$b_spc .= $frg;
+			    }
+			}
+
 			# LB3: ! eot
-			if ($str =~ /\G\z/cgos) {
+			if ($str_len <= $pos) {
 			    $b_cls = 'eot';
-			} else {
-			    $b_cls = 'eop';
 			}
 			last CHARACTER_PAIR;
 		    }
@@ -347,10 +349,17 @@ sub break {
 		    # - Explicit breaks and non-breaks
 
 		    # LB7(2): × (SP* ZW+)+
-		    if ($str =~ /\G(\p{lb_ZW}+)/cgo) {
-			$b_frg .= $b_spc.$1;
-			$b_spc = '';
-			$b_cls = LB_ZW;
+		    if ($cls == LB_ZW) {
+			while ($cls == LB_ZW) {
+			    $pos++;
+			    $b_frg .= $b_spc.$frg;
+			    $b_spc = '';
+			    $b_cls = LB_ZW;
+
+			    last if $str_len <= $pos;
+			    $frg = substr($str, $pos, 1);
+			    $cls = $s->getlbclass($frg);
+			}
 			next;
 		    }
 		    last;
@@ -360,7 +369,7 @@ sub break {
 		# Fill custom buffer and retry
 		#
 		my @c;
-		if (scalar(@c = $s->_test_custom(\$str))) {
+		if (scalar(@c = $s->_test_custom($str, \$pos))) {
 		    push @custom, @c;
 		    next;
 		}
@@ -371,28 +380,52 @@ sub break {
 
 		# - Rules for other line breaking classes
 
-		($a_spc, $a_urg) = ('', 0);
-
 		# LB1: Assign a line breaking class to each characters.
-		if ($str =~ /\G(\P{lb_hangul})/cgos) {
-		    $a_frg = $1;
-		    $a_cls = $s->getlbclass($a_frg);
+		$a_spc = '';
+		$a_urg = 0;
+		$pos++;
+		$a_frg = $frg;
+		$a_cls = $cls;
+
 		# LB26, LB27: Treat
 		#   (JL* H3 JT* | JL* H2 JV* JT* | JL* JV+ JT* | JL+ | JT+)
-		# as if it were ID.
-		} elsif ($str =~ /\G$test_hangul/cg) {
-		    $a_frg = $1;
+		# as if it were ID or, optionally, AL.
+		# N.B. [UAX #14] allows some morbid "Korean syllable blocks"
+		# such as
+		#   JL CM JV JT
+		# which might be broken to JL CM and rest.
+		# cf. Unicode Standard section 3.12 `Conjoining Jamo Behavior'.
+		if ($a_cls == LB_H2 or $a_cls == LB_H3 or
+		    $a_cls == LB_JL or $a_cls == LB_JV or $a_cls == LB_JT) {
+		    while ($pos < $str_len) {
+			$frg = substr($str, $pos, 1);
+			$cls = $s->getlbclass($frg);
+			last unless
+			    $a_cls == LB_JL and
+			    ($cls == LB_JL or $cls == LB_JV or
+			     $cls == LB_H2 or $cls == LB_H3) or
+			    ($a_cls == LB_JV or $a_cls == LB_H2) and
+			    ($cls == LB_JV or $cls == LB_JT) or
+			    ($a_cls == LB_JT or $a_cls == LB_H3) and
+			    $cls == LB_JT;
+			$pos++;
+			$a_frg .= $frg;
+			$a_cls = $cls;
+		    }
 		    $a_cls = ($s->{HangulAsAL} eq 'YES')? LB_AL: LB_ID;
-		} else {
-		    croak "break: ".pos($str)." (character_cluster): ".
-			"This should not happen: ask developer";
 		}
 
 		# - Combining marks
 
 		# LB9: Treat X CM+ as if it were X
 		# where X is anything except BK, CR, LF, NL, SP or ZW
-		$a_frg .= $1 if $str =~ /\G(\p{lb_cm}+)/cgo;
+		while ($pos < $str_len) {
+		    $frg = substr($str, $pos, 1);
+		    $cls = $s->getlbclass($frg);
+		    last unless $cls == LB_CM;
+		    $pos++;
+		    $a_frg .= $frg;
+		}		    
 
 		# Legacy-CM: Treat SP CM+ as if it were ID.  cf. [UAX #14] 9.1.
 		# LB10: Treat CM+ as if it were AL
@@ -464,9 +497,16 @@ sub break {
 			    while ($s->{CharactersMax} < length $frg) {
 				my $b = substr($frg, 0, $s->{CharactersMax});
 				$frg = substr($frg, $s->{CharactersMax});
-				$frg = $1.$frg
-				    if $frg =~ /^\p{lb_cm}/ and 
-				    $b =~ s/(.\p{lb_cm}*)$//os;
+				if ($s->getlbclass($frg) == LB_CM) {
+				    while (length $b) {
+					my $t = substr($b, -1);
+					$b = substr($b, length($b) - 1);
+					$frg = $t.$frg;
+					unless ($s->getlbclass($t) == LB_CM) {
+					    last;
+					}
+				    }
+				}
 				push @cc, [LB_XX, $b, '', 1] if length $b;
 			    }
 			    push @cc, [$cls, $frg, $spc, $urg];
@@ -715,9 +755,15 @@ sub config {
 	LB_NSidMasu() => ($self->{NSKanaAsID} =~ /MASU/? LB_ID: LB_NS),
     };
     $self->{_custom_ea_map} = {
-	EA_AnLat() => ($self->{SizingMethod} eq 'NARROWAL'? EA_Na: EA_A),
-	EA_AnGre() => ($self->{SizingMethod} eq 'NARROWAL'? EA_Na: EA_A),
-	EA_AnCyr() => ($self->{SizingMethod} eq 'NARROWAL'? EA_Na: EA_A),
+	# Ambiguous (A) characters may be resolved to either
+	# neutral (N) or fullwidth (F).
+	EA_A() => ($self->{Context} ne 'EASTASIAN'? EA_N: EA_F),
+	EA_AnLat() => ($self->{SizingMethod} eq 'NARROWAL' or
+		       $self->{Context} ne 'EASTASIAN'? EA_N: EA_F),
+	EA_AnGre() => ($self->{SizingMethod} eq 'NARROWAL' or
+		       $self->{Context} ne 'EASTASIAN'? EA_N: EA_F),
+	EA_AnCyr() => ($self->{SizingMethod} eq 'NARROWAL' or
+		       $self->{Context} ne 'EASTASIAN'? EA_N: EA_F),
     };
 
     # Other options
@@ -747,7 +793,11 @@ sub getcontext {
     my $context;
     foreach my $k (keys %opts) {
 	if (uc $k eq 'CHARSET') {
-	    $charset = MIME::Charset->new($opts{$k})->as_string;
+	    if (ref $opts{$k}) {
+		$charset = $opts{$k}->as_string;
+	    } else {
+		$charset = MIME::Charset->new($opts{$k})->as_string;
+	    }
 	} elsif (uc $k eq 'LANGUAGE') {
 	    $language = uc $opts{$k};
 	    $language =~ s/_/-/;
@@ -1163,12 +1213,14 @@ sub _urgent_break {
 
 sub _test_custom {
     my $self = shift;
-    my $strref = shift;
+    my $str = shift;
+    my $posref = shift;
     my @custom = ();
 
+    pos($str) = $$posref;
     foreach my $c (@{$self->{_custom_funcs}}) {
 	my ($re, $func) = @{$c};
-	if ($$strref =~ /$re/cg) {
+	if ($str =~ /$re/cg) {
 	    my $frg = $1;
 	    foreach my $b (&{$func}($self, $frg)) {
 		my $s = '';
@@ -1188,6 +1240,7 @@ sub _test_custom {
 	    last;
 	}
     }
+    $$posref = pos($str);
     return @custom;
 }
 
@@ -1260,11 +1313,14 @@ sub _strwidth {
 		last if $length <= $pos;
 		$nc = substr($spcstr, $pos, 1);
 		$ncls = $self->getlbclass($nc);
-		unless ($cls == LB_JL and ($ncls == LB_JL or $ncls == LB_JV or $ncls == LB_H2 or $ncls == LB_H3) or
-		    ($cls == LB_JV or $cls == LB_H2) and ($ncls == LB_JV or $ncls == LB_JT) or
-		    ($cls == LB_H3 or $cls == LB_JT) and $ncls == LB_JT) {
-		    last;
-		}
+		last unless
+		    $cls == LB_JL and
+		    ($ncls == LB_JL or $ncls == LB_JV or
+		     $ncls == LB_H2 or $ncls == LB_H3) or
+		    ($cls == LB_JV or $cls == LB_H2) and
+		    ($ncls == LB_JV or $ncls == LB_JT) or
+		    ($cls == LB_H3 or $cls == LB_JT) and
+		    $ncls == LB_JT;
 		$cls = $ncls;
 		$clen++;
 	    } 
@@ -1276,11 +1332,12 @@ sub _strwidth {
 	    my $w = $self->{_custom_ea_map}->{$width};
 	    $width = $w if defined $w;
 	}
+	# After all, possible widths are non-spacing (z), wide (F/W) or
+	# narrow (H/N/Na).
 
 	if ($width == EA_z) {
 	    $width = 0;
-	} elsif ($width == EA_F or $width == EA_W or
-	    $self->{Context} eq 'EASTASIAN' and $width == EA_A) {
+	} elsif ($width == EA_F or $width == EA_W) {
 	    $width = 2;
 	} else {
 	    $width = 1;
