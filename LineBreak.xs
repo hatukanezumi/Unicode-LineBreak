@@ -3,13 +3,15 @@
 #include "XSUB.h"
 #include "ppport.h"
 
+typedef unsigned int unichar_t;
+typedef size_t propval_t;
 typedef struct {
-    unsigned int beg;
-    unsigned int end;
-    size_t prop;
+    unichar_t beg;
+    unichar_t end;
+    propval_t prop;
 } mapent_t;
 
-static size_t LB_XX;
+static propval_t LB_XX;
 static int DIRECT;
 
 static mapent_t *propmaps[2] = { NULL, NULL };
@@ -17,13 +19,13 @@ static size_t propmapsizes[2] = { 0, 0 };
 static int **ruletable = NULL;
 static size_t ruletablesiz = 0;
 
-size_t _bsearch(mapent_t* map, size_t n, unsigned int c,
-	size_t def, unsigned int *res, size_t reslen)
+propval_t _bsearch(mapent_t* map, size_t n, unichar_t c, propval_t def,
+    unsigned int *res, size_t reslen)
 {
     mapent_t *top = map;
     mapent_t *bot = map + n - 1;
     mapent_t *cur;
-    size_t result = -1;
+    propval_t result = -1;
     unsigned int *p = res;
     size_t i = 0;
 	
@@ -55,11 +57,14 @@ size_t _bsearch(mapent_t* map, size_t n, unsigned int c,
     return result;
 }
 
-size_t getlbclass(unsigned int c, unsigned int *res, size_t reslen) {
+propval_t getlbclass(unichar_t c, unsigned int *res, size_t reslen)
+{
     return _bsearch(propmaps[0], propmapsizes[0], c, LB_XX, res, reslen);
 }
 
-int getlbrule(size_t b_idx, size_t a_idx, unsigned int *res, size_t reslen) {
+int getlbrule(propval_t b_idx, propval_t a_idx,
+    unsigned int *res, size_t reslen)
+{
     int result = 0;
     unsigned int *p = res;
     size_t i = 0;
@@ -90,7 +95,7 @@ MODULE = Unicode::LineBreak	PACKAGE = Unicode::LineBreak
 
 void
 _loadconst(lb_xx, direct)
-	size_t lb_xx;
+	propval_t lb_xx;
 	int direct;
     CODE:
 	LB_XX = lb_xx;
@@ -101,10 +106,11 @@ _loadmap(idx, mapref)
 	size_t	idx;
 	SV *	mapref;
     INIT:
-	size_t n, beg, end, propmapsiz;
+	size_t n, propmapsiz;
+	unichar_t beg, end;
 	AV * map;
 	AV * ent;
-	size_t prop;
+	propval_t prop;
 	mapent_t * propmap;
     CODE:
 	propmap = propmaps[idx];
@@ -191,16 +197,16 @@ _packed_hash(...)
     OUTPUT:
 	RETVAL
 
-size_t
+propval_t
 _bsearch(idx, c, def, sv)
 	size_t idx;
-	unsigned int c;
-	size_t def;
+	unichar_t c;
+	propval_t def;
 	SV *sv;
     INIT:
 	unsigned int *res;
 	size_t l;
-	size_t prop;
+	propval_t prop;
 
 	l = (size_t)SvCUR(sv);
 	res = (unsigned int *)SvPV(sv, l);
@@ -213,17 +219,17 @@ _bsearch(idx, c, def, sv)
     OUTPUT:
 	RETVAL
 
-size_t
+propval_t
 getlbclass(obj, str)
 	SV *obj;
 	unsigned char *str;
     INIT:
-	unsigned int c;
+	unichar_t c;
 	HV *hash;
 	SV *sv;
 	unsigned int *res;
 	size_t l;
-	size_t prop;
+	propval_t prop;
 
 	/* FIXME: return undef unless defined $str and length $str; */
 	if (!str)
@@ -243,8 +249,8 @@ getlbclass(obj, str)
 int
 getlbrule(obj, b_idx, a_idx)
 	SV * obj;	
-	size_t b_idx;
-	size_t a_idx;
+	propval_t b_idx;
+	propval_t a_idx;
     INIT:
 	HV *hash;
 	SV *sv;

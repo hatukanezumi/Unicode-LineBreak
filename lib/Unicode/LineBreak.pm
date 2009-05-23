@@ -618,11 +618,13 @@ sub config {
 	$self->{_format_func} = $self->{Format};
     }
     # Sizing method
+    my $narrowal;
     $self->{SizingMethod} ||= $Config->{SizingMethod};
     unless (ref $self->{SizingMethod}) {
 	$self->{SizingMethod} = uc $self->{SizingMethod};
 	$self->{_sizing_func} =
 	    $SIZING_FUNCS{$self->{SizingMethod}} || $SIZING_FUNCS{'DEFAULT'};
+	$narrowal = $self->{SizingMethod} eq 'NARROWAL'? 1: 0;
     } else {
 	$self->{_sizing_func} = $self->{SizingMethod};
     }
@@ -703,9 +705,9 @@ sub config {
     if ($self->{Context} eq 'EASTASIAN') {
 	$self->{_ea_hash} = &_packed_hash
 	    (EA_A() => EA_F,
-	     EA_AnLat() => ($self->{SizingMethod} eq 'NARROWAL'? EA_N: EA_F),
-	     EA_AnGre() => ($self->{SizingMethod} eq 'NARROWAL'? EA_N: EA_F),
-	     EA_AnCyr() => ($self->{SizingMethod} eq 'NARROWAL'? EA_N: EA_F)
+	     EA_AnLat() => ($narrowal? EA_N: EA_F),
+	     EA_AnGre() => ($narrowal? EA_N: EA_F),
+	     EA_AnCyr() => ($narrowal? EA_N: EA_F)
 	     );
     } else {
 	$self->{_ea_hash} = &_packed_hash
@@ -763,14 +765,6 @@ sub getstrsize {
     $str = '' unless defined $str;
     return $max? 0: $len
 	unless length $spc or length $str;
-
-    my $narrowal;
-    if (!ref $self->{SizingMethod} and
-	$self->{SizingMethod} eq 'NARROWAL') {
-	$narrowal = 1;
-    } else {
-	$narrowal = 0;
-    }
 
     my $spcstr = $spc.$str;
     my $length = length $spcstr;

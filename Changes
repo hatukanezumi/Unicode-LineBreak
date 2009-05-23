@@ -1,6 +1,7 @@
 0.004.510  Sat May 23 2009
 	* New: method getstrsize().
 	* Imp: XS'ize getlbclass().
+	* Doc: separate POD.  Added a few examples.
 	
 0.003.510  Thu May 21 2009
 	* Fix: Perl 5.6.x - skip tests with older POD::Simple.

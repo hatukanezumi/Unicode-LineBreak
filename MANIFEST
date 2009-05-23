@@ -1,6 +1,5 @@
 ARTISTIC
 Changes
-data/data2pl.pl
 data/EastAsianWidth.custom
 data/lbclasses.pl
 data/LineBreak.custom
@@ -12,6 +11,7 @@ GPL
 lib/Text/LineFold.pm
 lib/Text/LineFold/JA_JP.pod
 lib/Unicode/LineBreak.pm
+lib/Unicode/LineBreak.pod
 lib/Unicode/LineBreak/Constants.pm
 lib/Unicode/LineBreak/Data.pm
 lib/Unicode/LineBreak/Defaults.pm.sample
@@ -72,3 +72,4 @@ testin/titin.bz
 testin/zh.in
 testin/zh.out
 Todo
+typemap
