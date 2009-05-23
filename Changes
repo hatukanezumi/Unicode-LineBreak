@@ -1,20 +1,25 @@
-X.XXX.510  Xxx Xxx XX XXXX
+0.004.510  Sat May 23 2009
+	* Imp: New method getsize().
+	* Imp: XS'ize getlbclass().
+	
+0.003.510  Thu May 21 2009
 	* Fix: Perl 5.6.x - skip tests with older POD::Simple.
+	* Imp: remove \p{lb_??} pattern matchings.
 
-0.002.510  Sun Mar 17 2009
+0.002.510  Sun May 17 2009
 	* Partial XS support.
 	* lib/Unicode/LineBreak.pm: Added second format of SizinfMethd
 	  subroutines.
 	
-0.001.510  Sun Mar 10 2009
+0.001.510  Sun May 10 2009
 	* No new features.  Small fixes on documentation.
 
-0.001  Sat Mar 09 2009
+0.001  Sat May 09 2009
 	* 0.001 release.
 	- Added urgent/custom breaking features.
 	- Added tests.
 
-0.001_11  Sat Mar 02 2009
+0.001_11  Sat May 02 2009
 	* 0.001beta.  Added Text::LineFold module.
 
 0.001_03  Wed Apr 29 2009

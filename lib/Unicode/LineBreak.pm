@@ -113,6 +113,7 @@ use constant PROHIBITED => P;
 use constant URGENT => 200;
 
 ### Privates
+_loadconst(LB_XX, DIRECT);
 require Unicode::LineBreak::Rules;
 _loadrule($Unicode::LineBreak::RULES_MAP);
 require Unicode::LineBreak::Data;
@@ -175,8 +176,8 @@ my %FORMAT_FUNCS = (
 
 # Built-in behavior by L</SizingMethod> options.
 my %SIZING_FUNCS = (
-    'DEFAULT' => \&_strwidth,
-    'NARROWAL' => \&_strwidth,
+    'DEFAULT' => \&getsize,
+    'NARROWAL' => \&getsize,
 );
 
 # Built-in urgent breaking brehaviors specified by C<UrgentBreaking>.
@@ -196,7 +197,7 @@ my %URGENT_BREAKING_FUNCS = (
     while (1) {
         my $idx =  &{$self->{_sizing_func}}($self, $len, $pre, $spc, $str,
 					    $self->{ColumnsMax});
-	$idx = $self->_strwidth($len, $pre, $spc, $str, $self->{ColumnsMax})
+	$idx = $self->getsize($len, $pre, $spc, $str, $self->{ColumnsMax})
 	    unless defined $idx;
         if (0 < $idx) {
 	    push @result, substr($str, 0, $idx);
@@ -261,20 +262,31 @@ sub break {
 	if $str =~ /[^\x00-\x7F]/s and !is_utf8($str);
 
     ## Initialize status.
+
     # Result.
     my $result = '';
+
     # Line buffer.
     my ($l_frg, $l_spc, $l_len) = ('', '', 0);
+
     # ``before'' and ``after'' buffers.
-    # $?_urg is a flag specifing $?_frg had been broken by urgent breaking.
-    my ($b_cls, $b_frg, $b_spc, $b_urg) = (undef, '', '', 0);
-    my ($a_cls, $a_frg, $a_spc, $a_urg);
+    # cls: line breaking class.
+    # frg: unbreakable text fragment.
+    # spc: trailing spaces.
+    # urg: frg has been broken by urgent breaking.
+    # eop: the end of frg is mandatory breaking point.
+    # eot: frg is at end of text.
+    my %before = ('frg' => '', 'spc' => '');
+    my %after;
+
     # Queue of urgent/custom broken fragments.
     my @custom = ();
+
     # Initially, "sot" event has not yet done and "sop" event is inhibited.
     my $sot_done = 0;
     my $sop_done = 1;
 
+    # Current position and length of STR.
     my $pos = 0;
     my $str_len = length $str;
     while (1) {
@@ -284,10 +296,11 @@ sub break {
 	while (1) {
 	    my ($frg, $cls);
 
-	    ($b_cls, $b_frg, $b_spc, $b_urg) = ($a_cls, $a_frg, $a_spc, $a_urg)
-		if !defined $b_cls and defined $a_cls;
-	    ($a_cls, $a_frg, $a_spc, $a_urg) = (undef, '', '', 0);
-	    last CHARACTER_PAIR if defined $b_cls and $b_cls =~ /^eo/;
+	    %before = (%after)
+		if !defined $before{cls} and defined $after{cls};
+	    %after = ('frg' => '', 'spc' => '');
+	    last CHARACTER_PAIR
+		if defined $before{cls} and ($before{eop} or $before{eot});
 
 	    ## Use custom buffer at first.
 	    if (!scalar(@custom)) {
@@ -302,7 +315,7 @@ sub break {
 
 		    # LB3: ! eot
 		    if ($str_len <= $pos) {
-			$b_cls = 'eot';
+			$before{eot} = 1;
 			last CHARACTER_PAIR;
 		    }
 		    $frg = substr($str, $pos, 1);
@@ -313,12 +326,12 @@ sub break {
 		    # LB7(1): × SP+
 		    while ($cls == LB_SP) {
 			$pos++;
-			$b_spc .= $frg;
-			$b_cls = LB_WJ # in case of (sot | BK etc.) × SP+
-			    unless defined $b_cls;
+			$before{spc} .= $frg;
+			# Treat (sot | eop) SP+  as if it were WJ.
+			$before{cls} = LB_WJ unless defined $before{cls};
 
 			if ($str_len <= $pos) {
-			    $b_cls = 'eot';
+			    $before{eot} = 1;
 			    last CHARACTER_PAIR;
 			}
 			$frg = substr($str, $pos, 1);
@@ -331,20 +344,21 @@ sub break {
 		    if ($cls == LB_BK or $cls == LB_CR or $cls == LB_LF or
 			$cls == LB_NL) {
 			$pos++;
-			$b_spc .= $frg; # $b_spc = SP* (BK etc.)
-			$b_cls = 'eop';
+			$before{spc} .= $frg; # $before{spc} = SP* (BK etc.)
+			$before{cls} = $cls;
+			$before{eop} = 1;
 			if ($pos < $str_len and $cls == LB_CR) {
 			    $frg = substr($str, $pos, 1);
 			    $cls = $s->getlbclass($frg);
 			    if ($cls == LB_LF) {
 				$pos++;
-				$b_spc .= $frg;
+				$before{spc} .= $frg;
 			    }
 			}
 
 			# LB3: ! eot
 			if ($str_len <= $pos) {
-			    $b_cls = 'eot';
+			    $before{eot} = 1;
 			}
 			last CHARACTER_PAIR;
 		    }
@@ -355,12 +369,12 @@ sub break {
 		    if ($cls == LB_ZW) {
 			while ($cls == LB_ZW) {
 			    $pos++;
-			    $b_frg .= $b_spc.$frg;
-			    $b_spc = '';
-			    $b_cls = LB_ZW;
+			    $before{frg} .= $before{spc}.$frg;
+			    $before{spc} = '';
+			    $before{cls} = LB_ZW;
 
 			    if ($str_len <= $pos) {
-				$b_cls = 'eot';
+				$before{eot} = 1;
 				last CHARACTER_PAIR;
 			    }
 			    $frg = substr($str, $pos, 1);
@@ -387,38 +401,35 @@ sub break {
 		# - Rules for other line breaking classes
 
 		# LB1: Assign a line breaking class to each characters.
-		$a_spc = '';
-		$a_urg = 0;
 		$pos++;
-		$a_frg = $frg;
-		$a_cls = $cls;
+		%after = ('cls' => $cls, 'frg' => $frg, 'spc' => '');
 
 		# LB26, LB27: Treat
 		#   (JL* H3 JT* | JL* H2 JV* JT* | JL* JV+ JT* | JL+ | JT+)
 		# as if it were ID or, optionally, AL.
-		# N.B. [UAX #14] allows some morbid "Korean syllable blocks"
+		# N.B.: [UAX #14] allows some morbid "Korean syllable blocks"
 		# such as
 		#   JL CM JV JT
-		# which might be broken to JL CM and rest.
-		# cf. Unicode Standard section 3.12 `Conjoining Jamo Behavior'.
-		if ($a_cls == LB_H2 or $a_cls == LB_H3 or
-		    $a_cls == LB_JL or $a_cls == LB_JV or $a_cls == LB_JT) {
+		# which might be broken to JL CM and rest.  Maybe this rule is
+		# non-tailorable.  cf. Unicode Standard section 3.12
+		# `Conjoining Jamo Behavior'.
+		if ($cls == LB_JL or $cls == LB_JV or $cls == LB_JT or
+		    $cls == LB_H2 or $cls == LB_H3) {
+		    my $pcls = $cls;
 		    while ($pos < $str_len) {
 			$frg = substr($str, $pos, 1);
 			$cls = $s->getlbclass($frg);
-			last unless
-			    $a_cls == LB_JL and
-			    ($cls == LB_JL or $cls == LB_JV or
-			     $cls == LB_H2 or $cls == LB_H3) or
-			    ($a_cls == LB_JV or $a_cls == LB_H2) and
-			    ($cls == LB_JV or $cls == LB_JT) or
-			    ($a_cls == LB_JT or $a_cls == LB_H3) and
-			    $cls == LB_JT;
-			$pos++;
-			$a_frg .= $frg;
-			$a_cls = $cls;
+			if (($cls == LB_JL or $cls == LB_JV or $cls == LB_JT or
+			     $cls == LB_H2 or $cls == LB_H3) and
+			    $s->getlbrule($pcls, $cls) != DIRECT) {
+			    $pos++;
+			    $after{frg} .= $frg;
+			    $pcls = $cls;
+			    next;
+			}
+			last;
 		    }
-		    $a_cls = ($s->{HangulAsAL} eq 'YES')? LB_AL: LB_ID;
+		    $after{cls} = ($s->{HangulAsAL} eq 'YES')? LB_AL: LB_ID;
 		}
 
 		# - Combining marks
@@ -430,32 +441,35 @@ sub break {
 		    $cls = $s->getlbclass($frg);
 		    last unless $cls == LB_CM;
 		    $pos++;
-		    $a_frg .= $frg;
+		    $after{frg} .= $frg;
 		}		    
 
 		# Legacy-CM: Treat SP CM+ as if it were ID.  cf. [UAX #14] 9.1.
 		# LB10: Treat CM+ as if it were AL
-		if ($a_cls == LB_CM) {
+		if ($after{cls} == LB_CM) {
 		    if ($s->{LegacyCM} eq 'YES' and
-			defined $b_cls and length $b_spc and
-			$s->getlbclass(substr($b_spc, -1)) == LB_SP) {
-			$a_frg = substr($b_spc, -1).$a_frg;
-			$a_cls = LB_ID;
+			defined $before{cls} and length $before{spc} and
+			$s->getlbclass(substr($before{spc}, -1)) == LB_SP) {
+			$after{frg} = substr($before{spc}, -1).$after{frg};
+			$after{cls} = LB_ID;
+
 			# clear ``before'' buffer if it was empty.
-			$b_spc = substr($b_spc, 0, length($b_spc) - 1);
-			$b_cls = undef unless length $b_frg or length $b_spc;
+			$before{spc} =
+			    substr($before{spc}, 0, length($before{spc}) - 1);
+			$before{cls} = undef
+			    unless length $before{frg} or length $before{spc};
 		    } else {
-			$a_cls = LB_AL;
+			$after{cls} = LB_AL;
 		    }
 		}
 	    } else {
-		($a_cls, $a_frg, $a_spc, $a_urg) = @{shift @custom};
+		%after = (%{shift @custom});
 	    } # if (!scalar(@custom))
 
 	    # - Start of text
 
 	    # LB2: sot ×
-	    last if defined $b_cls;
+	    last if defined $before{cls};
 	} # CHARACTER_PAIR: while (1)
 
 	## Determin line breaking action by classes of adjacent characters.
@@ -463,43 +477,48 @@ sub break {
 
 	my $action;
 	# End of text.
-	if ($b_cls eq 'eot') {
+	if ($before{eot}) {
 	    $action = EOT;
         # Mandatory break.
-	} elsif ($b_cls eq 'eop') {
+	} elsif ($before{eop}) {
 	    $action = MANDATORY;
 	# Broken by urgent breaking or custom breaking.
-	} elsif ($b_urg) {
+	} elsif ($before{urg}) {
 	    $action = URGENT;
 	# LB11 - LB29 and LB31: Tailorable rules (except LB11, LB12).
 	} else {
-	    $action = $s->getlbrule($b_cls, $a_cls);
+	    $action = $s->getlbrule($before{cls}, $after{cls});
 	    # LB31: ALL ÷ ALL
 	    $action ||= DIRECT;
 
 	    # Check prohibited break.
 	    if ($action == PROHIBITED or
-		$action == INDIRECT and !length $b_spc) {
+		$action == INDIRECT and !length $before{spc}) {
 
-		# When conjunction of $b_frg and $a_frg is expected to exceed
-		# CharactersMax, try urgent breaking.
-		my $bsa = $b_frg.$b_spc.$a_frg;
+		# When conjunction of $before{frg} and $after{frg} is
+		# expected to exceed CharactersMax, try urgent breaking.
+		my $bsa = $before{frg}.$before{spc}.$after{frg};
 		if ($s->{CharactersMax} < length $bsa) {
-		    my @c = $s->_urgent_break(0, '', '', $a_cls, $bsa, $a_spc);
+		    my @c = $s->_urgent_break(0, '', '',
+					      $after{cls}, $bsa, $after{spc});
 		    my @cc = ();
 
-		    # When urgent break wasn't carried out and $b_frg was not
-		    # longer than CharactersMax, break between $b_frg and
-		    # $a_frg so that character clusters might not be broken.
-		    if (scalar @c == 1 and $c[0]->[1] eq $bsa and
-			length $b_frg <= $s->{CharactersMax}) {
-			@cc = ([LB_XX, $b_frg, $b_spc, 1],
-			       [$a_cls, $a_frg, $a_spc, 0]);
+		    # When urgent break wasn't carried out and $before{frg}
+		    # was not longer than CharactersMax, break between
+		    # $before{frg} and $after{frg} so that character clusters
+		    # might not be broken.
+		    if (scalar @c == 1 and $c[0]->{frg} eq $bsa and
+			length $before{frg} <= $s->{CharactersMax}) {
+			push @cc, {%before};
+			$cc[0]->{cls} = LB_XX;
+			$cc[0]->{urg} = 1;
+			push @cc, {%after};
 		    # Otherwise, if any of urgently broken fragments still
 		    # exceed CharactersMax, force chop them.
 		    } else {
 			foreach my $c (@c) {
-			    my ($cls, $frg, $spc, $urg) = @{$c};
+			    my ($cls, $frg, $spc, $urg) =
+				($c->{cls}, $c->{frg}, $c->{spc}, $c->{urg});
 			    while ($s->{CharactersMax} < length $frg) {
 				my $b = substr($frg, 0, $s->{CharactersMax});
 				$frg = substr($frg, $s->{CharactersMax});
@@ -513,73 +532,80 @@ sub break {
 					}
 				    }
 				}
-				push @cc, [LB_XX, $b, '', 1] if length $b;
+				if (length $b) {
+				    push @cc, {'cls' => LB_XX, 'frg' => $b,
+					       'spc' => '', 'urg' => 1};
+				}
 			    }
-			    push @cc, [$cls, $frg, $spc, $urg];
+			    push @cc, {'cls' => $cls, 'frg' => $frg,
+				       'spc' => $spc, 'urg' => $urg};
 			}
-			# As $a_frg may be an imcomplete fragment,
-			# urgent break won't be carried out at its end.
-			$cc[$#cc]->[3] = 0 if scalar @cc;
+			if (scalar @cc) {
+			    $cc[$#cc]->{eop} = $after{eop};
+			    $cc[$#cc]->{eot} = $after{eot};
+			    # As $after{frg} may be an imcomplete fragment,
+			    # urgent break won't be carried out at its end.
+			    $cc[$#cc]->{urg} = 0;
+			}
 		    }
 
 		    # Shift back urgently broken fragments then retry.
 		    unshift @custom, @cc;
 		    if (scalar @custom) {
-			($b_cls, $b_frg, $b_spc, $b_urg) = @{shift @custom};
-			#XXX maybe eop/eot
+			%before = (%{shift @custom}); #XXX maybe eop/eot
 		    } else {
-			($b_cls, $b_frg, $b_spc, $b_urg) = (undef, '', '', 0);
+			%before = ('frg' => '', 'spc' => '');
 		    }
 		    next;
 		} 
 		# Otherwise, fragments may be conjuncted safely.  Read more.
-		$b_frg .= $b_spc.$a_frg;
-		$b_spc = $a_spc;
-		$b_cls = $a_cls; #XXX maybe eop/eot
+		my $frg = $before{frg}.$before{spc}.$after{frg};
+		%before = (%after); #XXX maybe eop/eot
+		$before{frg} = $frg;
 		next;
 	    } # if ($action == PROHIBITED or ...)
-	} # if ($b_cls eq 'eot')
+	} # if ($before{eot})
 	# After all, possible actions are EOT, MANDATORY and other arbitrary.
 
 	### Examine line breaking action
 
 	if (!$sot_done) {
 	    # Process start of text.
-	    $b_frg = $s->_break('sot', $b_frg);
+	    $before{frg} = $s->_format('sot', $before{frg});
 	    $sot_done = 1;
 	    $sop_done = 1;
 	} elsif (!$sop_done) {
 	    # Process start of paragraph.
-	    $b_frg = $s->_break('sop', $b_frg);
+	    $before{frg} = $s->_format('sop', $before{frg});
 	    $sop_done = 1;
 	}
 	
 	# Check if arbitrary break is needed.
 	my $l_newlen =
-	    &{$s->{_sizing_func}}($s, $l_len, $l_frg, $l_spc, $b_frg);
+	    &{$s->{_sizing_func}}($s, $l_len, $l_frg, $l_spc, $before{frg});
 	if ($s->{ColumnsMax} and $s->{ColumnsMax} < $l_newlen) {
-	    $l_newlen = &{$s->{_sizing_func}}($s, 0, '', '', $b_frg); 
+	    $l_newlen = &{$s->{_sizing_func}}($s, 0, '', '', $before{frg}); 
 
 	    # When arbitrary break is expected to generate very short line,
-	    # or when $b_frg will exceed ColumnsMax, try urgent breaking.
-	    unless ($b_urg) {
+	    # or when $before{frg} will exceed ColumnsMax, try urgent breaking.
+	    unless ($before{urg}) {
 		my @c = ();
 		if ($l_len and $l_len < $s->{ColumnsMin}) {
 		    @c = $s->_urgent_break($l_len, $l_frg, $l_spc,
-					   $b_cls, $b_frg, $b_spc);
+					   $before{cls}, $before{frg},
+					   $before{spc});
 		} elsif ($s->{ColumnsMax} < $l_newlen) {
 		    @c = $s->_urgent_break(0, '', '',
-					   $b_cls, $b_frg, $b_spc);
+					   $before{cls}, $before{frg},
+					   $before{spc});
 		}
 		if (scalar @c) {
-		    push @c, [$a_cls, $a_frg, $a_spc, $a_urg]
-			if defined $a_cls;
+		    push @c, {%after} if defined $after{cls};
 		    unshift @custom, @c;
 		    if (scalar @custom) {
-			($b_cls, $b_frg, $b_spc, $b_urg) = @{shift @custom};
-			#XXX maybe eop/eot
+			%before = (%{shift @custom}); #XXX maybe eop/eot
 		    } else {
-			($b_cls, $b_frg, $b_spc, $b_urg) = (undef, '', '', 0);
+			%before = ('frg' => '', 'spc' => '');
 		    }
 		    next;
 		}
@@ -587,42 +613,42 @@ sub break {
 
 	    # Otherwise, process arbitrary break.
 	    if (length $l_frg.$l_spc) {
-		$result .= $s->_break('', $l_frg);
-		$result .= $s->_break('eol', $l_spc);
-		my $bak = $b_frg;
-		$b_frg = $s->_break('sol', $b_frg);
-		$l_newlen = &{$s->{_sizing_func}}($s, 0, '', '', $b_frg)
-		    unless $bak eq $b_frg;
+		$result .= $s->_format('', $l_frg);
+		$result .= $s->_format('eol', $l_spc);
+		my $bak = $before{frg};
+		$before{frg} = $s->_format('sol', $before{frg});
+		$l_newlen = &{$s->{_sizing_func}}($s, 0, '', '', $before{frg})
+		    unless $bak eq $before{frg};
 	    }
-	    $l_frg = $b_frg;
+	    $l_frg = $before{frg};
 	    $l_len = $l_newlen;
-	    $l_spc = $b_spc;
+	    $l_spc = $before{spc};
 	# Arbitrary break is not needed.
 	} else {
 	    $l_frg .= $l_spc;
-	    $l_frg .= $b_frg;
+	    $l_frg .= $before{frg};
 	    $l_len = $l_newlen;
-	    $l_spc = $b_spc;
+	    $l_spc = $before{spc};
 	} # if ($s->{ColumnsMax} and ...)
 
 	# Mandatory break or end-of-text.
 	if ($action == MANDATORY) {
 	    # Process mandatory break.
-	    $result .= $s->_break('', $l_frg);
-	    $result .= $s->_break('eop', $l_spc);
+	    $result .= $s->_format('', $l_frg);
+	    $result .= $s->_format('eop', $l_spc);
 	    $sop_done = 0;
 	    $l_frg = '';
 	    $l_len = 0;
 	    $l_spc = '';
 	} elsif ($action == EOT) {
 	    # Process end of text.
-	    $result .= $s->_break('', $l_frg);
-	    $result .= $s->_break('eot', $l_spc);
+	    $result .= $s->_format('', $l_frg);
+	    $result .= $s->_format('eot', $l_spc);
 	    last;
 	}
 
 	# Shift buffer.
-	($b_cls, $b_frg, $b_spc, $b_urg) = ($a_cls, $a_frg, $a_spc, $a_urg);
+	%before = (%after);
     } # while (1)
 
     ## Return result.
@@ -748,36 +774,43 @@ sub config {
     push @v, 'MASU MARK'                if $v eq 'ALL' or $v =~ /MASU/i;
     $self->{'NSKanaAsID'} = join(',', @v) || 'NO';
 
-    ## Customization of character properties.
-    $self->{_custom_lb_map} = {
-	LB_SAal() => LB_AL,
-	LB_SAcm() => LB_CM,
-	LB_SG() => LB_AL,
-	LB_XX() => LB_AL,
-	LB_AI() => ($self->{Context} eq 'EASTASIAN'? LB_ID: LB_AL),
-	LB_NSidIter() => ($self->{NSKanaAsID} =~ /ITER/? LB_ID: LB_NS),
-	LB_NSidKana() => ($self->{NSKanaAsID} =~ /SMALL/? LB_ID: LB_NS),
-	LB_NSidLong() => ($self->{NSKanaAsID} =~ /LONG/? LB_ID: LB_NS),
-	LB_NSidMasu() => ($self->{NSKanaAsID} =~ /MASU/? LB_ID: LB_NS),
-    };
-    $self->{_custom_ea_map} = {
-	# Ambiguous (A) characters may be resolved to either
-	# neutral (N) or fullwidth (F).
-	EA_A() => ($self->{Context} ne 'EASTASIAN'? EA_N: EA_F),
-	EA_AnLat() => ($self->{SizingMethod} eq 'NARROWAL' or
-		       $self->{Context} ne 'EASTASIAN'? EA_N: EA_F),
-	EA_AnGre() => ($self->{SizingMethod} eq 'NARROWAL' or
-		       $self->{Context} ne 'EASTASIAN'? EA_N: EA_F),
-	EA_AnCyr() => ($self->{SizingMethod} eq 'NARROWAL' or
-		       $self->{Context} ne 'EASTASIAN'? EA_N: EA_F),
-    };
+    ## Customization of character properties and rules.
+    # Resolve AI, SA, SG, XX.  Won't resolve CB.
+    $self->{_lb_hash} = &_packed_hash
+	(LB_SAal() => LB_AL,
+	 LB_SAcm() => LB_CM,
+	 LB_SG() => LB_AL,
+	 LB_XX() => LB_AL,
+	 LB_AI() => ($self->{Context} eq 'EASTASIAN'? LB_ID: LB_AL),
+	 LB_NSidIter() => ($self->{NSKanaAsID} =~ /ITER/? LB_ID: LB_NS),
+	 LB_NSidKana() => ($self->{NSKanaAsID} =~ /SMALL/? LB_ID: LB_NS),
+	 LB_NSidLong() => ($self->{NSKanaAsID} =~ /LONG/? LB_ID: LB_NS),
+	 LB_NSidMasu() => ($self->{NSKanaAsID} =~ /MASU/? LB_ID: LB_NS),
+	 );
+    # Resolve ambiguous (A) characters to either neutral (N) or fullwidth (F).
+    if ($self->{Context} eq 'EASTASIAN') {
+	$self->{_ea_hash} = &_packed_hash
+	    (EA_A() => EA_F,
+	     EA_AnLat() => ($self->{SizingMethod} eq 'NARROWAL'? EA_N: EA_F),
+	     EA_AnGre() => ($self->{SizingMethod} eq 'NARROWAL'? EA_N: EA_F),
+	     EA_AnCyr() => ($self->{SizingMethod} eq 'NARROWAL'? EA_N: EA_F)
+	     );
+    } else {
+	$self->{_ea_hash} = &_packed_hash
+	    (EA_A() => EA_N,
+	     EA_AnLat() => EA_N,
+	     EA_AnGre() => EA_N,
+	     EA_AnCyr() => EA_N
+	     );
+    }
+    # Core rules: No customization.
+    $self->{_rule_hash} = &_packed_hash();
 
     # Other options
     foreach $o (qw{CharactersMax ColumnsMin ColumnsMax Newline}) {
 	$self->{$o} = $Config->{$o} unless defined $self->{$o};
     }
 }
-
 
 =over 4
 
@@ -829,24 +862,6 @@ STRING.
 Classes C<"AI">, C<"SA">, C<"SG"> and C<"XX"> will be resolved to other
 appropriate classes. 
 
-=back
-
-=cut
-
-sub getlbclass {
-    my $self = shift;
-    my $str = shift;
-    return undef unless defined $str and length $str;
-
-    my $cls = &_bsearch(0, ord($str));
-    $cls = LB_XX unless defined $cls;
-    my $c = $self->{_custom_lb_map}->{$cls};
-    $cls = $c if defined $c;
-    $cls;
-}
-
-=over 4
-
 =item $self->getlbrule (BEFORE, AFTER)
 
 I<Instance method>.
@@ -879,7 +894,95 @@ C<"BK">, C<"CM">, C<"CR">, C<"LF">, C<"NL"> and C<"SP">,
 and won't give meaningful value related to classes
 C<"AI">, C<"SA">, C<"SG"> and C<"XX">. 
 
+=item $self->getsize (LEN, PRE, SPC, STR)
+
+=item $self->getsize (LEN, PRE, SPC, STR, MAX)
+
+Calculate size of Unicode string based on character widths defined by
+[UAX #11].
+For more details L</"Customizing Line Breaking Behavior">.
+
 =back
+
+=cut
+
+sub getsize {
+    my $self = shift;
+    my $len = shift;
+    my $pre = shift;
+    my $spc = shift;
+    my $str = shift;
+    my $max = shift || 0;
+    $spc = '' unless defined $spc;
+    $str = '' unless defined $str;
+    return $max? 0: $len
+	unless length $spc or length $str;
+
+    my $narrowal;
+    if (!ref $self->{SizingMethod} and
+	$self->{SizingMethod} eq 'NARROWAL') {
+	$narrowal = 1;
+    } else {
+	$narrowal = 0;
+    }
+
+    my $spcstr = $spc.$str;
+    my $length = length $spcstr;
+    my $idx = 0;
+    my $pos = 0;
+    while (1) {
+	my ($clen, $c, $cls, $nc, $ncls, $width);
+
+	if ($length <= $pos) {
+	    last;
+	}
+	$c = substr($spcstr, $pos, 1);
+	$cls = $self->getlbclass($c);
+	$clen = 1;
+
+	# Hangul syllable block
+	if ($cls == LB_H2 or $cls == LB_H3 or
+	    $cls == LB_JL or $cls == LB_JV or $cls == LB_JT) {
+	    while (1) {
+		$pos++;
+		last if $length <= $pos;
+		$nc = substr($spcstr, $pos, 1);
+		$ncls = $self->getlbclass($nc);
+		if (($ncls == LB_H2 or $ncls == LB_H3 or
+		    $ncls == LB_JL or $ncls == LB_JV or $ncls == LB_JT) and
+		    $self->getlbrule($cls, $ncls) != DIRECT) {
+		    $cls = $ncls;
+		    $clen++;
+		    next;
+		}
+		last;
+	    } 
+	    $width = EA_W;
+	} else {
+	    $pos++;
+	    $width = &_bsearch(1, ord($c), EA_A, $self->{_ea_hash});
+	}
+	# After all, possible widths are non-spacing (z), wide (F/W) or
+	# narrow (H/N/Na).
+
+	if ($width == EA_z) {
+	    $width = 0;
+	} elsif ($width == EA_F or $width == EA_W) {
+	    $width = 2;
+	} else {
+	    $width = 1;
+	}
+	if ($max and $max < $len + $width) {
+	    $idx -= length $spc;
+	    $idx = 0 unless 0 < $idx;
+	    last;
+	}
+	$idx += $clen;
+	$len += $width;
+    }
+
+    $max? $idx: $len;
+}
 
 =head2 Options
 
@@ -1026,6 +1129,7 @@ Following options are available.
 =item C<"DEFAULT">
 
 Default method.
+getsize() will be used.
 
 =item C<"NARROWAL">
 
@@ -1149,7 +1253,7 @@ affect decision of successive breaking positions while in the others won't.
 
 =cut
 
-sub _break {
+sub _format {
     my $self = shift;
     my $action = shift || '';
     my $str = shift;
@@ -1208,13 +1312,14 @@ sub _urgent_break {
     my $spc = shift;
 
     if (ref $self->{_urgent_breaking_func}) {
-	my @broken = map { [LB_XX, $_, '', 1]; }
+	my @broken = map { {'cls' => LB_XX, 'frg' => $_, 'spc' => '',
+			    'urg' => 1}; }
 	&{$self->{_urgent_breaking_func}}($self, $l_len, $l_frg, $l_spc, $frg);
-	$broken[$#broken]->[0] = $cls;
-	$broken[$#broken]->[2] = $spc;
+	$broken[$#broken]->{cls} = $cls;
+	$broken[$#broken]->{spc} = $spc;
 	return @broken;
     }
-    return ([$cls, $frg, $spc, 1]);
+    return ({'cls' => $cls, 'frg' => $frg, 'spc' => $spc, 'urg' => 1});
 }
 
 sub _test_custom {
@@ -1231,16 +1336,18 @@ sub _test_custom {
 	    foreach my $b (&{$func}($self, $frg)) {
 		my $s = '';
 		while (length $b and
-		    $self->getlbclass(substr($b, -1)) == LB_SP) {
+		       $self->getlbclass(substr($b, -1)) == LB_SP) {
 		    $s = substr($b, -1).$s;
 		    $b = substr($b, 0, length($b) - 1);
 		}
 		if (length $b) {
-		    push @custom, [LB_XX, $b, $s, 1];
+		    push @custom, {'cls' => LB_XX, 'frg' => $b, 'spc' => $s,
+				   'urg' => 1};
 		} elsif (scalar @custom) {
-		    $custom[$#custom]->[2] .= $s;
+		    $custom[$#custom]->{spc} .= $s;
 		} elsif (length $s) {
-		    push @custom, [LB_XX, $b, $s, 1];
+		    push @custom, {'cls' => LB_XX, 'frg' => $b, 'spc' => $s,
+				   'urg' => 1};
 		}
 	    }
 	    last;
@@ -1272,93 +1379,6 @@ I<number of Unicode characters> that substring of STR contains
 by which number of columns PRE.SPC.SUBSTR contains may not exceed MAX.
 This format will be used when L<UrgentBreaking> is set to C<"FORCE">.
 If you don't wish to implement latter format, C<undef> should be returned.
-
-=cut
-
-# self->_strwidth(LEN, PRE, SPC, STR)
-# self->_strwidth(LEN, PRE, SPC, STR, MAX)
-sub _strwidth {
-    my $self = shift;
-    my $len = shift;
-    my $pre = shift;
-    my $spc = shift;
-    my $str = shift;
-    my $max = shift || 0;
-    $spc = '' unless defined $spc;
-    $str = '' unless defined $str;
-    return $max? 0: $len
-	unless length $spc or length $str;
-
-    my $narrowal;
-    if (!ref $self->{SizingMethod} and
-	$self->{SizingMethod} eq 'NARROWAL') {
-	$narrowal = 1;
-    } else {
-	$narrowal = 0;
-    }
-
-    my $spcstr = $spc.$str;
-    my $length = length $spcstr;
-    my $idx = 0;
-    my $pos = 0;
-    while (1) {
-	my ($clen, $c, $cls, $nc, $ncls, $width);
-
-	if ($length <= $pos) {
-	    last;
-	}
-	$c = substr($spcstr, $pos, 1);
-	$cls = $self->getlbclass($c);
-	$clen = 1;
-
-	# Hangul syllable block
-	if ($cls == LB_H2 or $cls == LB_H3 or
-	    $cls == LB_JL or $cls == LB_JV or $cls == LB_JT) {
-	    while (1) {
-		$pos++;
-		last if $length <= $pos;
-		$nc = substr($spcstr, $pos, 1);
-		$ncls = $self->getlbclass($nc);
-		last unless
-		    $cls == LB_JL and
-		    ($ncls == LB_JL or $ncls == LB_JV or
-		     $ncls == LB_H2 or $ncls == LB_H3) or
-		    ($cls == LB_JV or $cls == LB_H2) and
-		    ($ncls == LB_JV or $ncls == LB_JT) or
-		    ($cls == LB_H3 or $cls == LB_JT) and
-		    $ncls == LB_JT;
-		$cls = $ncls;
-		$clen++;
-	    } 
-	    $width = EA_W;
-	} else {
-	    $pos++;
-	    $width = &_bsearch(1, ord($c));
-	    $width = EA_A unless defined $width;
-	    my $w = $self->{_custom_ea_map}->{$width};
-	    $width = $w if defined $w;
-	}
-	# After all, possible widths are non-spacing (z), wide (F/W) or
-	# narrow (H/N/Na).
-
-	if ($width == EA_z) {
-	    $width = 0;
-	} elsif ($width == EA_F or $width == EA_W) {
-	    $width = 2;
-	} else {
-	    $width = 1;
-	}
-	if ($max and $max < $len + $width) {
-	    $idx -= length $spc;
-	    $idx = 0 unless 0 < $idx;
-	    last;
-	}
-	$idx += $clen;
-	$len += $width;
-    }
-
-    $max? $idx: $len;
-}
 
 =head3 Character Classifications and Core Line Breaking Rules
 

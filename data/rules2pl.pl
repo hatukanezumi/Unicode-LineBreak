@@ -130,7 +130,6 @@ print CONSTANTS_PM ");\n\n";
 
 my @rule_classes = grep !/$OMIT/, @CLASSES;
 print RULES_PM <<EOF;
-# Note: Rules for H2, H3, JL, JV, JT aren't used by break() method.
 our \$RULES_MAP = [
 EOF
 print RULES_PM "    #";
