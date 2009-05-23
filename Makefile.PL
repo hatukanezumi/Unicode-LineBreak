@@ -10,7 +10,7 @@ if (scalar @ARGV and $ARGV[0] eq 'noxs') {
 
 WriteMakefile(
 	'NAME'		=> 'Unicode::LineBreak',
-	'ABSTRACT_FROM'	=> 'lib/Unicode/LineBreak.pm',
+	'ABSTRACT_FROM'	=> 'lib/Unicode/LineBreak.pod',
 	'VERSION_FROM'	=> 'lib/Unicode/LineBreak/Version.pm',
 	'AUTHOR'	=> q{Hatuka*nezumi - IKEDA Soji <hatuka@nezumi.nu>},
 	'LICENSE'	=> 'perl',

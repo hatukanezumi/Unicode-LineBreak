@@ -1,5 +1,5 @@
 0.004.510  Sat May 23 2009
-	* Imp: New method getsize().
+	* New: method getstrsize().
 	* Imp: XS'ize getlbclass().
 	
 0.003.510  Thu May 21 2009

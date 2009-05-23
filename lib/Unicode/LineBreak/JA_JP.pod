@@ -64,7 +64,7 @@ I<関数>。
 
 I<インスタンスメソッド>。
 Unicode 文字列 STRING の最初の文字の行分割特性 (分類) を得る。
-C<"AI">、C<"SA">、C<"SG">、C<"XX"> の各分類は他の適切な分類に解決する。
+AI、SA、SG、XX の各分類は他の適切な分類に解決する。
 
 =item $self->getlbrule (BEFORE, AFTER)
 
@@ -93,12 +93,12 @@ I<インスタンスメソッド>。
 =back
 
 B<注>:
-このメソッドは、C<"BK">、C<"CM">、C<"CR">、C<"LF">、C<"NL">、C<"SP"> の各分類に関わる規則については適切な値を返せないかもしれない。
-また、C<"AI">、C<"SA">、C<"SG">、C<"XX"> の各分類に関わる規則については意味のある値を返さない。
+このメソッドは、BK、CM、CR、LF、NL、SP の各分類に関わる規則については適切な値を返せないかもしれない。
+また、AI、SA、SG、XX の各分類に関わる規則については意味のある値を返さない。
 
-=item $self->getsize (LEN, PRE, SPC, STR)
+=item $self->getstrsize (LEN, PRE, SPC, STR)
 
-=item $self->getsize (LEN, PRE, SPC, STR, MAX)
+=item $self->getstrsize (LEN, PRE, SPC, STR, MAX)
 
 [UAX #11] で定義された文字幅に基づいて、文字列の長さを算出する。
 詳細は L</行分割動作のカスタマイズ> を参照。
@@ -240,7 +240,7 @@ U+303C ます記号。
 =item C<"DEFAULT">
 
 初期の方法。
-getsize() を使う。
+getstrsize() を使う。
 
 =item C<"NARROWAL">
 

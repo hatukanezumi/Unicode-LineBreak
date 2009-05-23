@@ -18,17 +18,18 @@ static int **ruletable = NULL;
 static size_t ruletablesiz = 0;
 
 size_t _bsearch(mapent_t* map, size_t n, unsigned int c,
-	size_t def, unsigned int *res)
+	size_t def, unsigned int *res, size_t reslen)
 {
     mapent_t *top = map;
     mapent_t *bot = map + n - 1;
     mapent_t *cur;
     size_t result = -1;
     unsigned int *p = res;
+    size_t i = 0;
 	
     if (!map || !n)
 	return -1;
-    if (!res)
+    if (!res || !reslen)
 	return -1;
     while (top <= bot) {
 	cur = top + (bot - top) / 2;
@@ -43,27 +44,29 @@ size_t _bsearch(mapent_t* map, size_t n, unsigned int c,
     }
     if (result == -1)
 	result = def;
-    while (*p != -1) {
+    while (i < reslen && *p != -1) {
 	if (result == *p) {
 	    result = p[1];
 	    break;
 	}
 	p += 2;
+	i++;
     }
     return result;
 }
 
-size_t getlbclass(unsigned int c, unsigned int *res) {
-    return _bsearch(propmaps[0], propmapsizes[0], c, LB_XX, res);
+size_t getlbclass(unsigned int c, unsigned int *res, size_t reslen) {
+    return _bsearch(propmaps[0], propmapsizes[0], c, LB_XX, res, reslen);
 }
 
-int getlbrule(size_t b_idx, size_t a_idx, unsigned int *res) {
+int getlbrule(size_t b_idx, size_t a_idx, unsigned int *res, size_t reslen) {
     int result = 0;
     unsigned int *p = res;
+    size_t i = 0;
 
     if (!ruletable || !ruletablesiz)
 	return 0;
-    if (!res)
+    if (!res || !reslen)
 	return 0;
     if (b_idx < 0 || ruletablesiz <= b_idx ||
 	a_idx < 0 || ruletablesiz <= a_idx)
@@ -72,12 +75,13 @@ int getlbrule(size_t b_idx, size_t a_idx, unsigned int *res) {
 	result = ruletable[b_idx][a_idx];
     if (result == 0)
 	result = DIRECT;
-    while (*p != -1) {
+    while (i < reslen && *p != -1) {
 	if (result == *p) {
 	    result = p[1];
 	    break;
 	}
 	p += 2;
+	i++;
     }
     return result;
 }
@@ -188,15 +192,20 @@ _packed_hash(...)
 	RETVAL
 
 size_t
-_bsearch(idx, val, def, res)
+_bsearch(idx, c, def, sv)
 	size_t idx;
-	unsigned int val;
+	unsigned int c;
 	size_t def;
-	char *res;
+	SV *sv;
     INIT:
+	unsigned int *res;
+	size_t l;
 	size_t prop;
-	prop = _bsearch(propmaps[idx], propmapsizes[idx], val,
-			def, (unsigned int *)res);
+
+	l = (size_t)SvCUR(sv);
+	res = (unsigned int *)SvPV(sv, l);
+	prop = _bsearch(propmaps[idx], propmapsizes[idx], c,
+			def, res, l / sizeof(unsigned int) / 2);
 	if (prop == -1)
 	    XSRETURN_UNDEF;
     CODE:
@@ -211,7 +220,9 @@ getlbclass(obj, str)
     INIT:
 	unsigned int c;
 	HV *hash;
+	SV *sv;
 	unsigned int *res;
+	size_t l;
 	size_t prop;
 
 	/* FIXME: return undef unless defined $str and length $str; */
@@ -219,8 +230,9 @@ getlbclass(obj, str)
 	    XSRETURN_UNDEF;
 	c = utf8_to_uvuni(str, NULL);
 	hash = (HV *)SvRV(obj);
-	res = (unsigned int *)SvRV(*hv_fetch(hash, "_lb_hash", 8, 0));
-	prop = getlbclass(c, res);
+	sv = *hv_fetch(hash, "_lb_hash", 8, 0);
+	res = (unsigned int *)SvPV(sv, l);
+	prop = getlbclass(c, res, l / sizeof(unsigned int) / 2);
 	if (prop == -1)
 	    XSRETURN_UNDEF;
     CODE:
@@ -234,16 +246,20 @@ getlbrule(obj, b_idx, a_idx)
 	size_t b_idx;
 	size_t a_idx;
     INIT:
-	int prop;
 	HV *hash;
+	SV *sv;
 	unsigned int *res;
+	size_t l;
+	int prop;
 
 	if (!SvOK(ST(1)) || !SvOK(ST(2)))
 	    XSRETURN_UNDEF;
     CODE:
 	hash = (HV *)SvRV(obj);
-	res = (unsigned int *)SvRV(*hv_fetch(hash, "_rule_hash", 10, 0));
-	prop = getlbrule(b_idx, a_idx, res);
+	sv = *hv_fetch(hash, "_rule_hash", 10, 0);
+	l = SvCUR(sv);
+	res = (unsigned int *)SvPV(sv, l);
+	prop = getlbrule(b_idx, a_idx, res, l / sizeof(unsigned int) / 2);
 	if (!prop)
 	    XSRETURN_UNDEF;
 	RETVAL = prop;
