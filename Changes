@@ -1,3 +1,6 @@
+0.005.510  Xxx Xxx XX 2009
+	* Imp: XS'ized getstrsize().
+
 0.004.510  Sat May 23 2009
 	* New: method getstrsize().
 	* Imp: XS'ize getlbclass().
@@ -5,11 +8,11 @@
 	
 0.003.510  Thu May 21 2009
 	* Fix: Perl 5.6.x - skip tests with older POD::Simple.
-	* Imp: remove \p{lb_??} pattern matchings.
+	* Imp: remove \p{...} pattern matchings slower than substr().
 
 0.002.510  Sun May 17 2009
 	* Partial XS support.
-	* lib/Unicode/LineBreak.pm: Added second format of SizinfMethd
+	* lib/Unicode/LineBreak.pm: Added second format of SizingMethod
 	  subroutines.
 	
 0.001.510  Sun May 10 2009

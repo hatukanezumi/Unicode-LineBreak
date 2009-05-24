@@ -26,7 +26,7 @@ B<任意分割>は、基本規則で認められており、ユーザが実行�
 B<音素文字的な文字>〔alphabetic characters〕は、通常、他の文字が分割の機会を与えないかぎり、文字同士の間で行分割できない文字。
 B<表語文字的な文字>〔ideographic characters〕は、通常、その前後で行分割できる文字。
 [UAX #14] では音素文字的な文字のほとんどを AL に、表語文字的な文字のほとんどを ID に分類している。
-これらの用語は文字学の観点からは不正確である。
+これらの用語は文字学の観点からすれば不正確である。
 
 文字列のB<桁数>は、文字列に含まれる文字の数と等しいとはかぎらない。
 個々の文字はB<広い>〔wide〕か、B<狭い>〔narrow〕か、前進を伴わないかのいずれかであり、各々 2 桁、1 桁、0 桁を占める。
@@ -167,8 +167,6 @@ L</Newline> オプションで指定したもので改行を置き換える。
 L</行の整形> を参照。
 
 =back
-
-L</Newline> オプションも参照。
 
 =item HangulAsAL => C<"YES"> | C<"NO">
 
@@ -361,6 +359,7 @@ SELF はオブジェクトのインスタンス、EVENT はサブルーチンが
         return undef;
     }
     my $lb = Unicode::LineBreak->new(Format => \&fmt);
+    print $lb->break($text);
 
 =head3 ユーザ定義の行分割動作
 
@@ -373,12 +372,13 @@ SELF はオブジェクトのインスタンス、LEN は先立つ行の長さ�
 
 サブルーチンは、文字列 STR を分割した結果の配列を返さなければならない。
 
-たとえば次のコードは、若干の化学物質 (チチンのような) の名前にハイフンを挿入し、行折りできるようにする。
+たとえば次のコードは、若干の化学物質 (チチンのような) の名称にハイフンを挿入し、行折りできるようにする。
 
     sub hyphenize {
 	return map {$_ =~ s/yl$/yl-/; $_} split /(\w+?yl(?=\w))/, $_[4];
     }
     my $lb = Unicode::LineBreak->new(UrgentBreaking => \&hyphenize);
+    print $lb->break("Methionylthreonylthreonylglutaminyl...");
 
 L</UserBreaking> オプションの要素に [REGEX, SUBREF] の配列参照を指定する場合、サブルーチンは 2 つの引数を取らなければならない。
 
@@ -401,7 +401,7 @@ SELF はオブジェクトのインスタンス、LEN は先行する文字列�
 ひとつめの形式では、サブルーチンは C<PRE.SPC.STR> の桁数を算出して返さなければならない。
 桁数は整数でなくてもよい。桁数の単位は随意に選べるが、L</ColumnsMin> オプションおよび L</ColumnsMax> オプションのそれと一致させなければならない。
 
-ふたつめの形式では、サブルーチンは STR の部分文字列の I<Unicode 文字の数>の最大値を返さなければならない。部分文字列 SUBSTR は PRE.SPC.SUBSTR の桁数が MAX を超えないように取る。この形式は L<UrgentBreaking> を C<"FORCE"> に設定した場合に使う。後の形式を実装したくなければ、C<undef> を返さなければならない。
+ふたつめの形式では、サブルーチンは STR の部分文字列の I<Unicode 文字の数>の最大値を返さなければならない。部分文字列 SUBSTR は PRE.SPC.SUBSTR の桁数が MAX を超えないように取る。この形式は L</UrgentBreaking> オプションを C<"FORCE"> に設定した場合に使う。後の形式を実装したくなければ、C<undef> を返さなければならない。
 
 初期値では、文字列長の算出には getstrsize() を使っている。
 

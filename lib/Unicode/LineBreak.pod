@@ -187,8 +187,6 @@ See L</Formatting Lines>.
 
 =back
 
-See also L</Newline> option.
-
 =item HangulAsAL => C<"YES"> | C<"NO">
 
 Treat hangul syllables and conjoining jamos as alphabetic characters (AL).
@@ -398,6 +396,7 @@ For example, following code folds lines removing trailing spaces:
         return undef;
     }
     my $lb = Unicode::LineBreak->new(Format => \&fmt);
+    print $lb->break($text);
 
 =head3 User-Defined Breaking Behaviors
 
@@ -421,6 +420,7 @@ For example, following code inserts hyphen to the name of several chemical subst
         return map {$_ =~ s/yl$/yl-/; $_} split /(\w+?yl(?=\w))/, $_[4];
     }
     my $lb = Unicode::LineBreak->new(UrgentBreaking => \&hyphenize);
+    print $lb->break("Methionylthreonylthreonylglutaminyl...");
 
 If you specify [REGEX, SUBREF] array reference as an item of
 L</UserBreaking> option,
@@ -452,7 +452,7 @@ The number of columns may not be an integer: Unit of the number may be freely ch
 By the second format, subroutine should return maximum
 I<number of Unicode characters> that substring of STR contains
 by which number of columns PRE.SPC.SUBSTR contains may not exceed MAX.
-This format will be used when L<UrgentBreaking> is set to C<"FORCE">.
+This format will be used when L</UrgentBreaking> option is set to C<"FORCE">.
 If you don't wish to implement latter format, C<undef> should be returned.
 
 By default, getstrsize() is used to calculate string sizes.

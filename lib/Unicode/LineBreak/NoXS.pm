@@ -73,4 +73,74 @@ sub getlbrule {
     $result;
 }
 
+sub getstrsize {
+    my $self = shift;
+    my $len = shift;
+    my $pre = shift;
+    my $spc = shift;
+    my $str = shift;
+    my $max = shift || 0;
+    $spc = '' unless defined $spc;
+    $str = '' unless defined $str;
+    return $max? 0: $len
+	unless length $spc or length $str;
+
+    my $spcstr = $spc.$str;
+    my $length = length $spcstr;
+    my $idx = 0;
+    my $pos = 0;
+    while (1) {
+	my ($clen, $c, $cls, $nc, $ncls, $width);
+
+	if ($length <= $pos) {
+	    last;
+	}
+	$c = substr($spcstr, $pos, 1);
+	$cls = $self->getlbclass($c);
+	$clen = 1;
+
+	# Hangul syllable block
+	if ($cls == LB_H2 or $cls == LB_H3 or
+	    $cls == LB_JL or $cls == LB_JV or $cls == LB_JT) {
+	    while (1) {
+		$pos++;
+		last if $length <= $pos;
+		$nc = substr($spcstr, $pos, 1);
+		$ncls = $self->getlbclass($nc);
+		if (($ncls == LB_H2 or $ncls == LB_H3 or
+		    $ncls == LB_JL or $ncls == LB_JV or $ncls == LB_JT) and
+		    $self->getlbrule($cls, $ncls) != DIRECT) {
+		    $cls = $ncls;
+		    $clen++;
+		    next;
+		}
+		last;
+	    } 
+	    $width = EA_W;
+	} else {
+	    $pos++;
+	    $width = &_bsearch(1, ord($c), EA_A, $self->{_ea_hash});
+	}
+	# After all, possible widths are non-spacing (z), wide (F/W) or
+	# narrow (H/N/Na).
+
+	if ($width == EA_z) {
+	    $width = 0;
+	} elsif ($width == EA_F or $width == EA_W) {
+	    $width = 2;
+	} else {
+	    $width = 1;
+	}
+	if ($max and $max < $len + $width) {
+	    $idx -= length $spc;
+	    $idx = 0 unless 0 < $idx;
+	    last;
+	}
+	$idx += $clen;
+	$len += $width;
+    }
+
+    $max? $idx: $len;
+}
+
 1;

@@ -99,28 +99,12 @@ sub exclusive2re {
     return qr{$class};
 }
 
-#XXXmy $i = 0;
-#XXXprint RULES_PM "our %lb_IDX = (\n";
-#XXXforeach my $c (@CLASSES) {
-#XXX    print RULES_PM <<"EOF";
-#XXX    '$c' => $i,
-#XXXEOF
-#XXX   $i++;
-#XXX}
-#XXXprint RULES_PM ");\n\n";
-
-#XXXprint RULES_PM "our %lb_tailorable = (\n";
-#XXXforeach my $c (grep !/$OMIT/, @CLASSES) {
-#XXX    print RULES_PM "    '$c' => 1,\n";
-#XXX}
-#XXXprint RULES_PM "    'CM' => 1\n);\n\n";
-
 print CONSTANTS_PM <<"EOF";
 use constant {
-    M => 2,
-    D => 1,
-    I => -1,
-    P => -2,
+    M => 4,
+    D => 3,
+    I => 2,
+    P => 1,
 };
 
 EOF
