@@ -68,8 +68,6 @@ use constant {
     URGENT => 200,
 };
 
-### Privates
-
 use constant 1.01;
 my $package = __PACKAGE__;
 _loadconst(grep { s/^${package}::// } keys %constant::declared);
@@ -81,6 +79,7 @@ require Unicode::LineBreak::Data;
 _loadmap(0, $Unicode::LineBreak::lb_MAP);
 _loadmap(1, $Unicode::LineBreak::ea_MAP);
 
+### Privates
 my $EASTASIAN_CHARSETS = qr{
     ^BIG5 |
     ^CP9\d\d |
@@ -152,13 +151,11 @@ my %URGENT_BREAKING_FUNCS = (
     my $str = shift;
     return () unless length $spc or length $str;
 
+    my $max = $self->{ColumnsMax} || 0;
     my @result = ();
 
     while (1) {
-        my $idx =  &{$self->{_sizing_func}}($self, $len, $pre, $spc, $str,
-					    $self->{ColumnsMax});
-	$idx = $self->getstrsize($len, $pre, $spc, $str, $self->{ColumnsMax})
-	    unless defined $idx;
+        my $idx = $self->_sizing($len, $pre, $spc, $str, $max);
         if (0 < $idx) {
 	    push @result, substr($str, 0, $idx);
 	    $str = substr($str, $idx);
@@ -186,7 +183,20 @@ sub new {
 
     my $self = { };
     &config($self, @_);
+    &_reset($self);
     bless $self, $class;
+}
+
+sub _reset {
+    my $self = shift;
+    $self->{_unwritten_result} = '';
+    $self->{_line_buffer} = {'frg' => '', 'spc' => '', 'len' => 0};
+    $self->{_before_buffer} = {'frg' => '', 'spc' => ''};
+    $self->{_after_buffer} = {'frg' => '', 'spc' => ''};
+    $self->{_custom_buffer} = [];
+    $self->{_unread_input} = '';
+    $self->{_sop_done} = 1;
+    $self->{_sot_done} = 0;
 }
 
 sub break {
@@ -196,34 +206,43 @@ sub break {
     croak "Unicode string must be given."
 	if $str =~ /[^\x00-\x7F]/s and !is_utf8($str);
 
-    ## Initialize status.
+    ### Initialize status.
 
-    # Result.
-    my $result = '';
+    ## Result.
+    my $result = $s->{_unwritten_result};
 
-    # Line buffer.
-    my ($l_frg, $l_spc, $l_len) = ('', '', 0);
+    ## Line buffer.
+    # frg: unbreakable text fragment.
+    # spc: trailing spaces.
+    # len: current number of columns bufferd.
+    my $l_frg = $s->{_line_buffer}->{frg};
+    my $l_spc = $s->{_line_buffer}->{spc};
+    my $l_len = $s->{_line_buffer}->{len};
 
-    # ``before'' and ``after'' buffers.
+    ## ``before'' and ``after'' buffers.
     # cls: line breaking class.
     # frg: unbreakable text fragment.
     # spc: trailing spaces.
     # urg: frg has been broken by urgent breaking.
     # eop: the end of frg is mandatory breaking point.
     # eot: frg is at end of text.
-    my %before = ('frg' => '', 'spc' => '');
-    my %after;
+    my %before = (%{$s->{_before_buffer}});
+    my %after = (%{$s->{_after_buffer}});
 
-    # Queue of urgent/custom broken fragments.
-    my @custom = ();
+    ## Queue of urgent/custom broken fragments.
+    my @custom = @{$s->{_custom_buffer}};
 
-    # Initially, "sot" event has not yet done and "sop" event is inhibited.
-    my $sot_done = 0;
-    my $sop_done = 1;
+    ## Unread input
+    $str = $s->{_unread_input}.$str;
 
-    # Current position and length of STR.
+    ## Initially, "sot" event has not yet done and "sop" event is inhibited.
+    my $sot_done = $s->{_sot_done};
+    my $sop_done = $s->{_sop_done};
+
+    ## Current position and length of STR.
     my $pos = 0;
     my $str_len = length $str;
+
     while (1) {
 	### Chop off a pair of unbreakable character clusters from text.
 
@@ -514,10 +533,9 @@ sub break {
 	}
 	
 	# Check if arbitrary break is needed.
-	my $l_newlen =
-	    &{$s->{_sizing_func}}($s, $l_len, $l_frg, $l_spc, $before{frg});
+	my $l_newlen = $s->_sizing($l_len, $l_frg, $l_spc, $before{frg});
 	if ($s->{ColumnsMax} and $s->{ColumnsMax} < $l_newlen) {
-	    $l_newlen = &{$s->{_sizing_func}}($s, 0, '', '', $before{frg}); 
+	    $l_newlen = $s->_sizing(0, '', '', $before{frg}); 
 
 	    # When arbitrary break is expected to generate very short line,
 	    # or when $before{frg} will exceed ColumnsMax, try urgent breaking.
@@ -550,7 +568,7 @@ sub break {
 		$result .= $s->_format('eol', $l_spc);
 		my $bak = $before{frg};
 		$before{frg} = $s->_format('sol', $before{frg});
-		$l_newlen = &{$s->{_sizing_func}}($s, 0, '', '', $before{frg})
+		$l_newlen = $s->_sizing(0, '', '', $before{frg})
 		    unless $bak eq $before{frg};
 	    }
 	    $l_frg = $before{frg};
@@ -625,7 +643,7 @@ sub config {
 	$self->{_format_func} = $self->{Format};
     }
     # Sizing method
-    my $narrowal;
+    my $narrowal = 0;
     $self->{SizingMethod} ||= $Config->{SizingMethod};
     unless (ref $self->{SizingMethod}) {
 	$self->{SizingMethod} = uc $self->{SizingMethod};
@@ -697,7 +715,7 @@ sub config {
 
     ## Customization of character properties and rules.
     # Resolve AI, SA, SG, XX.  Won't resolve CB.
-    $self->{_lb_hash} = &_packed_hash
+    $self->{_lb_hash} = &_packed_table
 	(LB_SAal() => LB_AL,
 	 LB_SAcm() => LB_CM,
 	 LB_SG() => LB_AL,
@@ -710,14 +728,14 @@ sub config {
 	 );
     # Resolve ambiguous (A) characters to either neutral (N) or fullwidth (F).
     if ($self->{Context} eq 'EASTASIAN') {
-	$self->{_ea_hash} = &_packed_hash
+	$self->{_ea_hash} = &_packed_table
 	    (EA_A() => EA_F,
 	     EA_AnLat() => ($narrowal? EA_N: EA_F),
 	     EA_AnGre() => ($narrowal? EA_N: EA_F),
 	     EA_AnCyr() => ($narrowal? EA_N: EA_F)
 	     );
     } else {
-	$self->{_ea_hash} = &_packed_hash
+	$self->{_ea_hash} = &_packed_table
 	    (EA_A() => EA_N,
 	     EA_AnLat() => EA_N,
 	     EA_AnGre() => EA_N,
@@ -725,7 +743,7 @@ sub config {
 	     );
     }
     # Core rules: No customization.
-    $self->{_rule_hash} = &_packed_hash();
+    $self->{_rule_hash} = &_packed_table();
 
     # Other options
     foreach $o (qw{CharactersMax ColumnsMin ColumnsMax Newline}) {
@@ -834,6 +852,13 @@ sub _test_custom {
     }
     $$posref = pos($str);
     return @custom;
+}
+
+sub _sizing {
+    my $self = shift;
+    my $size = &{$self->{_sizing_func}}($self, @_);
+    $size = $self->getstrsize(@_) unless defined $size;
+    $size;
 }
 
 1;

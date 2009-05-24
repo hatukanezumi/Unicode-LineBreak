@@ -3,6 +3,8 @@
 #include "XSUB.h"
 #include "ppport.h"
 
+#define PROP_UNKNOWN ((propval_t)(-1))
+
 typedef unsigned int unichar_t;
 typedef size_t propval_t;
 typedef struct {
@@ -27,7 +29,8 @@ static size_t ruletablesiz = 0;
 unistr_t *_unistr_concat(unistr_t *buf, unistr_t *a, unistr_t *b)
 {
     if (!buf) {
-	buf = malloc(sizeof(unistr_t));
+	if ((buf = malloc(sizeof(unistr_t))) == NULL)
+	    return NULL;
 	buf->str = NULL;
 	buf->len = 0;
     } else if (buf->str)
@@ -37,15 +40,18 @@ unistr_t *_unistr_concat(unistr_t *buf, unistr_t *a, unistr_t *b)
 	buf->str = NULL;
 	buf->len = 0;
     } else if (!b || !b->str || !b->len) {
-	buf->str = malloc(sizeof(unichar_t) * a->len);
+	if ((buf->str = malloc(sizeof(unichar_t) * a->len)) == NULL)
+	    return NULL;
 	memcpy(buf->str, a->str, sizeof(unichar_t) * a->len);
 	buf->len = a->len;
     } else if (!a || !a->str || !a->len) {
-	buf->str = malloc(sizeof(unichar_t) * b->len);
+	if ((buf->str = malloc(sizeof(unichar_t) * b->len)) == NULL)
+	    return NULL;
 	memcpy(buf->str, b->str, sizeof(unichar_t) * b->len);
 	buf->len = b->len;
     } else {
-	buf->str = malloc(sizeof(unichar_t) * (a->len + b->len));
+	if ((buf->str = malloc(sizeof(unichar_t) * (a->len + b->len))) == NULL)
+	    return NULL;
 	memcpy(buf->str, a->str, sizeof(unichar_t) * a->len);
 	memcpy(buf->str + a->len, b->str, sizeof(unichar_t) * b->len);
 	buf->len = a->len + b->len;
@@ -53,8 +59,26 @@ unistr_t *_unistr_concat(unistr_t *buf, unistr_t *a, unistr_t *b)
     return buf;
 }
 
+propval_t _search_packed_table(unsigned int *tbl, propval_t val)
+{
+    size_t tbllen, i;
+    unsigned int *p;
+
+    if (!tbl)
+	return PROP_UNKNOWN;
+    if (!(tbllen = (size_t)tbl[0]))
+	return PROP_UNKNOWN;
+
+    for (i = 0, p = tbl + 1; i < tbllen && *p != -1; i++, p += 2)
+	if (val == *p) {
+	    val = p[1];
+	    break;
+	}
+    return val;
+}
+
 /*
- * _bsearch( map, size, c, default, res, ressize)
+ * _bsearch (map, mapsize, c, default, tbl)
  * Examine binary search on property map table with following structure:
  * [
  *     [start, stop, property_value],
@@ -64,19 +88,15 @@ unistr_t *_unistr_concat(unistr_t *buf, unistr_t *a, unistr_t *b)
  * are assigned property_value.
  */
 propval_t _bsearch(mapent_t* map, size_t n, unichar_t c, propval_t def,
-    unsigned int *res, size_t reslen)
+    unsigned int *tbl)
 {
     mapent_t *top = map;
     mapent_t *bot = map + n - 1;
     mapent_t *cur;
-    propval_t result = -1;
-    unsigned int *p = res;
-    size_t i = 0;
+    propval_t result = PROP_UNKNOWN;
 	
     if (!map || !n)
-	return -1;
-    if (!res || !reslen)
-	return -1;
+	return PROP_UNKNOWN;
     while (top <= bot) {
 	cur = top + (bot - top) / 2;
 	if (c < cur->beg)
@@ -88,57 +108,34 @@ propval_t _bsearch(mapent_t* map, size_t n, unichar_t c, propval_t def,
 	    break;
 	}
     }
-    if (result == -1)
+    if (result == PROP_UNKNOWN)
 	result = def;
-    while (i < reslen && *p != -1) {
-	if (result == *p) {
-	    result = p[1];
-	    break;
-	}
-	p += 2;
-	i++;
-    }
-    return result;
+    return _search_packed_table(tbl, result);
 }
 
-propval_t getlbclass(unichar_t c, unsigned int *res, size_t reslen)
+propval_t getlbclass(unichar_t c, unsigned int *tbl)
 {
-    return _bsearch(propmaps[0], propmapsizes[0], c, LB_XX, res, reslen);
+    return _bsearch(propmaps[0], propmapsizes[0], c, LB_XX, tbl);
 }
 
-propval_t getlbrule(propval_t b_idx, propval_t a_idx,
-    unsigned int *res, size_t reslen)
+propval_t getlbrule(propval_t b_idx, propval_t a_idx, unsigned int *tbl)
 {
-    propval_t result = 0;
-    unsigned int *p = res;
-    size_t i = 0;
+    propval_t result = PROP_UNKNOWN;
 
     if (!ruletable || !ruletablesiz)
-	return 0;
-    if (!res || !reslen)
-	return 0;
+	return PROP_UNKNOWN;
     if (b_idx < 0 || ruletablesiz <= b_idx ||
 	a_idx < 0 || ruletablesiz <= a_idx)
 	;
     else
 	result = ruletable[b_idx][a_idx];
-    if (result == 0)
+    if (result == PROP_UNKNOWN)
 	result = DIRECT;
-    while (i < reslen && *p != -1) {
-	if (result == *p) {
-	    result = p[1];
-	    break;
-	}
-	p += 2;
-	i++;
-    }
-    return result;
+    return _search_packed_table(tbl, result);
 }
 
 size_t getstrsize(size_t len, unistr_t *pre, unistr_t *spc, unistr_t *str,
-    unsigned int *lb_res, size_t lb_reslen,
-    unsigned int *ea_res, size_t ea_reslen,
-    unsigned int *rule_res, size_t rule_reslen,
+    unsigned int *lb_tbl, unsigned int *ea_tbl, unsigned int *rule_tbl,
     size_t max)
 {
     unistr_t spcstr = { 0, 0 };
@@ -149,19 +146,20 @@ size_t getstrsize(size_t len, unistr_t *pre, unistr_t *spc, unistr_t *str,
     if ((!spc || !spc->str || !spc->len) && (!str || !str->str || !str->len))
 	return max? 0: len;
 
-    _unistr_concat(&spcstr, spc, str);
+    if (_unistr_concat(&spcstr, spc, str) == NULL)
+	return PROP_UNKNOWN;
     length = spcstr.len;
     idx = 0;
     pos = 0;
     while (1) {
-	size_t clen, width;
+	size_t clen, w;
 	unichar_t c, nc;
-	propval_t cls, ncls;
+	propval_t cls, ncls, width;
 
 	if (length <= pos)
 	    break;
 	c = spcstr.str[pos];
-	cls = getlbclass(c, lb_res, lb_reslen);
+	cls = getlbclass(c, lb_tbl);
 	clen = 1;
 
 	/* Hangul syllable block */
@@ -172,10 +170,10 @@ size_t getstrsize(size_t len, unistr_t *pre, unistr_t *spc, unistr_t *str,
 		if (length <= pos)
 		    break;
 		nc = spcstr.str[pos];
-		ncls = getlbclass(nc, lb_res, lb_reslen);
+		ncls = getlbclass(nc, lb_tbl);
 		if ((ncls == LB_H2 || ncls == LB_H3 ||
 		    ncls == LB_JL || ncls == LB_JV || ncls == LB_JT) &&
-		    getlbrule(cls, ncls, rule_res, rule_reslen) != DIRECT) {
+		    getlbrule(cls, ncls, rule_tbl) != DIRECT) {
 		    cls = ncls;
 		    clen++;
 		    continue;
@@ -185,8 +183,7 @@ size_t getstrsize(size_t len, unistr_t *pre, unistr_t *spc, unistr_t *str,
 	    width = EA_W;
 	} else {
 	    pos++;
-	    width = _bsearch(propmaps[1], propmapsizes[1], c, EA_A,
-			     ea_res, ea_reslen);
+	    width = _bsearch(propmaps[1], propmapsizes[1], c, EA_A, ea_tbl);
 	}
 	/*
 	 * After all, possible widths are non-spacing (z), wide (F/W) or
@@ -194,20 +191,20 @@ size_t getstrsize(size_t len, unistr_t *pre, unistr_t *spc, unistr_t *str,
 	 */
 
 	if (width == EA_z) {
-	    width = 0;
+	    w = 0;
 	} else if (width == EA_F || width == EA_W) {
-	    width = 2;
+	    w = 2;
 	} else {
-	    width = 1;
+	    w = 1;
 	}
-	if (max && max < len + width) {
+	if (max && max < len + w) {
 	    idx -= spc->len;
 	    if (idx < 0)
 		idx = 0;
 	    break;
 	}
 	idx += clen;
-	len += width;
+	len += w;
     }
 
     if (spcstr.str)
@@ -221,29 +218,34 @@ size_t getstrsize(size_t len, unistr_t *pre, unistr_t *spc, unistr_t *str,
 typedef struct {
     char *name;
     propval_t *ptr;
-    propval_t def;
 } constent_t;
 constent_t _constent[] = {
-    {"EA_z", &EA_z, -1}, 
-    {"EA_A", &EA_A, -1}, 
-    {"EA_W", &EA_W, -1}, 
-    {"EA_F", &EA_F, -1}, 
-    {"LB_H2", &LB_H2, -1},
-    {"LB_H3", &LB_H3, -1},
-    {"LB_JL", &LB_JL, -1},
-    {"LB_JV", &LB_JV, -1},
-    {"LB_JT", &LB_JT, -1},
-    {"LB_XX", &LB_XX, -1},
-    {"DIRECT", &DIRECT, 0},
-    {NULL, NULL, 0},
+    { "EA_z", &EA_z }, 
+    { "EA_A", &EA_A }, 
+    { "EA_W", &EA_W }, 
+    { "EA_F", &EA_F }, 
+    { "LB_H2", &LB_H2 },
+    { "LB_H3", &LB_H3 },
+    { "LB_JL", &LB_JL },
+    { "LB_JV", &LB_JV },
+    { "LB_JT", &LB_JT },
+    { "LB_XX", &LB_XX },
+    { "DIRECT", &DIRECT },
+    { NULL, NULL },
 };
 
-#define _hash_res(name) \
-{ \
-    hash = (HV *)SvRV(obj); \
-    sv = *hv_fetch(hash, name, strlen(name), 0); \
-    l = SvCUR(sv); \
-    res = (unsigned int *)SvPV(sv, l); \
+unsigned int *_get_packed_table(SV *obj, char *name)
+{
+    SV *sv;
+    STRLEN l;
+    unsigned int *tbl;
+
+    sv = *hv_fetch((HV *)SvRV(obj), name, strlen(name), 0);
+    l = SvCUR(sv);
+    tbl = (unsigned int *)SvPV(sv, l);
+    if (l < tbl[0] * sizeof(unsigned int) * 2 + sizeof(unsigned int))
+	croak("_get_packed_table: Actual length %d; reported %d", l, tbl[0]);
+    return tbl;
 }
 
 unistr_t *_utf8touni(unistr_t *buf, SV *str)
@@ -291,7 +293,7 @@ _loadconst(...)
     CODE:
 	p = _constent;
 	while (p->name) {
-	    *(p->ptr) = p->def;
+	    *(p->ptr) = -1;
 	    for (i = 0; i < items; i++) {
 		name = (char *)SvPV_nolen(ST(i));
 		if (strcmp(name, p->name) == 0) {
@@ -390,18 +392,22 @@ _loadrule(tableref)
 	    }
 	}
 
+# _packed_table (ITEM...)
+#     Equvalent to
+#     pack('I*', (scalar(@_) + 2) / 2, @_, -1, -1);
 SV *
-_packed_hash(...)
+_packed_table(...)
     PREINIT:
 	unsigned int *packed = NULL;
 	size_t i;
     CODE:
-	if ((packed = malloc(sizeof(unsigned int) * (items + 2))) == NULL)
-	    croak("_packed_hash: Memory exausted");
-	for (i = 0; i < items; i++)
-	    packed[i] = (unsigned int)SvIV(ST(i));
-	packed[i++] = (unsigned int)(-1);
-	packed[i++] = (unsigned int)(-1);
+	if ((packed = malloc(sizeof(unsigned int) * (items + 3))) == NULL)
+	    croak("_packed_table: Memory exausted");
+	packed[0] = (unsigned int)((items + 2) / 2);
+	for (i = 1; i < items + 1; i++)
+	    packed[i] = (unsigned int)SvIV(ST(i-1));
+	packed[i++] = -1;
+	packed[i++] = -1;
 	RETVAL = newSVpvn((char *)(void *)packed, sizeof(unsigned int) * i);
 	free(packed);
     OUTPUT:
@@ -410,46 +416,38 @@ _packed_hash(...)
 propval_t
 getlbclass(obj, str)
 	SV *obj;
-	unsigned char *str;
+	SV *str;
     INIT:
 	unichar_t c;
-	HV *hash;
-	SV *sv;
-	unsigned int *res;
-	size_t l;
+	unsigned int *tbl;
 	propval_t prop;
-
-	/* FIXME: return undef unless defined $str and length $str; */
-	if (!str)
-	    XSRETURN_UNDEF;
-	c = utf8_to_uvuni(str, NULL);
-	_hash_res("_lb_hash");
-	prop = getlbclass(c, res, l / sizeof(unsigned int) / 2);
-	if (prop == -1)
-	    XSRETURN_UNDEF;
     CODE:
+	/* FIXME: return undef unless (defined $str and length $str); */
+	if (!SvCUR(str))
+	    XSRETURN_UNDEF;
+	c = utf8_to_uvuni((U8 *)SvPV_nolen(str), NULL);
+	tbl = _get_packed_table(obj, "_lb_hash");
+	prop = getlbclass(c, tbl);
+	if (prop == PROP_UNKNOWN)
+	    XSRETURN_UNDEF;
 	RETVAL = prop;	
     OUTPUT:
 	RETVAL
 
-int
+propval_t
 getlbrule(obj, b_idx, a_idx)
 	SV * obj;	
 	propval_t b_idx;
 	propval_t a_idx;
     INIT:
-	HV *hash;
-	SV *sv;
-	unsigned int *res;
-	size_t l;
+	unsigned int *tbl;
 	propval_t prop;
-
+    CODE:
 	if (!SvOK(ST(1)) || !SvOK(ST(2)))
 	    XSRETURN_UNDEF;
-    CODE:
-	_hash_res("_rule_hash");
-	prop = getlbrule(b_idx, a_idx, res, l / sizeof(unsigned int) / 2);
-	if (!prop)
+	tbl = _get_packed_table(obj, "_rule_hash");
+	prop = getlbrule(b_idx, a_idx, tbl);
+	if (prop == PROP_UNKNOWN)
 	    XSRETURN_UNDEF;
 	RETVAL = prop;
     OUTPUT:
@@ -460,38 +458,30 @@ getstrsize(obj, len, pre, spc, str, ...)
 	SV *obj;
 	size_t len;
 	SV *pre;
-	SV* spc;
-	SV* str;
+	SV *spc;
+	SV *str;
     INIT:
 	size_t max;
-	HV *hash;
-	SV *sv;
-	unsigned int *res, *lb_res, *ea_res, *rule_res;
-	size_t l, lb_reslen, ea_reslen, rule_reslen;
+	unsigned int *lb_tbl, *ea_tbl, *rule_tbl;
 	unistr_t unipre = { 0, 0 }, unispc = { 0, 0 }, unistr = { 0, 0 };
     CODE:
 	_utf8touni(&unipre, pre);	
 	_utf8touni(&unispc, spc);	
 	_utf8touni(&unistr, str);	
-	_hash_res("_lb_hash");
-	lb_res = res;
-	lb_reslen = l / sizeof(unsigned int) / 2;
-	_hash_res("_ea_hash");
-	ea_res = res;
-	ea_reslen = l / sizeof(unsigned int) / 2;
-	_hash_res("_rule_hash");
-	rule_res = res;
-	rule_reslen = l / sizeof(unsigned int) / 2;
+	lb_tbl = _get_packed_table(obj, "_lb_hash");
+	ea_tbl = _get_packed_table(obj, "_ea_hash");
+	rule_tbl = _get_packed_table(obj, "_rule_hash");
 	if (5 < items)
 	    max = SvUV(ST(5));
 	else
 	    max = 0;
 
 	RETVAL = getstrsize(len, &unipre, &unispc, &unistr,
-			    lb_res, lb_reslen, ea_res, ea_reslen,
-			    rule_res, rule_reslen, max);
+			    lb_tbl, ea_tbl, rule_tbl, max);
 	if (unipre.str) free(unipre.str);
 	if (unispc.str) free(unispc.str);
 	if (unistr.str) free(unistr.str);
+	if (RETVAL == PROP_UNKNOWN)
+	    croak("getstrsize: Can't allocate memory");
     OUTPUT:
 	RETVAL

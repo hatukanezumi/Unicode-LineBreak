@@ -1,5 +1,7 @@
 0.005.510  Xxx Xxx XX 2009
 	* Imp: XS'ized getstrsize().
+	* Fix: getlbclass(): use SV* instead of char*.
+	* Cleanup.
 
 0.004.510  Sat May 23 2009
 	* New: method getstrsize().

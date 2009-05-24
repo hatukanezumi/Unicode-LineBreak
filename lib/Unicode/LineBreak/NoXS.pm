@@ -8,7 +8,7 @@ sub _loadmap {
     $MAPs[$idx] = $map;
 }
 sub _loadrule { }
-sub _packed_hash { return {@_}; }
+sub _packed_table { return {@_}; }
 
 # _bsearch IDX, VAL, DEFAULT, HASH
 # Examine binary search on property map table with following structure:
