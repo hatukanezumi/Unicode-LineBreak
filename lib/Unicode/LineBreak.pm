@@ -10,7 +10,7 @@ use vars qw($VERSION @EXPORT_OK @ISA $UNICODE_VERSION @LB_CLASSES $Config);
 
 ### Exporting:
 use Exporter;
-our @EXPORT_OK = qw(getcontext MANDATORY DIRECT INDIRECT PROHIBITED);
+our @EXPORT_OK = qw(context MANDATORY DIRECT INDIRECT PROHIBITED);
 our %EXPORT_TAGS = ('all' => [@EXPORT_OK]);
 
 ### Inheritance:
@@ -127,7 +127,7 @@ my %FORMAT_FUNCS = (
 	    return $self->{Newline};
 	} elsif ($event =~ /^eo/) {
 	    $str = substr($str, 1)
-		while length $str and $self->getlbclass($str) == LB_SP;
+		while length $str and $self->lbclass($str) == LB_SP;
 	    return $str;
 	}
 	undef;
@@ -136,8 +136,8 @@ my %FORMAT_FUNCS = (
 
 # Built-in behavior by L</SizingMethod> options.
 my %SIZING_FUNCS = (
-    'DEFAULT' => \&getstrsize,
-    'NARROWAL' => \&getstrsize,
+    'DEFAULT' => \&strsize,
+    'NARROWAL' => \&strsize,
 );
 
 # Built-in urgent breaking brehaviors specified by C<UrgentBreaking>.
@@ -178,7 +178,7 @@ my %USER_BREAKING_FUNCS = (
 		    sub { ($_[1] =~ m{(?:^.+?//[^/]*|/[^/]*)}go) } ],
 );
 
-sub new {
+sub new ($) {
     my $class = shift;
 
     my $self = { };
@@ -187,7 +187,7 @@ sub new {
     bless $self, $class;
 }
 
-sub _reset {
+sub _reset ($) {
     my $self = shift;
     $self->{_unwritten_result} = '';
     $self->{_line_buffer} = {'frg' => '', 'spc' => '', 'len' => 0};
@@ -199,7 +199,7 @@ sub _reset {
     $self->{_sot_done} = 0;
 }
 
-sub break {
+sub break ($$) {
     my $s = shift;
     my $str = shift;
     return '' unless defined $str and length $str;
@@ -273,7 +273,7 @@ sub break {
 			last CHARACTER_PAIR;
 		    }
 		    $frg = substr($str, $pos, 1);
-		    $cls = $s->getlbclass($frg);
+		    $cls = $s->lbclass($frg);
 
 		    # - Explicit breaks and non-breaks
 
@@ -289,7 +289,7 @@ sub break {
 			    last CHARACTER_PAIR;
 			}
 			$frg = substr($str, $pos, 1);
-			$cls = $s->getlbclass($frg);
+			$cls = $s->lbclass($frg);
 		    }
 
 		    # - Mandatory breaks
@@ -303,7 +303,7 @@ sub break {
 			$before{eop} = 1;
 			if ($pos < $str_len and $cls == LB_CR) {
 			    $frg = substr($str, $pos, 1);
-			    $cls = $s->getlbclass($frg);
+			    $cls = $s->lbclass($frg);
 			    if ($cls == LB_LF) {
 				$pos++;
 				$before{spc} .= $frg;
@@ -332,7 +332,7 @@ sub break {
 				last CHARACTER_PAIR;
 			    }
 			    $frg = substr($str, $pos, 1);
-			    $cls = $s->getlbclass($frg);
+			    $cls = $s->lbclass($frg);
 			}
 			next;
 		    }
@@ -372,10 +372,10 @@ sub break {
 		    my $pcls = $cls;
 		    while ($pos < $str_len) {
 			$frg = substr($str, $pos, 1);
-			$cls = $s->getlbclass($frg);
+			$cls = $s->lbclass($frg);
 			if (($cls == LB_JL or $cls == LB_JV or $cls == LB_JT or
 			     $cls == LB_H2 or $cls == LB_H3) and
-			    $s->getlbrule($pcls, $cls) != DIRECT) {
+			    $s->lbrule($pcls, $cls) != DIRECT) {
 			    $pos++;
 			    $after{frg} .= $frg;
 			    $pcls = $cls;
@@ -392,7 +392,7 @@ sub break {
 		# where X is anything except BK, CR, LF, NL, SP or ZW
 		while ($pos < $str_len) {
 		    $frg = substr($str, $pos, 1);
-		    $cls = $s->getlbclass($frg);
+		    $cls = $s->lbclass($frg);
 		    last unless $cls == LB_CM;
 		    $pos++;
 		    $after{frg} .= $frg;
@@ -403,7 +403,7 @@ sub break {
 		if ($after{cls} == LB_CM) {
 		    if ($s->{LegacyCM} eq 'YES' and
 			defined $before{cls} and length $before{spc} and
-			$s->getlbclass(substr($before{spc}, -1)) == LB_SP) {
+			$s->lbclass(substr($before{spc}, -1)) == LB_SP) {
 			$after{frg} = substr($before{spc}, -1).$after{frg};
 			$after{cls} = LB_ID;
 
@@ -441,7 +441,7 @@ sub break {
 	    $action = URGENT;
 	# LB11 - LB29 and LB31: Tailorable rules (except LB11, LB12).
 	} else {
-	    $action = $s->getlbrule($before{cls}, $after{cls});
+	    $action = $s->lbrule($before{cls}, $after{cls});
 
 	    # Check prohibited break.
 	    if ($action == PROHIBITED or
@@ -474,12 +474,12 @@ sub break {
 			    while ($s->{CharactersMax} < length $frg) {
 				my $b = substr($frg, 0, $s->{CharactersMax});
 				$frg = substr($frg, $s->{CharactersMax});
-				if ($s->getlbclass($frg) == LB_CM) {
+				if ($s->lbclass($frg) == LB_CM) {
 				    while (length $b) {
 					my $t = substr($b, -1);
 					$b = substr($b, length($b) - 1);
 					$frg = $t.$frg;
-					unless ($s->getlbclass($t) == LB_CM) {
+					unless ($s->lbclass($t) == LB_CM) {
 					    last;
 					}
 				    }
@@ -606,7 +606,7 @@ sub break {
     $result;
 }
 
-sub config {
+sub config ($@) {
     my $self = shift;
     my %params = @_;
     my @opts = qw{CharactersMax ColumnsMin ColumnsMax Context Format
@@ -751,7 +751,7 @@ sub config {
     }
 }
 
-sub getcontext {
+sub context (@) {
     my %opts = @_;
 
     my $charset;
@@ -779,7 +779,7 @@ sub getcontext {
     $context;
 }
 
-sub _format {
+sub _format ($$$) {
     my $self = shift;
     my $action = shift || '';
     my $str = shift;
@@ -799,7 +799,7 @@ sub _format {
     return $result;
 }
 
-sub _urgent_break {
+sub _urgent_break ($$$$$$$) {
     my $self = shift;
     my $l_len = shift;
     my $l_frg = shift;
@@ -819,7 +819,7 @@ sub _urgent_break {
     return ({'cls' => $cls, 'frg' => $frg, 'spc' => $spc, 'urg' => 1});
 }
 
-sub _test_custom {
+sub _test_custom ($$$) {
     my $self = shift;
     my $str = shift;
     my $posref = shift;
@@ -833,7 +833,7 @@ sub _test_custom {
 	    foreach my $b (&{$func}($self, $frg)) {
 		my $s = '';
 		while (length $b and
-		       $self->getlbclass(substr($b, -1)) == LB_SP) {
+		       $self->lbclass(substr($b, -1)) == LB_SP) {
 		    $s = substr($b, -1).$s;
 		    $b = substr($b, 0, length($b) - 1);
 		}
@@ -854,10 +854,10 @@ sub _test_custom {
     return @custom;
 }
 
-sub _sizing {
+sub _sizing ($$$$$;$) {
     my $self = shift;
     my $size = &{$self->{_sizing_func}}($self, @_);
-    $size = $self->getstrsize(@_) unless defined $size;
+    $size = $self->strsize(@_) unless defined $size;
     $size;
 }
 

@@ -15,7 +15,7 @@ META_YML = ../META.yml
 
 all: $(DATA_PM) $(RULES_PM) $(VERSION_PM) $(CONSTANTS_PM)
 
-$(DATA_PM): $(EASTASIANWIDTH) $(LINEBREAK) EastAsianWidth.custom LineBreak.custom map2pl.pl
+$(DATA_PM): $(EASTASIANWIDTH) $(LINEBREAK) EastAsianWidth.custom LineBreak.custom map2pl.pl lbclasses.pl
 	( \
 	  echo '#-*- perl -*-'; \
 	  echo ''; \
@@ -32,7 +32,7 @@ $(DATA_PM): $(EASTASIANWIDTH) $(LINEBREAK) EastAsianWidth.custom LineBreak.custo
 	  echo '1;' \
 	) > $@
 
-$(RULES_PM): Rules rules2pl.pl
+$(RULES_PM): Rules rules2pl.pl lbclasses.pl
 	perl rules2pl.pl $< Constants.rules $(RULES_PM)
 
 $(CONSTANTS_PM): $(DATA_PM) $(RULES_PM)

@@ -31,14 +31,13 @@ unistr_t *_unistr_concat(unistr_t *buf, unistr_t *a, unistr_t *b)
     if (!buf) {
 	if ((buf = malloc(sizeof(unistr_t))) == NULL)
 	    return NULL;
-	buf->str = NULL;
-	buf->len = 0;
     } else if (buf->str)
 	free(buf->str);
+    buf->str = NULL;
+    buf->len = 0;
 
     if ((!a || !a->str || !a->len) && (!b || !b->str || !b->len)) {
-	buf->str = NULL;
-	buf->len = 0;
+	;
     } else if (!b || !b->str || !b->len) {
 	if ((buf->str = malloc(sizeof(unichar_t) * a->len)) == NULL)
 	    return NULL;
@@ -113,12 +112,17 @@ propval_t _bsearch(mapent_t* map, size_t n, unichar_t c, propval_t def,
     return _search_packed_table(tbl, result);
 }
 
-propval_t getlbclass(unichar_t c, unsigned int *tbl)
+propval_t eawidth(unichar_t c, unsigned int *tbl)
+{
+    return _bsearch(propmaps[1], propmapsizes[1], c, EA_A, tbl);
+}
+
+propval_t lbclass(unichar_t c, unsigned int *tbl)
 {
     return _bsearch(propmaps[0], propmapsizes[0], c, LB_XX, tbl);
 }
 
-propval_t getlbrule(propval_t b_idx, propval_t a_idx, unsigned int *tbl)
+propval_t lbrule(propval_t b_idx, propval_t a_idx, unsigned int *tbl)
 {
     propval_t result = PROP_UNKNOWN;
 
@@ -134,7 +138,7 @@ propval_t getlbrule(propval_t b_idx, propval_t a_idx, unsigned int *tbl)
     return _search_packed_table(tbl, result);
 }
 
-size_t getstrsize(size_t len, unistr_t *pre, unistr_t *spc, unistr_t *str,
+size_t strsize(size_t len, unistr_t *pre, unistr_t *spc, unistr_t *str,
     unsigned int *lb_tbl, unsigned int *ea_tbl, unsigned int *rule_tbl,
     size_t max)
 {
@@ -159,7 +163,7 @@ size_t getstrsize(size_t len, unistr_t *pre, unistr_t *spc, unistr_t *str,
 	if (length <= pos)
 	    break;
 	c = spcstr.str[pos];
-	cls = getlbclass(c, lb_tbl);
+	cls = lbclass(c, lb_tbl);
 	clen = 1;
 
 	/* Hangul syllable block */
@@ -170,10 +174,10 @@ size_t getstrsize(size_t len, unistr_t *pre, unistr_t *spc, unistr_t *str,
 		if (length <= pos)
 		    break;
 		nc = spcstr.str[pos];
-		ncls = getlbclass(nc, lb_tbl);
+		ncls = lbclass(nc, lb_tbl);
 		if ((ncls == LB_H2 || ncls == LB_H3 ||
 		    ncls == LB_JL || ncls == LB_JV || ncls == LB_JT) &&
-		    getlbrule(cls, ncls, rule_tbl) != DIRECT) {
+		    lbrule(cls, ncls, rule_tbl) != DIRECT) {
 		    cls = ncls;
 		    clen++;
 		    continue;
@@ -183,7 +187,7 @@ size_t getstrsize(size_t len, unistr_t *pre, unistr_t *spc, unistr_t *str,
 	    width = EA_W;
 	} else {
 	    pos++;
-	    width = _bsearch(propmaps[1], propmapsizes[1], c, EA_A, ea_tbl);
+	    width = eawidth(c, ea_tbl);
 	}
 	/*
 	 * After all, possible widths are non-spacing (z), wide (F/W) or
@@ -242,9 +246,13 @@ unsigned int *_get_packed_table(SV *obj, char *name)
 
     sv = *hv_fetch((HV *)SvRV(obj), name, strlen(name), 0);
     l = SvCUR(sv);
-    tbl = (unsigned int *)SvPV(sv, l);
-    if (l < tbl[0] * sizeof(unsigned int) * 2 + sizeof(unsigned int))
-	croak("_get_packed_table: Actual length %d; reported %d", l, tbl[0]);
+    if (l) {
+	tbl = (unsigned int *)SvPV(sv, l);
+	if (l < tbl[0] * sizeof(unsigned int) * 2 + sizeof(unsigned int))
+	    croak("_get_packed_table: Actual len %d; reported %d", l, tbl[0]);
+    } else {
+	tbl = NULL;
+    }
     return tbl;
 }
 
@@ -254,7 +262,10 @@ unistr_t *_utf8touni(unistr_t *buf, SV *str)
     STRLEN utf8len, unilen, len;
     unichar_t *uniptr;
 
-    if (buf->str)
+    if (!buf) {
+	if ((buf = malloc(sizeof(unistr_t))) == NULL)
+	    croak("_utf8touni: Memory exausted");
+    } else if (buf->str)
 	free(buf->str);
     buf->str = NULL;
     buf->len = 0;
@@ -270,12 +281,13 @@ unistr_t *_utf8touni(unistr_t *buf, SV *str)
     utf8ptr = utf8;
     uniptr = buf->str;
     while (utf8ptr < utf8 + utf8len) {
-	*(uniptr++) = (unichar_t)utf8_to_uvuni(utf8ptr, &len);
+	*uniptr = (unichar_t)utf8_to_uvuni(utf8ptr, &len);
 	if (len < 0)
 	    croak("_utf8touni: Not well-formed UTF-8");
 	if (len == 0)
 	    croak("_utf8touni: Internal error");
 	utf8ptr += len;
+	uniptr++;
     }
     buf->len = unilen;
     return buf;
@@ -285,6 +297,7 @@ MODULE = Unicode::LineBreak	PACKAGE = Unicode::LineBreak
 
 void
 _loadconst(...)
+    PROTOTYPE: @
     PREINIT:
 	size_t i;
 	constent_t *p;
@@ -317,6 +330,7 @@ void
 _loadmap(idx, mapref)
 	size_t	idx;
 	SV *	mapref;
+    PROTOTYPE: $$
     INIT:
 	size_t n, propmapsiz;
 	unichar_t beg, end;
@@ -354,6 +368,7 @@ _loadmap(idx, mapref)
 void
 _loadrule(tableref)
 	SV *	tableref;
+    PROTOTYPE: $
     INIT:
 	size_t n, m;
 	AV * rule;
@@ -397,6 +412,7 @@ _loadrule(tableref)
 #     pack('I*', (scalar(@_) + 2) / 2, @_, -1, -1);
 SV *
 _packed_table(...)
+    PROTOTYPE: @
     PREINIT:
 	unsigned int *packed = NULL;
 	size_t i;
@@ -414,9 +430,32 @@ _packed_table(...)
 	RETVAL
 
 propval_t
-getlbclass(obj, str)
+eawidth(obj, str)
 	SV *obj;
 	SV *str;
+    PROTOTYPE: $$
+    INIT:
+	unichar_t c;
+	unsigned int *tbl;
+	propval_t prop;
+    CODE:
+	/* FIXME: return undef unless (defined $str and length $str); */
+	if (!SvCUR(str))
+	    XSRETURN_UNDEF;
+	c = utf8_to_uvuni((U8 *)SvPV_nolen(str), NULL);
+	tbl = _get_packed_table(obj, "_ea_hash");
+	prop = eawidth(c, tbl);
+	if (prop == PROP_UNKNOWN)
+	    XSRETURN_UNDEF;
+	RETVAL = prop;	
+    OUTPUT:
+	RETVAL
+
+propval_t
+lbclass(obj, str)
+	SV *obj;
+	SV *str;
+    PROTOTYPE: $$
     INIT:
 	unichar_t c;
 	unsigned int *tbl;
@@ -427,7 +466,7 @@ getlbclass(obj, str)
 	    XSRETURN_UNDEF;
 	c = utf8_to_uvuni((U8 *)SvPV_nolen(str), NULL);
 	tbl = _get_packed_table(obj, "_lb_hash");
-	prop = getlbclass(c, tbl);
+	prop = lbclass(c, tbl);
 	if (prop == PROP_UNKNOWN)
 	    XSRETURN_UNDEF;
 	RETVAL = prop;	
@@ -435,10 +474,11 @@ getlbclass(obj, str)
 	RETVAL
 
 propval_t
-getlbrule(obj, b_idx, a_idx)
+lbrule(obj, b_idx, a_idx)
 	SV * obj;	
 	propval_t b_idx;
 	propval_t a_idx;
+    PROTOTYPE: $$$
     INIT:
 	unsigned int *tbl;
 	propval_t prop;
@@ -446,7 +486,7 @@ getlbrule(obj, b_idx, a_idx)
 	if (!SvOK(ST(1)) || !SvOK(ST(2)))
 	    XSRETURN_UNDEF;
 	tbl = _get_packed_table(obj, "_rule_hash");
-	prop = getlbrule(b_idx, a_idx, tbl);
+	prop = lbrule(b_idx, a_idx, tbl);
 	if (prop == PROP_UNKNOWN)
 	    XSRETURN_UNDEF;
 	RETVAL = prop;
@@ -454,34 +494,35 @@ getlbrule(obj, b_idx, a_idx)
 	RETVAL
 
 size_t
-getstrsize(obj, len, pre, spc, str, ...)
+strsize(obj, len, pre, spc, str, ...)
 	SV *obj;
 	size_t len;
 	SV *pre;
 	SV *spc;
 	SV *str;
+    PROTOTYPE: $$$$$;$
     INIT:
 	size_t max;
 	unsigned int *lb_tbl, *ea_tbl, *rule_tbl;
 	unistr_t unipre = { 0, 0 }, unispc = { 0, 0 }, unistr = { 0, 0 };
     CODE:
-	_utf8touni(&unipre, pre);	
-	_utf8touni(&unispc, spc);	
-	_utf8touni(&unistr, str);	
 	lb_tbl = _get_packed_table(obj, "_lb_hash");
 	ea_tbl = _get_packed_table(obj, "_ea_hash");
 	rule_tbl = _get_packed_table(obj, "_rule_hash");
+	_utf8touni(&unipre, pre);
+	_utf8touni(&unispc, spc);
+	_utf8touni(&unistr, str);
 	if (5 < items)
 	    max = SvUV(ST(5));
 	else
 	    max = 0;
 
-	RETVAL = getstrsize(len, &unipre, &unispc, &unistr,
+	RETVAL = strsize(len, &unipre, &unispc, &unistr,
 			    lb_tbl, ea_tbl, rule_tbl, max);
 	if (unipre.str) free(unipre.str);
 	if (unispc.str) free(unispc.str);
 	if (unistr.str) free(unistr.str);
 	if (RETVAL == PROP_UNKNOWN)
-	    croak("getstrsize: Can't allocate memory");
+	    croak("strsize: Can't allocate memory");
     OUTPUT:
 	RETVAL

@@ -1,7 +1,10 @@
 0.005.510  Xxx Xxx XX 2009
-	* Imp: XS'ized getstrsize().
-	* Fix: getlbclass(): use SV* instead of char*.
-	* Cleanup.
+
+	* Chg: renamed functions: remove ``get-''.
+	* Imp: XS'ized strsize().
+	* New: eawidth() method, XS'ized.
+	* Fix: lbclass(): use SV* instead of char*.
+	* Cleanup codes and PODs.
 
 0.004.510  Sat May 23 2009
 	* New: method getstrsize().

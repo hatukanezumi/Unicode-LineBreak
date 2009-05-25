@@ -2,13 +2,13 @@ package Unicode::LineBreak;
 
 sub _loadconst { }
 our @MAPs = ();
-sub _loadmap {
+sub _loadmap ($$) {
     my $idx = shift;
     my $map = shift;
     $MAPs[$idx] = $map;
 }
 sub _loadrule { }
-sub _packed_table { return {@_}; }
+sub _packed_table (@) { return {@_}; }
 
 # _bsearch IDX, VAL, DEFAULT, HASH
 # Examine binary search on property map table with following structure:
@@ -47,14 +47,21 @@ sub _bsearch {
     $result;
 }
 
-sub getlbclass {
+sub eawidth ($$) {
+    my $self = shift;
+    my $str = shift;
+    return undef unless defined $str and length $str;
+    &_bsearch(1, ord($str), EA_A, $self->{_ea_hash});
+}
+
+sub lbclass ($$) {
     my $self = shift;
     my $str = shift;
     return undef unless defined $str and length $str;
     &_bsearch(0, ord($str), LB_XX, $self->{_lb_hash});
 }
 
-sub getlbrule {
+sub lbrule ($$$) {
     my $self = shift;
     my $b_idx = shift;
     my $a_idx = shift;
@@ -73,7 +80,7 @@ sub getlbrule {
     $result;
 }
 
-sub getstrsize {
+sub strsize ($$$$$;$) {
     my $self = shift;
     my $len = shift;
     my $pre = shift;
@@ -90,13 +97,13 @@ sub getstrsize {
     my $idx = 0;
     my $pos = 0;
     while (1) {
-	my ($clen, $c, $cls, $nc, $ncls, $width);
+	my ($clen, $c, $cls, $nc, $ncls, $width, $w);
 
 	if ($length <= $pos) {
 	    last;
 	}
 	$c = substr($spcstr, $pos, 1);
-	$cls = $self->getlbclass($c);
+	$cls = $self->lbclass($c);
 	$clen = 1;
 
 	# Hangul syllable block
@@ -106,10 +113,10 @@ sub getstrsize {
 		$pos++;
 		last if $length <= $pos;
 		$nc = substr($spcstr, $pos, 1);
-		$ncls = $self->getlbclass($nc);
+		$ncls = $self->lbclass($nc);
 		if (($ncls == LB_H2 or $ncls == LB_H3 or
 		    $ncls == LB_JL or $ncls == LB_JV or $ncls == LB_JT) and
-		    $self->getlbrule($cls, $ncls) != DIRECT) {
+		    $self->lbrule($cls, $ncls) != DIRECT) {
 		    $cls = $ncls;
 		    $clen++;
 		    next;
@@ -119,25 +126,25 @@ sub getstrsize {
 	    $width = EA_W;
 	} else {
 	    $pos++;
-	    $width = &_bsearch(1, ord($c), EA_A, $self->{_ea_hash});
+	    $width = $self->eawidth($c);
 	}
 	# After all, possible widths are non-spacing (z), wide (F/W) or
 	# narrow (H/N/Na).
 
 	if ($width == EA_z) {
-	    $width = 0;
+	    $w = 0;
 	} elsif ($width == EA_F or $width == EA_W) {
-	    $width = 2;
+	    $w = 2;
 	} else {
-	    $width = 1;
+	    $w = 1;
 	}
-	if ($max and $max < $len + $width) {
+	if ($max and $max < $len + $w) {
 	    $idx -= length $spc;
 	    $idx = 0 unless 0 < $idx;
 	    last;
 	}
 	$idx += $clen;
-	$len += $width;
+	$len += $w;
     }
 
     $max? $idx: $len;

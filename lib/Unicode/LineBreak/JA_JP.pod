@@ -33,7 +33,9 @@ B<表語文字的な文字>〔ideographic characters〕は、通常、その前�
 若干の文字は、使われる文脈によって広くも狭くもなり得る。
 カスタマイズによって、文字はより多様な幅を持ちうる。
 
-=head2 公開インタフェース
+=head1 PUBLIC INTERFACE
+
+=head2 行の分割
 
 =over 4
 
@@ -55,18 +57,32 @@ I<インスタンスメソッド>。
 設定を取得または変更する。
 KEY => VALUE の対については L</オプション> を参照。
 
-=item getcontext ([Charset => CHARSET], [Language => LANGUAGE])
+=back
+
+=head2 情報の取得
+
+=over 4
+
+=item context ([Charset => CHARSET], [Language => LANGUAGE])
 
 I<関数>。
 キャラクタセット CHARSET および言語コード LANGUAGE から、それを使う言語/地域の文脈を得る。
 
-=item $self->getlbclass (STRING)
+=item $self->eawidth (STRING)
+
+I<インスタンスメソッド>。
+Unicode 文字列 STRING の最初の文字の East_Asian_Width 特性を得る。
+EA_Na、EA_N、EA_W、EA_H、EA_F、EA_z のいずれかの定数が返る。
+EA_z は前進を伴わない (幅のない) 文字を意味する。
+特性値 A は適切な値に解決する。
+
+=item $self->lbclass (STRING)
 
 I<インスタンスメソッド>。
 Unicode 文字列 STRING の最初の文字の行分割特性 (分類) を得る。
 AI、SA、SG、XX の各分類は他の適切な分類に解決する。
 
-=item $self->getlbrule (BEFORE, AFTER)
+=item $self->lbrule (BEFORE, AFTER)
 
 I<インスタンスメソッド>。
 分類 BEFORE と分類 AFTER の間での行分割規則を得る。
@@ -96,9 +112,9 @@ B<注>:
 このメソッドは、BK、CM、CR、LF、NL、SP の各分類に関わる規則については適切な値を返せないかもしれない。
 また、AI、SA、SG、XX の各分類に関わる規則については意味のある値を返さない。
 
-=item $self->getstrsize (LEN, PRE, SPC, STR)
+=item $self->strsize (LEN, PRE, SPC, STR)
 
-=item $self->getstrsize (LEN, PRE, SPC, STR, MAX)
+=item $self->strsize (LEN, PRE, SPC, STR, MAX)
 
 I<インスタンスメソッド>。
 MAX を指定しないと、[UAX #11] で定義された文字幅に基づいて、Unicode 文字列 PRE.SPC.STR のI<桁数>を算出する。
@@ -239,7 +255,7 @@ U+303C ます記号。
 =item C<"DEFAULT">
 
 初期の方法。
-getstrsize() を使う。
+strsize() を使う。
 
 =item C<"NARROWAL">
 
@@ -308,13 +324,17 @@ URI を SOLIDUS (スラッシュ) の前で分割する。
 
 =over 4
 
+=item C<EA_Na>, C<EA_N>, C<EA_A>, C<EA_W>, C<EA_H>, C<EA_F>, C<EA_z>
+
+[UAX #11] で定義される 6 つの East_Asian_Width 特性を表す値と、前進を伴わないことを表す EA_z。
+
 =item C<LB_I<??>>
 
 [UAX #14] で定義される 36 の行分割特性 (分類) を表す値。
 
 =item C<@LB_CLASSES>
 
-上記の分類の名前すべての配列。
+上の分類の名前すべての配列。
 
 =item C<MANDATORY>, C<DIRECT>, C<INDIRECT>, C<PROHIBITED>
 
@@ -326,9 +346,9 @@ URI を SOLIDUS (スラッシュ) の前で分割する。
 
 =back
 
-=head2 行分割動作のカスタマイズ
+=head1 CUSTOMIZATION
 
-=head3 行の整形
+=head2 行の整形
 
 L</Format> オプションにサブルーチンへの参照を指定する場合、そのサブルーチンは 3 つの引数を取らなければならない。
 
@@ -361,7 +381,7 @@ SELF はオブジェクトのインスタンス、EVENT はサブルーチンが
     my $lb = Unicode::LineBreak->new(Format => \&fmt);
     print $lb->break($text);
 
-=head3 ユーザ定義の行分割動作
+=head2 ユーザ定義の行分割動作
 
 任意分割によって生じる行が CharactersMax、ColumnsMin、ColumnsMax のいずれかの制限を超えると見込まれるときは、引き続く文字列に対してB<緊急分割>を実行できる。
 L</UrgentBreaking> オプションにサブルーチンへの参照を指定する場合、そのサブルーチンは 5 つの引数を取らなければならない。
@@ -388,7 +408,7 @@ SELF はオブジェクトのインスタンス、STR は REGEX にマッチす�
 
 サブルーチンは、文字列 STR を分割した結果の配列を返さなければならない。
 
-=head3 文字列長の算出
+=head2 文字列長の算出
 
 L</SizingMethod> オプションにサブルーチンへの参照を指定する場合、そのサブルーチンは 5 つか 6 つの引数を取らなければならない。
 
@@ -403,19 +423,30 @@ SELF はオブジェクトのインスタンス、LEN は先行する文字列�
 
 ふたつめの形式では、サブルーチンは STR の部分文字列の I<Unicode 文字の数>の最大値を返さなければならない。部分文字列 SUBSTR は PRE.SPC.SUBSTR の桁数が MAX を超えないように取る。この形式は L</UrgentBreaking> オプションを C<"FORCE"> に設定した場合に使う。後の形式を実装したくなければ、C<undef> を返さなければならない。
 
-初期値では、文字列長の算出には getstrsize() を使っている。
+初期値では、文字列長の算出には strsize() を使っている。
 
-=head3 文字の分類と行分割の基本規則
+=head2 文字の分類と行分割の基本規則
 
 文字の分類と行分割の基本的な規則は L<Unicode::LineBreak::Data> と L<Unicode::LineBreak::Rules> で定義している。
 これらをカスタマイズしたい場合は、ソースパッケージの F<data> ディレクトリの中を見ること。
 
-
-=head3 設定ファイル
+=head2 設定ファイル
 
 L</new> メソッドおよび L</config> メソッドのオプション引数の組み込み初期値は、 設定ファイルで上書きできる。
 F<Unicode/LineBreak/Defaults.pm>。
 詳細は F<Unicode/LineBreak/Defaults.pm.sample> を読んでほしい。
+
+=head1 BUGS
+
+バグやバグのような動作は、開発者に教えてください。L</AUTHOR> を参照。
+
+=head1 VERSION
+
+L<Unicode::LineBreak::Version> を参照してほしい。
+
+このモジュールの開発版が
+L<http://hatuka.nezumi.nu/repos/Unicode-LineBreak/>
+にある。
 
 =head2 標準への適合性
 
@@ -451,18 +482,6 @@ SA に分類される文字は AL に解決する。
 SG や XX に分類される文字は AL に解決する。
 
 =back
-
-=head1 BUGS
-
-バグやバグのような動作は、開発者に教えてください。L</AUTHOR> を参照。
-
-=head1 VERSION
-
-L<Unicode::LineBreak::Version> を参照。
-
-このモジュールの開発版が
-L<http://hatuka.nezumi.nu/repos/Unicode-LineBreak/>
-にある。
 
 =head1 REFERENCES
 

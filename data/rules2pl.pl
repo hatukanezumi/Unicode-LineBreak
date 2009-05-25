@@ -114,6 +114,7 @@ print CONSTANTS_PM ");\n\n";
 
 my @rule_classes = grep !/$OMIT/, @CLASSES;
 print RULES_PM <<EOF;
+# Note: Entries related to BK, CR, CM, LF, NL, SP aren't used by break().
 our \$RULES_MAP = [
 EOF
 print RULES_PM "    #";
@@ -131,7 +132,7 @@ foreach my $b (@rule_classes) {
 	    if ($b =~ /$before/ and $a =~ /$after/) {
 		if ($action == MANDATORY) {
 		    $mandatory = 1;
-		    last;
+		    $direct = 1 unless defined $direct;
 		} elsif ($action == INDIRECT_PROHIBITED) {
 		    $direct = 0 unless defined $direct;
 		    $indirect = 0 unless defined $indirect;
@@ -154,14 +155,14 @@ foreach my $b (@rule_classes) {
 	    last if defined $direct and defined $indirect;
 	}
 	my $action;
-	if ($mandatory) {
-	    $action = 'M'; # '!';
+	if ($mandatory and $direct) {
+	    $action = 'M'; # '!'
 	} elsif ($direct) {
-	    $action = 'D'; # '_';
+	    $action = 'D'; # '_'
 	} elsif ($indirect) {
-	    $action = 'I'; # '%';
+	    $action = 'I'; # '%'
 	} else {
-	    $action = 'P'; # '^';
+	    $action = 'P'; # '^'
 	}
 
 	print RULES_PM "$action,";

@@ -44,7 +44,7 @@ use Unicode::LineBreak qw(:all);
 ### Globals
 
 ### The package version, both in 1.23 style *and* usable by MakeMaker:
-our $VERSION = '0.003';
+our $VERSION = '0.005';
 
 ### Public Configuration Attributes
 our $Config = {
@@ -265,7 +265,7 @@ sub config {
     ## Context
     Unicode::LineBreak::config($self,
 			       Context =>
-			       getcontext(Charset => $self->{Charset},
+			       context(Charset => $self->{Charset},
 					  Language => $self->{Language}));
 }
 
@@ -415,13 +415,13 @@ sub unfold {
 			my $i = length $l;
 			do {
 			    $i--;
-			    $b_cls = $self->getlbclass(substr($l, $i));
+			    $b_cls = $self->lbclass(substr($l, $i));
 			} while ($b_cls == LB_CM and 0 < $i);
 			$b_cls = LB_AL if $b_cls == LB_CM or $b_cls == LB_SP;
-			$a_cls = $self->getlbclass($n);
+			$a_cls = $self->lbclass($n);
 			$a_cls = LB_AL if $a_cls == LB_CM;
 
-			if ($self->getlbrule($b_cls, $a_cls) == INDIRECT) {
+			if ($self->lbrule($b_cls, $a_cls) == INDIRECT) {
 			    $result .= ' ';
 			}
 		    }
