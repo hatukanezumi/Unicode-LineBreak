@@ -189,56 +189,57 @@ sub new ($) {
 
 sub _reset ($) {
     my $self = shift;
-    $self->{_unwritten_result} = '';
-    $self->{_line_buffer} = {'frg' => '', 'spc' => '', 'len' => 0};
-    $self->{_before_buffer} = {'frg' => '', 'spc' => ''};
-    $self->{_after_buffer} = {'frg' => '', 'spc' => ''};
-    $self->{_custom_buffer} = [];
-    $self->{_unread_input} = '';
-    $self->{_sop_done} = 1;
-    $self->{_sot_done} = 0;
+    $self->{_line} = {'frg' => '', 'spc' => '', 'cols' => 0};
+    $self->{_unread} = '';
+    $self->{_sox} = 0;
 }
 
 sub break ($$) {
-    my $s = shift;
+    my $self = shift;
     my $str = shift;
     return '' unless defined $str and length $str;
-    croak "Unicode string must be given."
-	if $str =~ /[^\x00-\x7F]/s and !is_utf8($str);
+    return $self->break_partial($str).$self->break_partial(undef);
+}
+
+sub break_partial ($$) {
+    my $s = shift;
+    my $str = shift;
+    my $eot = 0;
+
+    unless (defined $str) { 
+	$eot = 1;
+	$str = '';
+    } elsif ($str =~ /[^\x00-\x7F]/s and !is_utf8($str)) {
+        croak "Unicode string must be given."
+    }
 
     ### Initialize status.
 
-    ## Result.
-    my $result = $s->{_unwritten_result};
-
     ## Line buffer.
-    # frg: unbreakable text fragment.
-    # spc: trailing spaces.
-    # len: current number of columns bufferd.
-    my $l_frg = $s->{_line_buffer}->{frg};
-    my $l_spc = $s->{_line_buffer}->{spc};
-    my $l_len = $s->{_line_buffer}->{len};
-
+    # frg: Unbreakable text fragment.
+    # spc: Trailing spaces.
+    # cols: Number of columns of frg.
+    my %line = %{$s->{_line}};
     ## ``before'' and ``after'' buffers.
-    # cls: line breaking class.
-    # frg: unbreakable text fragment.
-    # spc: trailing spaces.
-    # urg: frg has been broken by urgent breaking.
-    # eop: the end of frg is mandatory breaking point.
-    # eot: frg is at end of text.
-    my %before = (%{$s->{_before_buffer}});
-    my %after = (%{$s->{_after_buffer}});
+    # cls: Line breaking class.
+    # frg: Unbreakable text fragment.
+    # spc: Trailing spaces.
+    # urg: This buffer had been broken by urgent breaking.
+    # eop: There is a mandatory breaking point at end of this buffer.
+    my %before = ('frg' => '', 'spc' => '');
+    my %after = ('frg' => '', 'spc' => '');
+    ## Unread input.
+    $str = $s->{_unread}.$str;
+    ## Start of text/paragraph status.
+    # 0: Start of text not done.
+    # 1: Start of text done while start of paragraph not done.
+    # 2: Start of paragraph done.
+    my $sox = $s->{_sox};
 
+    ## Result.
+    my $result = '';
     ## Queue of urgent/custom broken fragments.
-    my @custom = @{$s->{_custom_buffer}};
-
-    ## Unread input
-    $str = $s->{_unread_input}.$str;
-
-    ## Initially, "sot" event has not yet done and "sop" event is inhibited.
-    my $sot_done = $s->{_sot_done};
-    my $sop_done = $s->{_sop_done};
-
+    my @custom = ();
     ## Current position and length of STR.
     my $pos = 0;
     my $str_len = length $str;
@@ -250,11 +251,10 @@ sub break ($$) {
 	while (1) {
 	    my ($frg, $cls);
 
-	    %before = (%after)
-		if !defined $before{cls} and defined $after{cls};
-	    %after = ('frg' => '', 'spc' => '');
-	    last CHARACTER_PAIR
-		if defined $before{cls} and ($before{eop} or $before{eot});
+	    # End of input.
+	    last CHARACTER_PAIR if !scalar(@custom) and $str_len <= $pos;
+	    # Mandatory break
+	    last CHARACTER_PAIR if defined $before{cls} and $before{eop};
 
 	    ## Use custom buffer at first.
 	    if (!scalar(@custom)) {
@@ -265,13 +265,6 @@ sub break ($$) {
 		#
 
 		while (1) {
-		    # - End of text
-
-		    # LB3: ! eot
-		    if ($str_len <= $pos) {
-			$before{eot} = 1;
-			last CHARACTER_PAIR;
-		    }
 		    $frg = substr($str, $pos, 1);
 		    $cls = $s->lbclass($frg);
 
@@ -284,10 +277,8 @@ sub break ($$) {
 			# Treat (sot | eop) SP+  as if it were WJ.
 			$before{cls} = LB_WJ unless defined $before{cls};
 
-			if ($str_len <= $pos) {
-			    $before{eot} = 1;
-			    last CHARACTER_PAIR;
-			}
+			# End of input.
+			last CHARACTER_PAIR if $str_len <= $pos;
 			$frg = substr($str, $pos, 1);
 			$cls = $s->lbclass($frg);
 		    }
@@ -300,19 +291,19 @@ sub break ($$) {
 			$pos++;
 			$before{spc} .= $frg; # $before{spc} = SP* (BK etc.)
 			$before{cls} = $cls;
-			$before{eop} = 1;
-			if ($pos < $str_len and $cls == LB_CR) {
-			    $frg = substr($str, $pos, 1);
-			    $cls = $s->lbclass($frg);
-			    if ($cls == LB_LF) {
-				$pos++;
-				$before{spc} .= $frg;
+			# LB5(1): CR × LF
+			if ($cls == LB_CR) {
+			    if ($pos < $str_len) {
+				$frg = substr($str, $pos, 1);
+				$cls = $s->lbclass($frg);
+				if ($cls == LB_LF) {
+				    $pos++;
+				    $before{spc} .= $frg;
+				}
+				$before{eop} = 1;
 			    }
-			}
-
-			# LB3: ! eot
-			if ($str_len <= $pos) {
-			    $before{eot} = 1;
+			} else {
+			    $before{eop} = 1;
 			}
 			last CHARACTER_PAIR;
 		    }
@@ -327,10 +318,8 @@ sub break ($$) {
 			    $before{spc} = '';
 			    $before{cls} = LB_ZW;
 
-			    if ($str_len <= $pos) {
-				$before{eot} = 1;
-				last CHARACTER_PAIR;
-			    }
+			    # End of input
+			    last CHARACTER_PAIR if $str_len <= $pos;
 			    $frg = substr($str, $pos, 1);
 			    $cls = $s->lbclass($frg);
 			}
@@ -424,23 +413,25 @@ sub break ($$) {
 
 	    # LB2: sot ×
 	    last if defined $before{cls};
+
+	    # shift buffers.
+	    %before = (%after);
+	    %after = ('frg' => '', 'spc' => '');
 	} # CHARACTER_PAIR: while (1)
 
 	## Determin line breaking action by classes of adjacent characters.
-	## EOT is used only internally.
+	## EOT (and URGENT) are used only internally.
 
 	my $action;
-	# End of text.
-	if ($before{eot}) {
-	    $action = EOT;
-        # Mandatory break.
-	} elsif ($before{eop}) {
+
+	# Mandatory break.
+	if ($before{eop}) {
 	    $action = MANDATORY;
 	# Broken by urgent breaking or custom breaking.
 	} elsif ($before{urg}) {
 	    $action = URGENT;
 	# LB11 - LB29 and LB31: Tailorable rules (except LB11, LB12).
-	} else {
+	} elsif (defined $after{cls}) {
 	    $action = $s->lbrule($before{cls}, $after{cls});
 
 	    # Check prohibited break.
@@ -494,8 +485,7 @@ sub break ($$) {
 			}
 			if (scalar @cc) {
 			    $cc[$#cc]->{eop} = $after{eop};
-			    $cc[$#cc]->{eot} = $after{eot};
-			    # As $after{frg} may be an imcomplete fragment,
+			    # As $after{frg} may be an incomplete fragment,
 			    # urgent break won't be carried out at its end.
 			    $cc[$#cc]->{urg} = 0;
 			}
@@ -503,49 +493,62 @@ sub break ($$) {
 
 		    # Shift back urgently broken fragments then retry.
 		    unshift @custom, @cc;
-		    if (scalar @custom) {
-			%before = (%{shift @custom}); #XXX maybe eop/eot
-		    } else {
-			%before = ('frg' => '', 'spc' => '');
-		    }
+		    %before = ('frg' => '', 'spc' => '');
+		    %after = ('frg' => '', 'spc' => '');
 		    next;
 		} 
 		# Otherwise, fragments may be conjuncted safely.  Read more.
 		my $frg = $before{frg}.$before{spc}.$after{frg};
-		%before = (%after); #XXX maybe eop/eot
-		$before{frg} = $frg;
+		%before = (%after); $before{frg} = $frg;
+		%after = ('frg' => '', 'spc' => '');
 		next;
 	    } # if ($action == PROHIBITED or ...)
-	} # if ($before{eot})
+	} # if ($before{eop})
+
+        # Check end of input.
+        if (!defined $after{cls} and !scalar @custom and $str_len <= $pos) {
+            # End of text.
+            if ($eot) {
+                $action = EOT;
+	    # End of partial text.
+            } else {
+                # Save status then output partial result.
+                $s->{_line} = \%line;
+		$s->{_unread} = $before{frg}.$before{spc};
+                $s->{_sox} = $sox;
+                return $result;
+            }
+        }
+
 	# After all, possible actions are EOT, MANDATORY and other arbitrary.
 
 	### Examine line breaking action
 
-	if (!$sot_done) {
+	if ($sox == 0) { # sot undone.
 	    # Process start of text.
 	    $before{frg} = $s->_format('sot', $before{frg});
-	    $sot_done = 1;
-	    $sop_done = 1;
-	} elsif (!$sop_done) {
+	    $sox = 1;
+	} elsif ($sox == 1) { # sop undone.
 	    # Process start of paragraph.
 	    $before{frg} = $s->_format('sop', $before{frg});
-	    $sop_done = 1;
+	    $sox = 2;
 	}
-	
+
 	# Check if arbitrary break is needed.
-	my $l_newlen = $s->_sizing($l_len, $l_frg, $l_spc, $before{frg});
-	if ($s->{ColumnsMax} and $s->{ColumnsMax} < $l_newlen) {
-	    $l_newlen = $s->_sizing(0, '', '', $before{frg}); 
+	my $newcols = $s->_sizing($line{cols}, $line{frg}, $line{spc},
+				  $before{frg});
+	if ($s->{ColumnsMax} and $s->{ColumnsMax} < $newcols) {
+	    $newcols = $s->_sizing(0, '', '', $before{frg}); 
 
 	    # When arbitrary break is expected to generate very short line,
 	    # or when $before{frg} will exceed ColumnsMax, try urgent breaking.
 	    unless ($before{urg}) {
 		my @c = ();
-		if ($l_len and $l_len < $s->{ColumnsMin}) {
-		    @c = $s->_urgent_break($l_len, $l_frg, $l_spc,
+		if ($line{cols} and $line{cols} < $s->{ColumnsMin}) {
+		    @c = $s->_urgent_break($line{cols}, $line{frg}, $line{spc},
 					   $before{cls}, $before{frg},
 					   $before{spc});
-		} elsif ($s->{ColumnsMax} < $l_newlen) {
+		} elsif ($s->{ColumnsMax} < $newcols) {
 		    @c = $s->_urgent_break(0, '', '',
 					   $before{cls}, $before{frg},
 					   $before{spc});
@@ -553,56 +556,50 @@ sub break ($$) {
 		if (scalar @c) {
 		    push @c, {%after} if defined $after{cls};
 		    unshift @custom, @c;
-		    if (scalar @custom) {
-			%before = (%{shift @custom}); #XXX maybe eop/eot
-		    } else {
-			%before = ('frg' => '', 'spc' => '');
-		    }
+		    %before = ('frg' => '', 'spc' => '');
+		    %after = ('frg' => '', 'spc' => '');
 		    next;
 		}
 	    }
 
 	    # Otherwise, process arbitrary break.
-	    if (length $l_frg.$l_spc) {
-		$result .= $s->_format('', $l_frg);
-		$result .= $s->_format('eol', $l_spc);
+	    if (length $line{frg} or length $line{spc}) {
+		$result .= $s->_format('', $line{frg});
+		$result .= $s->_format('eol', $line{spc});
 		my $bak = $before{frg};
 		$before{frg} = $s->_format('sol', $before{frg});
-		$l_newlen = $s->_sizing(0, '', '', $before{frg})
+		$newcols = $s->_sizing(0, '', '', $before{frg})
 		    unless $bak eq $before{frg};
 	    }
-	    $l_frg = $before{frg};
-	    $l_len = $l_newlen;
-	    $l_spc = $before{spc};
+	    %line = ('frg' => $before{frg},
+		     'spc' => $before{spc}, 'cols' => $newcols);
 	# Arbitrary break is not needed.
 	} else {
-	    $l_frg .= $l_spc;
-	    $l_frg .= $before{frg};
-	    $l_len = $l_newlen;
-	    $l_spc = $before{spc};
+	    %line = ('frg' => $line{frg}.$line{spc}.$before{frg},
+		     'spc' => $before{spc}, 'cols' => $newcols);
 	} # if ($s->{ColumnsMax} and ...)
 
 	# Mandatory break or end-of-text.
 	if ($action == MANDATORY) {
 	    # Process mandatory break.
-	    $result .= $s->_format('', $l_frg);
-	    $result .= $s->_format('eop', $l_spc);
-	    $sop_done = 0;
-	    $l_frg = '';
-	    $l_len = 0;
-	    $l_spc = '';
+	    $result .= $s->_format('', $line{frg});
+	    $result .= $s->_format('eop', $line{spc});
+	    $sox = 1; # eop done then sop must be carried out.
+	    %line = ('frg' => '', 'spc' => '', 'cols' => 0);
 	} elsif ($action == EOT) {
 	    # Process end of text.
-	    $result .= $s->_format('', $l_frg);
-	    $result .= $s->_format('eot', $l_spc);
+	    $result .= $s->_format('', $line{frg});
+	    $result .= $s->_format('eot', $line{spc});
 	    last;
 	}
 
-	# Shift buffer.
+	# Shift buffers.
 	%before = (%after);
+	%after = ('frg' => '', 'spc' => '');
     } # while (1)
 
-    ## Return result.
+    ## Reset status then return the rest of result.
+    $s->_reset;
     $result;
 }
 

@@ -3,7 +3,7 @@
 package Text::LineFold;
 require 5.008;
 
-=encoding utf8
+=encoding utf-8
 
 =head1 NAME
 

@@ -1,6 +1,7 @@
 0.005.510  Xxx Xxx XX 2009
 
 	* Chg: renamed functions: remove ``get-''.
+	* New: break_partial() method.
 	* Imp: XS'ized strsize().
 	* New: eawidth() method, XS'ized.
 	* Fix: lbclass(): use SV* instead of char*.
