@@ -60,7 +60,6 @@ push @{$EXPORT_TAGS{'all'}}, @LB_CLASSES;
 $EXPORT_TAGS{'class'} = [@LB_CLASSES];
 
 use constant {
-    EOT => 100,
     MANDATORY => M,
     DIRECT => D,
     INDIRECT => I,
@@ -76,8 +75,8 @@ require Unicode::LineBreak::Rules;
 _loadrule($Unicode::LineBreak::RULES_MAP);
 
 require Unicode::LineBreak::Data;
-_loadmap(0, $Unicode::LineBreak::lb_MAP);
-_loadmap(1, $Unicode::LineBreak::ea_MAP);
+_loadlb($Unicode::LineBreak::lb_MAP);
+_loadea($Unicode::LineBreak::ea_MAP);
 
 ### Privates
 my $EASTASIAN_CHARSETS = qr{
@@ -249,7 +248,7 @@ sub break_partial ($$) {
 
       CHARACTER_PAIR:
 	while (1) {
-	    my ($frg, $cls);
+	    my ($chr, $cls);
 
 	    # End of input.
 	    last CHARACTER_PAIR if !scalar(@custom) and $str_len <= $pos;
@@ -265,22 +264,22 @@ sub break_partial ($$) {
 		#
 
 		while (1) {
-		    $frg = substr($str, $pos, 1);
-		    $cls = $s->lbclass($frg);
+		    $chr = substr($str, $pos, 1);
+		    $cls = $s->lbclass($chr);
 
 		    # - Explicit breaks and non-breaks
 
 		    # LB7(1): × SP+
 		    while ($cls == LB_SP) {
 			$pos++;
-			$before{spc} .= $frg;
+			$before{spc} .= $chr;
 			# Treat (sot | eop) SP+  as if it were WJ.
 			$before{cls} = LB_WJ unless defined $before{cls};
 
 			# End of input.
 			last CHARACTER_PAIR if $str_len <= $pos;
-			$frg = substr($str, $pos, 1);
-			$cls = $s->lbclass($frg);
+			$chr = substr($str, $pos, 1);
+			$cls = $s->lbclass($chr);
 		    }
 
 		    # - Mandatory breaks
@@ -289,22 +288,20 @@ sub break_partial ($$) {
 		    if ($cls == LB_BK or $cls == LB_CR or $cls == LB_LF or
 			$cls == LB_NL) {
 			$pos++;
-			$before{spc} .= $frg; # $before{spc} = SP* (BK etc.)
+			$before{spc} .= $chr; # $before{spc} = SP* (NEWLINE)
 			$before{cls} = $cls;
 			# LB5(1): CR × LF
 			if ($cls == LB_CR) {
-			    if ($pos < $str_len) {
-				$frg = substr($str, $pos, 1);
-				$cls = $s->lbclass($frg);
-				if ($cls == LB_LF) {
-				    $pos++;
-				    $before{spc} .= $frg;
-				}
-				$before{eop} = 1;
+			    # End of input - might be partial newline seq.
+			    last CHARACTER_PAIR if $str_len <= $pos;
+			    $chr = substr($str, $pos, 1);
+			    $cls = $s->lbclass($chr);
+			    if ($cls == LB_LF) {
+				$pos++;
+				$before{spc} .= $chr;
 			    }
-			} else {
-			    $before{eop} = 1;
 			}
+			$before{eop} = 1;
 			last CHARACTER_PAIR;
 		    }
 
@@ -314,14 +311,14 @@ sub break_partial ($$) {
 		    if ($cls == LB_ZW) {
 			while ($cls == LB_ZW) {
 			    $pos++;
-			    $before{frg} .= $before{spc}.$frg;
+			    $before{frg} .= $before{spc}.$chr;
 			    $before{spc} = '';
 			    $before{cls} = LB_ZW;
 
 			    # End of input
 			    last CHARACTER_PAIR if $str_len <= $pos;
-			    $frg = substr($str, $pos, 1);
-			    $cls = $s->lbclass($frg);
+			    $chr = substr($str, $pos, 1);
+			    $cls = $s->lbclass($chr);
 			}
 			next;
 		    }
@@ -332,7 +329,17 @@ sub break_partial ($$) {
 		# Fill custom buffer and retry
 		#
 		my @c;
-		if (scalar(@c = $s->_test_custom($str, \$pos))) {
+		my $len;
+		if (scalar(@c = $s->_test_custom($str, $pos, \$len))) {
+		    # End of input - might be partial match.
+		    if (!$eot and $str_len <= $pos + $len) {
+			$s->{_line} = \%line;
+			$s->{_unread} =
+			    $before{frg}.$before{spc}.substr($str, $pos);
+			$s->{_sox} = $sox;
+			return $result;
+		    }
+		    $pos += $len;
 		    push @custom, @c;
 		    next;
 		}
@@ -345,7 +352,7 @@ sub break_partial ($$) {
 
 		# LB1: Assign a line breaking class to each characters.
 		$pos++;
-		%after = ('cls' => $cls, 'frg' => $frg, 'spc' => '');
+		%after = ('cls' => $cls, 'frg' => $chr, 'spc' => '');
 
 		# LB26, LB27: Treat
 		#   (JL* H3 JT* | JL* H2 JV* JT* | JL* JV+ JT* | JL+ | JT+)
@@ -360,13 +367,13 @@ sub break_partial ($$) {
 		    $cls == LB_H2 or $cls == LB_H3) {
 		    my $pcls = $cls;
 		    while ($pos < $str_len) {
-			$frg = substr($str, $pos, 1);
-			$cls = $s->lbclass($frg);
+			$chr = substr($str, $pos, 1);
+			$cls = $s->lbclass($chr);
 			if (($cls == LB_JL or $cls == LB_JV or $cls == LB_JT or
 			     $cls == LB_H2 or $cls == LB_H3) and
 			    $s->lbrule($pcls, $cls) != DIRECT) {
 			    $pos++;
-			    $after{frg} .= $frg;
+			    $after{frg} .= $chr;
 			    $pcls = $cls;
 			    next;
 			}
@@ -380,11 +387,11 @@ sub break_partial ($$) {
 		# LB9: Treat X CM+ as if it were X
 		# where X is anything except BK, CR, LF, NL, SP or ZW
 		while ($pos < $str_len) {
-		    $frg = substr($str, $pos, 1);
-		    $cls = $s->lbclass($frg);
+		    $chr = substr($str, $pos, 1);
+		    $cls = $s->lbclass($chr);
 		    last unless $cls == LB_CM;
 		    $pos++;
-		    $after{frg} .= $frg;
+		    $after{frg} .= $chr;
 		}		    
 
 		# Legacy-CM: Treat SP CM+ as if it were ID.  cf. [UAX #14] 9.1.
@@ -420,7 +427,7 @@ sub break_partial ($$) {
 	} # CHARACTER_PAIR: while (1)
 
 	## Determin line breaking action by classes of adjacent characters.
-	## EOT (and URGENT) are used only internally.
+	## URGENT is used only internally.
 
 	my $action;
 
@@ -506,21 +513,16 @@ sub break_partial ($$) {
 	} # if ($before{eop})
 
         # Check end of input.
-        if (!defined $after{cls} and !scalar @custom and $str_len <= $pos) {
-            # End of text.
-            if ($eot) {
-                $action = EOT;
-	    # End of partial text.
-            } else {
-                # Save status then output partial result.
-                $s->{_line} = \%line;
-		$s->{_unread} = $before{frg}.$before{spc};
-                $s->{_sox} = $sox;
-                return $result;
-            }
+        if (!$eot and !defined $after{cls} and
+	    !scalar @custom and $str_len <= $pos) {
+	    # Save status then output partial result.
+	    $s->{_line} = \%line;
+	    $s->{_unread} = $before{frg}.$before{spc};
+	    $s->{_sox} = $sox;
+	    return $result;
         }
 
-	# After all, possible actions are EOT, MANDATORY and other arbitrary.
+	# After all, possible actions are MANDATORY and other arbitrary.
 
 	### Examine line breaking action
 
@@ -580,23 +582,26 @@ sub break_partial ($$) {
 	} # if ($s->{ColumnsMax} and ...)
 
 	# Mandatory break or end-of-text.
+	if ($eot and !defined $after{cls} and
+	    !scalar @custom and $str_len <= $pos) {
+	    last;
+	}
 	if ($action == MANDATORY) {
 	    # Process mandatory break.
 	    $result .= $s->_format('', $line{frg});
 	    $result .= $s->_format('eop', $line{spc});
 	    $sox = 1; # eop done then sop must be carried out.
 	    %line = ('frg' => '', 'spc' => '', 'cols' => 0);
-	} elsif ($action == EOT) {
-	    # Process end of text.
-	    $result .= $s->_format('', $line{frg});
-	    $result .= $s->_format('eot', $line{spc});
-	    last;
 	}
 
 	# Shift buffers.
 	%before = (%after);
 	%after = ('frg' => '', 'spc' => '');
-    } # while (1)
+    } # TEXT: while (1)
+
+    # Process end of text.
+    $result .= $s->_format('', $line{frg});
+    $result .= $s->_format('eot', $line{spc});
 
     ## Reset status then return the rest of result.
     $s->_reset;
@@ -726,14 +731,20 @@ sub config ($@) {
     # Resolve ambiguous (A) characters to either neutral (N) or fullwidth (F).
     if ($self->{Context} eq 'EASTASIAN') {
 	$self->{_ea_hash} = &_packed_table
-	    (EA_A() => EA_F,
+	    (EA_NZ() => EA_Z,
+	     EA_AZ() => EA_Z,
+	     EA_WZ() => EA_Z,
+	     EA_A() => EA_F,
 	     EA_AnLat() => ($narrowal? EA_N: EA_F),
 	     EA_AnGre() => ($narrowal? EA_N: EA_F),
 	     EA_AnCyr() => ($narrowal? EA_N: EA_F)
 	     );
     } else {
 	$self->{_ea_hash} = &_packed_table
-	    (EA_A() => EA_N,
+	    (EA_NZ() => EA_Z,
+	     EA_AZ() => EA_Z,
+	     EA_WZ() => EA_Z,
+	     EA_A() => EA_N,
 	     EA_AnLat() => EA_N,
 	     EA_AnGre() => EA_N,
 	     EA_AnCyr() => EA_N
@@ -819,10 +830,11 @@ sub _urgent_break ($$$$$$$) {
 sub _test_custom ($$$) {
     my $self = shift;
     my $str = shift;
-    my $posref = shift;
+    my $pos = shift;
+    my $lenref = shift;
     my @custom = ();
 
-    pos($str) = $$posref;
+    pos($str) = $pos;
     foreach my $c (@{$self->{_custom_funcs}}) {
 	my ($re, $func) = @{$c};
 	if ($str =~ /$re/cg) {
@@ -847,7 +859,7 @@ sub _test_custom ($$$) {
 	    last;
 	}
     }
-    $$posref = pos($str);
+    $$lenref = pos($str) - $pos;
     return @custom;
 }
 

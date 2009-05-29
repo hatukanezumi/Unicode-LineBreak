@@ -31,7 +31,7 @@ B<表語文字的な文字>〔ideographic characters〕は、通常、その前�
 これらの用語は文字学の観点からすれば不正確である。
 
 文字列のB<桁数>は、文字列に含まれる文字の数と等しいとはかぎらない。
-個々の文字はB<広い>〔wide〕か、B<狭い>〔narrow〕か、前進を伴わないかのいずれかであり、各々 2 桁、1 桁、0 桁を占める。
+個々の文字はB<広い>〔wide〕か、B<狭い>〔narrow〕か、前進を伴わない〔nonspacing〕かのいずれかであり、各々 2 桁、1 桁、0 桁を占める。
 若干の文字は、使われる文脈によって広くも狭くもなり得る。
 カスタマイズによって、文字はより多様な幅を持ちうる。
 
@@ -50,6 +50,12 @@ KEY => VALUE の対については L</オプション> を参照。
 
 I<インスタンスメソッド>。
 Unicode 文字列 STRING を分割し、それを返す。
+
+=item $self->break_partial (STRING)
+
+I<インスタンスメソッド>。
+break() と同じだが、文字列を少しずつ追加して入力する場合。
+入力が完了したことを示すには、STRING 引数に C<undef> を与える。
 
 =item $self->config (KEY)
 
@@ -74,8 +80,8 @@ I<関数>。
 
 I<インスタンスメソッド>。
 Unicode 文字列 STRING の最初の文字の East_Asian_Width 特性を得る。
-EA_Na、EA_N、EA_W、EA_H、EA_F、EA_z のいずれかの定数が返る。
-EA_z は前進を伴わない (幅のない) 文字を意味する。
+EA_Na、EA_N、EA_W、EA_H、EA_F、EA_Z のいずれかの定数が返る。
+EA_Z は前進を伴わない (幅のない) ことを意味する。
 特性値 A は適切な値に解決する。
 
 =item $self->lbclass (STRING)
@@ -326,9 +332,9 @@ URI を SOLIDUS (スラッシュ) の前で分割する。
 
 =over 4
 
-=item C<EA_Na>, C<EA_N>, C<EA_A>, C<EA_W>, C<EA_H>, C<EA_F>, C<EA_z>
+=item C<EA_Na>, C<EA_N>, C<EA_A>, C<EA_W>, C<EA_H>, C<EA_F>, C<EA_Z>
 
-[UAX #11] で定義される 6 つの East_Asian_Width 特性を表す値と、前進を伴わないことを表す EA_z。
+[UAX #11] で定義される 6 つの East_Asian_Width 特性を表す値と、前進を伴わないことを表す EA_Z。
 
 =item C<LB_I<??>>
 

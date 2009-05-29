@@ -92,7 +92,7 @@ sub exclusive2re {
         $class{$c} = 1;
     }
     @class = ();
-    foreach my $c (@CLASSES) {
+    foreach my $c (@LBCLASSES) {
         push @class, $c unless $class{$c};
     }
     $class = join('|', @class);
@@ -109,10 +109,10 @@ use constant {
 
 EOF
 print CONSTANTS_PM 'our @LB_CLASSES = qw(';
-print CONSTANTS_PM join " ", map { "LB_$_" } @CLASSES;
+print CONSTANTS_PM join " ", map { "LB_$_" } @LBCLASSES;
 print CONSTANTS_PM ");\n\n";
 
-my @rule_classes = grep !/$OMIT/, @CLASSES;
+my @rule_classes = grep !/$OMIT/, @LBCLASSES;
 print RULES_PM <<EOF;
 # Note: Entries related to BK, CR, CM, LF, NL, SP aren't used by break().
 our \$RULES_MAP = [

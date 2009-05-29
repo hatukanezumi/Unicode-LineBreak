@@ -61,16 +61,19 @@ use constant {
 };
 
 use constant {
-    EA_z => 0,
+    EA_Z => 0,
     EA_Na => 1,
     EA_N => 2,
     EA_A => 3,
-    EA_AnLat => 4,
-    EA_AnGre => 5,
-    EA_AnCyr => 6,
-    EA_W => 7,
-    EA_H => 8,
-    EA_F => 9,
+    EA_W => 4,
+    EA_H => 5,
+    EA_F => 6,
+    EA_NZ => 7,
+    EA_AZ => 8,
+    EA_AnLat => 9,
+    EA_AnGre => 10,
+    EA_AnCyr => 11,
+    EA_WZ => 12,
 };
 
 1;

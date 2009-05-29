@@ -1,12 +1,8 @@
 package Unicode::LineBreak;
 
 sub _loadconst { }
-our @MAPs = ();
-sub _loadmap ($$) {
-    my $idx = shift;
-    my $map = shift;
-    $MAPs[$idx] = $map;
-}
+sub _loadlb { }
+sub _loadea { }
 sub _loadrule { }
 sub _packed_table (@) { return {@_}; }
 
@@ -19,10 +15,10 @@ sub _packed_table (@) { return {@_}; }
 # where start and stop stands for a continuous range of UCS ordinal those
 # are assigned property_value.
 sub _bsearch {
-    my $map = $MAPs[shift];
+    my $map = shift;
     my $val = shift;
     my $def = shift;
-    my $res = shift;
+    my $tbl = shift;
 
     my $top = 0;
     my $bot = $#{$map};
@@ -42,7 +38,7 @@ sub _bsearch {
         }
     }
     $result = $def unless defined $result;
-    my $r = $res->{$result};
+    my $r = $tbl->{$result};
     $result = $r if defined $r;
     $result;
 }
@@ -51,14 +47,16 @@ sub eawidth ($$) {
     my $self = shift;
     my $str = shift;
     return undef unless defined $str and length $str;
-    &_bsearch(1, ord($str), EA_A, $self->{_ea_hash});
+    &_bsearch($Unicode::LineBreak::ea_MAP, ord($str), EA_A,
+	      $self->{_ea_hash});
 }
 
 sub lbclass ($$) {
     my $self = shift;
     my $str = shift;
     return undef unless defined $str and length $str;
-    &_bsearch(0, ord($str), LB_XX, $self->{_lb_hash});
+    &_bsearch($Unicode::LineBreak::lb_MAP, ord($str), LB_XX,
+	      $self->{_lb_hash});
 }
 
 sub lbrule ($$$) {
@@ -75,7 +73,7 @@ sub lbrule ($$$) {
 	$result = $action;
     }
     $result = DIRECT unless defined $result;
-    my $r = $res->{$result};
+    my $r = $self->{_rule_hash}->{$result};
     $result = $r if defined $r;
     $result;
 }
@@ -128,10 +126,14 @@ sub strsize ($$$$$;$) {
 	    $pos++;
 	    $width = $self->eawidth($c);
 	}
-	# After all, possible widths are non-spacing (z), wide (F/W) or
+	if ($length <= $pos) {
+	    last;
+	}
+
+	# After all, possible widths are nonspacing, wide (F/W) or
 	# narrow (H/N/Na).
 
-	if ($width == EA_z) {
+	if ($width == EA_Z) {
 	    $w = 0;
 	} elsif ($width == EA_F or $width == EA_W) {
 	    $w = 2;

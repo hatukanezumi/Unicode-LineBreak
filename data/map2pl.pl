@@ -1,13 +1,14 @@
 #-*- perl -*-
 
+require "lbclasses.pl";
+
 my $cat = $ARGV[3] || die;
 if ($cat eq 'lb') {
-    require "lbclasses.pl";
-    %CLASSES = map { ($_ => 1) } @CLASSES;
+    @CLASSES = @LBCLASSES;
 } else {
-    @CLASSES = ();
-    %CLASSES = ();
+    @CLASSES = @EAWIDTHS;
 }
+%CLASSES = map { ($_ => 1) } @CLASSES;
 
 my @PROPS;
 my %PROP_EXCEPTIONS;

@@ -4,6 +4,8 @@ MODULE_VERSION = 0.005
 #BETA_VERSION = 01
 UNICODE_VERSION = 5.1.0
 
+WGET = wget
+UCD_BASE = http://www.unicode.org/Public/$(UNICODE_VERSION)/ucd/
 UNICODEDATA = UnicodeData-$(UNICODE_VERSION).txt
 LINEBREAK = LineBreak-$(UNICODE_VERSION).txt
 EASTASIANWIDTH = EastAsianWidth-$(UNICODE_VERSION).txt
@@ -74,7 +76,11 @@ $(VERSION_PM): $(DATA_PM) $(RULES_PM) makefile
 EastAsianWidth.custom: $(UNICODEDATA) $(EASTASIANWIDTH)
 	( \
 	  echo '## Zero-width characters.'; \
-	  perl -ne '@_=split(/;/,$$_); print "$$_[0];z # $$_[1]\n" if $$_[2]=~/M.|Cc|Cf|Zl|Zp/' $(UNICODEDATA); \
+	  perl -ne '/^([^;]*);[^;]*;(Me|Mn|Cc|Cf|Zl|Zp);/ && print "$$1\n"' \
+	  $(UNICODEDATA) | \
+	  perl -ne 'BEGIN { while (<STDIN>) {chomp $$_; $$Z{$$_}=1} }' \
+	  -e 's/^([^;]+)(;\w+)/$$1$${2}Z/; print "$$_" if $$Z{$$1}' \
+	  $(EASTASIANWIDTH); \
 	  echo ''; \
 	  echo '## Ambiguous width alphabetics.'; \
 	  perl -ne '/# LATIN (CAPITAL|SMALL) (LETTER|LIGATURE)/ && s/;A /;AnLat / && print;' \
@@ -100,6 +106,14 @@ LineBreak.custom: $(UNICODEDATA) $(LINEBREAK)
 	      -e '/MASU MARK/s/;NS /;NSidMasu /p' \
 	  $(LINEBREAK) \
 	) > $@
+
+unicodedata: $(UNICODEDATA) $(LINEBREAK) $(EASTASIANWIDTH)
+$(UNICODEDATA):
+	$(WGET) -O $@ $(UCD_BASE)UnicodeData.txt
+$(LINEBREAK):
+	$(WGET) -O $@ $(UCD_BASE)LineBreak.txt
+$(EASTASIANWIDTH):
+	$(WGET) -O $@ $(UCD_BASE)EastAsianWidth.txt
 
 clean:
 	rm -f $(DATA_PM) Constants.* $(CONSTANTS_PM) $(RULES_PM) $(VERSION_PM)

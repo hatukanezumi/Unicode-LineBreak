@@ -1,12 +1,7 @@
 use 5.008;
 use ExtUtils::MakeMaker;
 
-my @noxs;
-if (scalar @ARGV and $ARGV[0] eq 'noxs') {
-    @noxs = ('XS' => {}, 'C' => []);
-} else {
-    @noxs = ();
-}
+my @noxs = $ARGV[0] eq 'noxs'? ('XS' => {}, 'C' => []): ();
 
 WriteMakefile(
 	'NAME'		=> 'Unicode::LineBreak',

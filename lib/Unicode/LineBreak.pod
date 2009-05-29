@@ -37,7 +37,7 @@ both before and after themselves.
 These terms are inaccurate from the point of view by grammatology.
 
 B<Number of columns> of a string is not always equal to the number of characters it contains:
-Each of characters is either B<wide>, B<narrow> or non-spacing;
+Each of characters is either B<wide>, B<narrow> or nonspacing;
 they occupy 2, 1 or 0 columns, respectively.
 Several characters may be both wide and narrow by the contexts they are used.
 Characters may have more various widths by customization.
@@ -57,6 +57,12 @@ About KEY => VALUE pairs see L</Options>.
 
 I<Instance method>.
 Break Unicode string STRING and returns it.
+
+=item $self->break_partial (STRING)
+
+I<Instance method>.
+Same as break() but accepts incremental inputs.
+Give C<undef> as STRING argument to specify that input was completed.
 
 =item $self->config (KEY)
 
@@ -82,8 +88,8 @@ language LANGUAGE.
 I<Instance method>.
 Get East_Asian_Width property of the first character of Unicode string
 STRING.
-One of constants EA_Na, EA_N, EA_W, EA_H, EA_F and EA_z will be returned.
-EA_z means non-spacing (zero width) character.
+One of constants EA_Na, EA_N, EA_W, EA_H, EA_F and EA_Z will be returned.
+EA_Z means nonspacing (zero width) character.
 Property value A will be resolved to other appropriate values. 
 
 =item $self->lbclass (STRING)
@@ -354,10 +360,10 @@ For more details see L</User-Defined Breaking Behaviors>.
 
 =over 4
 
-=item C<EA_Na>,	C<EA_N>, C<EA_A>, C<EA_W>, C<EA_H>, C<EA_F>, C<EA_z>
+=item C<EA_Na>,	C<EA_N>, C<EA_A>, C<EA_W>, C<EA_H>, C<EA_F>, C<EA_Z>
 
 Index values to specify 6 East_Asian_Width properties
-defined by [UAX #11], and EA_z to specify non-spacing.
+defined by [UAX #11], and EA_Z to specify nonspacing.
 
 =item C<LB_I<??>>
 

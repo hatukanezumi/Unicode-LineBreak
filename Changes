@@ -1,10 +1,12 @@
-0.005.510  Xxx Xxx XX 2009
+0.005.510  Sat May 29 2009
 
 	* Chg: renamed functions: remove ``get-''.
 	* New: break_partial() method.
-	* Imp: XS'ized strsize().
 	* New: eawidth() method, XS'ized.
+	* Imp: XS'ized strsize().
 	* Fix: lbclass(): use SV* instead of char*.
+	* Fix: Mc characters aren't nonspacing: Mn, Me, Cc, Cf, Zl and Zp
+	  are nonspacing.
 	* Cleanup codes and PODs.
 
 0.004.510  Sat May 23 2009
