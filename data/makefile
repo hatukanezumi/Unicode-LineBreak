@@ -1,7 +1,7 @@
 ## 
 
-MODULE_VERSION = 0.005
-#BETA_VERSION = 01
+MODULE_VERSION = 1.000
+BETA_VERSION = 01
 UNICODE_VERSION = 5.1.0
 
 WGET = wget
@@ -96,7 +96,7 @@ LineBreak.custom: $(UNICODEDATA) $(LINEBREAK)
 	  sed -ne 's/^\([^;]*\);SA .*/\1/p' $(LINEBREAK) | \
 	  perl -ne 'BEGIN { while (<STDIN>) {chomp $$_; $$SA{$$_}=1} }' \
 	  -e '@_=split(/;/);' \
-	  -e 'if ($$SA{$$_[0]}) { if ($$_[2]=~/Mc|Mn/) { print "$$_[0];SAcm # $$_[1]\n" } else { print "$$_[0];SAal # $$_[1]\n" } }' \
+	  -e 'if ($$SA{$$_[0]}) { $$l = ($$_[1] =~ /^THAI /)? "Thai": ""; if ($$_[2]=~/Mc|Mn/) { print "$$_[0];SAcm$$l # $$_[1]\n" } else { print "$$_[0];SAal$$l # $$_[1]\n" } }' \
 	  $(UNICODEDATA); \
 	  echo ''; \
 	  echo '## NS characters optionally treated as ID.'; \

@@ -52,12 +52,14 @@ use constant {
     LB_AI => 33,
     LB_SA => 34,
     LB_XX => 35,
-    LB_SAal => 36,
-    LB_SAcm => 37,
-    LB_NSidIter => 38,
-    LB_NSidMasu => 39,
-    LB_NSidKana => 40,
-    LB_NSidLong => 41,
+    LB_SAalThai => 36,
+    LB_SAcmThai => 37,
+    LB_SAal => 38,
+    LB_SAcm => 39,
+    LB_NSidIter => 40,
+    LB_NSidMasu => 41,
+    LB_NSidKana => 42,
+    LB_NSidLong => 43,
 };
 
 use constant {

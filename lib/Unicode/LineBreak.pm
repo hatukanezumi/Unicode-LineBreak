@@ -197,7 +197,7 @@ sub break ($$) {
     my $self = shift;
     my $str = shift;
     return '' unless defined $str and length $str;
-    return $self->break_partial($str).$self->break_partial(undef);
+    return $self->break_partial($str) . $self->break_partial(undef);
 }
 
 sub break_partial ($$) {
@@ -329,6 +329,7 @@ sub break_partial ($$) {
 		# Fill custom buffer and retry
 		#
 		my @c;
+		# Custom Breaking.
 		my $len;
 		if (scalar(@c = $s->_test_custom($str, $pos, \$len))) {
 		    # End of input - might be partial match.
@@ -341,6 +342,30 @@ sub break_partial ($$) {
 		    }
 		    $pos += $len;
 		    push @custom, @c;
+		    next;
+		}
+		# Break SA sequence.
+		my $frg = '';
+		while ($cls == LB_SA) {
+		    $pos++;
+		    $frg .= $chr;
+		    # End of input.
+		    last if $str_len <= $pos;
+		    $chr = substr($str, $pos, 1);
+		    $cls = $s->lbclass($chr);
+		}
+		if ($frg) {
+		    # End of input - might be partial sequence.
+		    if (!$eot and $str_len <= $pos) {
+			$s->{_line} = \%line;
+			$s->{_unread} = $before{frg}.$before{spc}.$frg;
+			$s->{_sox} = $sox;
+			return $result;
+		    }
+		    @c = Unicode::LineBreak::Thai::userbreak($frg);
+		    push @custom, map { {'cls' => LB_AL,
+					 'frg' => $_, 'spc' => '',
+				         'urg' => 1}; } @c;
 		    next;
 		}
 
@@ -717,9 +742,20 @@ sub config ($@) {
 
     ## Customization of character properties and rules.
     # Resolve AI, SA, SG, XX.  Won't resolve CB.
+    my @sa;
+    if (Unicode::LineBreak::Thai::supported()) {
+	@sa = (LB_SAcmThai() => LB_SA,
+	       LB_SAalThai() => LB_SA,
+	       );
+    } else {
+	@sa = (LB_SAcmThai() => LB_CM,
+	       LB_SAalThai() => LB_AL,
+	       );
+    }
     $self->{_lb_hash} = &_packed_table
 	(LB_SAal() => LB_AL,
 	 LB_SAcm() => LB_CM,
+	 @sa,
 	 LB_SG() => LB_AL,
 	 LB_XX() => LB_AL,
 	 LB_AI() => ($self->{Context} eq 'EASTASIAN'? LB_ID: LB_AL),

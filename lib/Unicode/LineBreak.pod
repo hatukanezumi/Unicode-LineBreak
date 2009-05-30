@@ -35,6 +35,8 @@ B<Ideographic characters> are characters that usually allow line breaks
 both before and after themselves.
 [UAX #14] classifies most of alphabetic to AL and most of ideographic to ID.
 These terms are inaccurate from the point of view by grammatology.
+On several scripts, breaking points are not obvious by each characters
+therefore heuristic based on dictionary is used.
 
 B<Number of columns> of a string is not always equal to the number of characters it contains:
 Each of characters is either B<wide>, B<narrow> or nonspacing;
@@ -99,32 +101,14 @@ Get line breaking property (class) of the first character of Unicode string
 STRING.
 Classes AI, SA, SG and XX will be resolved to other
 appropriate classes. 
+However, when word segmentation for South East Asian scripts is enabled,
+characters of supported scripts (currently Thai only) will be kept SA.
 
 =item $self->lbrule (BEFORE, AFTER)
 
 I<Instance method>.
 Get line breaking rule between class BEFORE and class AFTER.
-One of following constants will be returned.
-
-=over 4
-
-=item C<MANDATORY>
-
-Mandatory break.
-
-=item C<DIRECT>
-
-Both direct break and indirect break are allowed.
-
-=item C<INDIRECT>
-
-Indirect break is allowed, but direct break is prohibited.
-
-=item C<PROHIBITED>
-
-Prohibited break.
-
-=back
+See </Constants> for returned value.
 
 B<Note>:
 This method might not give appropriate value related to classes
@@ -376,7 +360,10 @@ An array of all classes above.
 
 =item C<MANDATORY>, C<DIRECT>, C<INDIRECT>, C<PROHIBITED>
 
-4 values to specify line breaking behaviors.
+4 values to specify line breaking behaviors:
+Mandatory break; Both direct break and indirect break are allowed;
+Indirect break is allowed but direct break is prohibited;
+Prohibited break.
 
 =item C<$UNICODE_VERSION>
 
@@ -537,7 +524,8 @@ Character(s) assigned to CB are not resolved.
 
 =item *
 
-Characters assigned to SA are resolved to AL,
+When word segmentation for South East Asian languages is not supported,
+characters assigned to SA are resolved to AL,
 except that characters that have General_Category Mn or Mc be resolved to CM.
 
 =item *

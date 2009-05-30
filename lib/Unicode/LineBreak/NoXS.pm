@@ -126,9 +126,6 @@ sub strsize ($$$$$;$) {
 	    $pos++;
 	    $width = $self->eawidth($c);
 	}
-	if ($length <= $pos) {
-	    last;
-	}
 
 	# After all, possible widths are nonspacing, wide (F/W) or
 	# narrow (H/N/Na).
@@ -151,5 +148,10 @@ sub strsize ($$$$$;$) {
 
     $max? $idx: $len;
 }
+
+package Unicode::LineBreak::Thai;
+
+sub userbreak { return (shift); }
+sub supported { return 0; }
 
 1;

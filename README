@@ -5,8 +5,18 @@ Copyright (C) 2009 by Hatuka*nezumi - IKEDA Soji <hatuka(at)nezumi.nu>.
 This package is free software; you can redistribute it and/or modify it 
 under the same terms as Perl itself.
 
+Requirements
+============
+
+Perl 5.8.0 or later is required.
+
+Optionally, libthai package is needed to support Thai word segmentation:
+    http://linux.thai.net/projects/libthai
+
 Install
 =======
+
+To build and install Unicode-LineBreak package, do:
 
 $ perl Makefile.PL
 $ make
@@ -19,6 +29,8 @@ $ perl Makefile.PL noxs
 $ make
 $ make test
 # make install
+
+Note that non-XS version does not support libthai features.
 
 Documentations
 ==============

@@ -1,4 +1,9 @@
-0.005.510  Sat May 29 2009
+1.000_01  Sat May 30 2009
+
+	* Fix: broken non-XS strsize().
+	* New: Added Thai word segmentation using libthai.
+
+0.005.510  Fri May 29 2009
 
 	* Chg: renamed functions: remove ``get-''.
 	* New: break_partial() method.

@@ -2,6 +2,10 @@
 #include "perl.h"
 #include "XSUB.h"
 #include "ppport.h"
+#if USE_LIBTHAI
+#    include "thai/thwchar.h"
+#    include "thai/thwbrk.h"
+#endif /* USE_LIBTHAI */
 
 #define PROP_UNKNOWN ((propval_t)(-1))
 
@@ -36,6 +40,11 @@ static size_t eamapsiz = 0;
 static propval_t **rulemap = NULL;
 static size_t rulemapsiz = 0;
 
+/*
+ * Utilities
+ */
+
+static
 unistr_t *_unistr_concat(unistr_t *buf, unistr_t *a, unistr_t *b)
 {
     if (!buf) {
@@ -68,6 +77,7 @@ unistr_t *_unistr_concat(unistr_t *buf, unistr_t *a, unistr_t *b)
     return buf;
 }
 
+static
 propval_t _search_packed_table(unsigned int *tbl, propval_t val)
 {
     size_t tbllen, i;
@@ -96,6 +106,7 @@ propval_t _search_packed_table(unsigned int *tbl, propval_t val)
  * where start and stop stands for a continuous range of UCS ordinal those
  * are assigned property_value.
  */
+static
 propval_t _bsearch(mapent_t* map, size_t mapsiz, unichar_t c, propval_t def,
     unsigned int *tbl)
 {
@@ -122,6 +133,10 @@ propval_t _bsearch(mapent_t* map, size_t mapsiz, unichar_t c, propval_t def,
 	result = def;
     return _search_packed_table(tbl, result);
 }
+
+/*
+ * Exports
+ */
 
 propval_t eawidth(linebreakObj *obj, unichar_t c)
 {
@@ -160,7 +175,7 @@ size_t strsize(linebreakObj *obj,
 	return max? 0: len;
 
     if (_unistr_concat(&spcstr, spc, str) == NULL)
-	return PROP_UNKNOWN;
+	return -1;
     length = spcstr.len;
     idx = 0;
     pos = 0;
@@ -248,13 +263,12 @@ constent_t _constent[] = {
     { NULL, NULL },
 };
 
+static
 mapent_t *_loadmap(mapent_t *propmap, SV *mapref, size_t *mapsiz)
 {
     size_t n;
-    unichar_t beg, end;
     AV * map;
     AV * ent;
-    propval_t prop;
 
     if (propmap)
 	free(propmap);
@@ -270,17 +284,15 @@ mapent_t *_loadmap(mapent_t *propmap, SV *mapref, size_t *mapsiz)
     } else {
 	for (n = 0; n < *mapsiz; n++) {
 	    ent = (AV *)SvRV(*av_fetch(map, n, 0));
-	    beg = SvUV(*av_fetch(ent, 0, 0));
-	    end = SvUV(*av_fetch(ent, 1, 0));
-	    prop = SvIV(*av_fetch(ent, 2, 0));
-	    propmap[n].beg = beg;
-	    propmap[n].end = end;
-	    propmap[n].prop = prop;
+	    propmap[n].beg = SvUV(*av_fetch(ent, 0, 0));
+	    propmap[n].end = SvUV(*av_fetch(ent, 1, 0));
+	    propmap[n].prop = SvIV(*av_fetch(ent, 2, 0));
 	}
     }
     return propmap;
 }
 
+static
 unsigned int *_get_packed_table(SV *obj, char *name)
 {
     SV *sv;
@@ -299,6 +311,7 @@ unsigned int *_get_packed_table(SV *obj, char *name)
     return tbl;
 }
 
+static
 unistr_t *_utf8touni(unistr_t *buf, SV *str)
 {
     U8 *utf8, *utf8ptr;
@@ -336,6 +349,55 @@ unistr_t *_utf8touni(unistr_t *buf, SV *str)
     return buf;
 }
 
+#if USE_LIBTHAI
+
+static
+wchar_t *_utf8towstr(SV *str)
+{
+    unistr_t unistr = {0, 0};
+    wchar_t *wstr, *p;
+    size_t i;
+
+    _utf8touni(&unistr, str);
+    if ((wstr = malloc(sizeof(wchar_t) * (unistr.len + 1))) == NULL)
+	croak("_utf8towchar: Cannot allocate memory");
+    for (p = wstr, i = 0; unistr.str && i < unistr.len; i++)
+	*(p++) = (unistr.str)[i];
+    *p = 0;
+    if (unistr.str) free(unistr.str);
+    return wstr;
+}
+
+static
+SV *_wstrtoutf8(wchar_t *unistr, size_t unilen)
+{
+    U8 *buf = NULL, *newbuf;
+    STRLEN utf8len;
+    wchar_t *uniptr;
+    SV *utf8;
+
+    utf8len = 0;
+    uniptr = unistr;
+    while (uniptr < unistr + unilen && *uniptr) {
+	if ((newbuf = realloc(buf,
+			      sizeof(U8) * (utf8len + UTF8_MAXBYTES + 1)))
+	    == NULL) {
+	    croak("_wstrtoutf8: Cannot allocate memory");
+	}
+	buf = newbuf;
+	utf8len = uvuni_to_utf8(buf + utf8len, *uniptr) - buf;
+	uniptr++;
+    }
+
+    utf8 = newSVpvn((char *)(void *)buf, utf8len);
+    SvUTF8_on(utf8);
+    free(buf);
+    return utf8;
+}
+
+#endif /* USE_LIBTHAI */
+
+static
 linebreakObj *_selftoobj(linebreakObj *obj, SV *self)
 {
     if (!obj && (obj = malloc(sizeof(linebreakObj))) == NULL)
@@ -545,7 +607,48 @@ strsize(self, len, pre, spc, str, ...)
 	if (unipre.str) free(unipre.str);
 	if (unispc.str) free(unispc.str);
 	if (unistr.str) free(unistr.str);
-	if (RETVAL == PROP_UNKNOWN)
+	if (RETVAL == -1)
 	    croak("strsize: Can't allocate memory");
     OUTPUT:
 	RETVAL
+
+MODULE = Unicode::LineBreak	PACKAGE = Unicode::LineBreak::Thai
+
+void
+userbreak(str)
+	SV *str;
+    INIT:
+#if USE_LIBTHAI
+	SV *utf8;
+	int pos;
+	wchar_t *line = NULL, *p;
+#endif /* USE_LIBTHAI */
+    PPCODE:
+	if (!SvOK(str))
+	    return;
+#if USE_LIBTHAI
+	line = _utf8towstr(str);
+	p = line;
+	while (*p && th_wbrk(p, &pos, 1)) {
+	    utf8 = _wstrtoutf8(p, pos);
+	    XPUSHs(sv_2mortal(utf8));
+	    p += pos;
+	}
+	if (*p) {
+	    for (pos = 0; p[pos]; pos++) ;
+	    utf8 = _wstrtoutf8(p, pos);
+	    XPUSHs(sv_2mortal(utf8));
+	}
+
+	free(line);
+#else
+	XPUSHs(sv_2mortal(str));
+#endif /* USE_LIBTHAI */
+
+int
+supported()
+    CODE:
+	RETVAL = USE_LIBTHAI;
+    OUTPUT:
+	RETVAL
+
