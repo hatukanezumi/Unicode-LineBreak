@@ -152,6 +152,6 @@ sub strsize ($$$$$;$) {
 package Unicode::LineBreak::Thai;
 
 sub userbreak { return (shift); }
-sub supported { return 0; }
+sub supported { return undef; }
 
 1;

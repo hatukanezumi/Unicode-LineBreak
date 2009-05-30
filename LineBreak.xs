@@ -2,7 +2,7 @@
 #include "perl.h"
 #include "XSUB.h"
 #include "ppport.h"
-#if USE_LIBTHAI
+#ifdef USE_LIBTHAI
 #    include "thai/thwchar.h"
 #    include "thai/thwbrk.h"
 #endif /* USE_LIBTHAI */
@@ -349,7 +349,7 @@ unistr_t *_utf8touni(unistr_t *buf, SV *str)
     return buf;
 }
 
-#if USE_LIBTHAI
+#ifdef USE_LIBTHAI
 
 static
 wchar_t *_utf8towstr(SV *str)
@@ -618,7 +618,7 @@ void
 userbreak(str)
 	SV *str;
     INIT:
-#if USE_LIBTHAI
+#ifdef USE_LIBTHAI
 	SV *utf8;
 	int pos;
 	wchar_t *line = NULL, *p;
@@ -626,7 +626,7 @@ userbreak(str)
     PPCODE:
 	if (!SvOK(str))
 	    return;
-#if USE_LIBTHAI
+#ifdef USE_LIBTHAI
 	line = _utf8towstr(str);
 	p = line;
 	while (*p && th_wbrk(p, &pos, 1)) {
@@ -645,10 +645,14 @@ userbreak(str)
 	XPUSHs(sv_2mortal(str));
 #endif /* USE_LIBTHAI */
 
-int
+char *
 supported()
     CODE:
+#ifdef USE_LIBTHAI
 	RETVAL = USE_LIBTHAI;
+#else
+	XSRETURN_UNDEF;
+#endif /* USE_LIBTHAI */
     OUTPUT:
 	RETVAL
 

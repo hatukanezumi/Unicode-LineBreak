@@ -4,8 +4,9 @@ require "t/lb.pl";
 
 BEGIN { plan tests => 1 }
 
-if (Unicode::LineBreak::Thai::supported()) {
-    diag("libthai supported.");
+my $libthai = Unicode::LineBreak::Thai::supported();
+if ($libthai) {
+    diag("libthai $libthai supported.");
     dotest('th', 'th');
 } else {
     diag("libthai not supported.");

@@ -1,15 +1,15 @@
 use 5.008;
 use ExtUtils::MakeMaker;
 
-my @opts = ('DEFINE' => "-DUSE_LIBTHAI=0");
+my @opts = ();
 if ($ARGV[0] eq 'noxs') {
     @opts = ('XS' => {}, 'C' => []);
 } elsif (!$ARGV[0] or $ARGV[0] ne 'nolibthai') {
     my $libthai = `pkg-config --modversion libthai`;
     chomp $libthai;
     if ($libthai) {
-	print "Use libthai\n";
-	@opts = ('DEFINE' => "-DUSE_LIBTHAI=1",
+	print "Use libthai $libthai\n";
+	@opts = ('DEFINE' => "-DUSE_LIBTHAI=\\\"$libthai\\\"",
 		 'INC' => `pkg-config --cflags libthai`,
 		 'LIBS' => `pkg-config --libs libthai`,
 		 );
