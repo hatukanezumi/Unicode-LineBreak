@@ -1,3 +1,8 @@
+1.000_02  Xxx Xxx XX 2009
+
+	* Fix: correct th tests.
+	* Imp: strsize(): Take care of combining character sequence.
+
 1.000_01  Sat May 30 2009
 
 	* Fix: broken non-XS strsize().

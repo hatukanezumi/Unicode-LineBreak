@@ -97,9 +97,7 @@ sub strsize ($$$$$;$) {
     while (1) {
 	my ($clen, $c, $cls, $nc, $ncls, $width, $w);
 
-	if ($length <= $pos) {
-	    last;
-	}
+	last if $length <= $pos;
 	$c = substr($spcstr, $pos, 1);
 	$cls = $self->lbclass($c);
 	$clen = 1;
@@ -121,22 +119,26 @@ sub strsize ($$$$$;$) {
 		}
 		last;
 	    } 
-	    $width = EA_W;
+	    $w = 2;
 	} else {
 	    $pos++;
 	    $width = $self->eawidth($c);
+	    if ($width == EA_Z) { $w = 0; }
+	    elsif ($width == EA_F or $width == EA_W) { $w = 2; }
+	    else { $w = 1; }
+	}
+	while ($pos < $length) {
+	    $c = substr($spcstr, $pos, 1);
+	    $cls = $self->lbclass($c);
+	    last unless $cls == LB_CM;
+	    $pos++;
+	    $clen++;
+	    $width = $self->eawidth($c);
+	    if ($width == EA_Z) { ; }
+	    elsif ($width == EA_F or $width == EA_W) { $w += 2; }
+	    else { $w += 1; }
 	}
 
-	# After all, possible widths are nonspacing, wide (F/W) or
-	# narrow (H/N/Na).
-
-	if ($width == EA_Z) {
-	    $w = 0;
-	} elsif ($width == EA_F or $width == EA_W) {
-	    $w = 2;
-	} else {
-	    $w = 1;
-	}
 	if ($max and $max < $len + $w) {
 	    $idx -= length $spc;
 	    $idx = 0 unless 0 < $idx;

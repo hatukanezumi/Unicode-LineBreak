@@ -29,7 +29,7 @@ typedef struct {
     unsigned int *rule_tbl;
 } linebreakObj;
 
-static propval_t LB_H2, LB_H3, LB_JL, LB_JV, LB_JT, LB_XX;
+static propval_t LB_CM, LB_H2, LB_H3, LB_JL, LB_JV, LB_JT, LB_XX;
 static propval_t EA_Z, EA_A, EA_W, EA_F;
 static propval_t DIRECT;
 
@@ -208,23 +208,33 @@ size_t strsize(linebreakObj *obj,
 		}
 		break;
 	    } 
-	    width = EA_W;
+	    w = 2;
 	} else {
 	    pos++;
 	    width = eawidth(obj, c);
+	    if (width == EA_Z)
+		w = 0;
+	    else if (width == EA_F || width == EA_W)
+		w = 2;
+	    else
+		w = 1;
 	}
-	/*
-	 * After all, possible widths are nonspacing, wide (F/W) or
-	 * narrow (H/N/Na).
-	 */
+	while (pos < length) {
+	    c = spcstr.str[pos];
+	    cls = lbclass(obj, c);
+	    if (cls != LB_CM)
+		break;
+	    pos++;
+	    clen++;
+	    width = eawidth(obj, c);
+	    if (width == EA_Z)
+		;
+	    else if (width == EA_F || width == EA_W)
+		w += 2;
+	    else
+		w += 1;
+        }
 
-	if (width == EA_Z) {
-	    w = 0;
-	} else if (width == EA_F || width == EA_W) {
-	    w = 2;
-	} else {
-	    w = 1;
-	}
 	if (max && max < len + w) {
 	    idx -= spc->len;
 	    if (idx < 0)
@@ -253,6 +263,7 @@ constent_t _constent[] = {
     { "EA_A", &EA_A }, 
     { "EA_W", &EA_W }, 
     { "EA_F", &EA_F }, 
+    { "LB_CM", &LB_CM },
     { "LB_H2", &LB_H2 },
     { "LB_H3", &LB_H3 },
     { "LB_JL", &LB_JL },
