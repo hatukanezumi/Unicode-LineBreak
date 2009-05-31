@@ -258,6 +258,7 @@ typedef struct {
     char *name;
     propval_t *ptr;
 } constent_t;
+static
 constent_t _constent[] = {
     { "EA_Z", &EA_Z }, 
     { "EA_A", &EA_A }, 
@@ -371,7 +372,7 @@ wchar_t *_utf8towstr(SV *str)
 
     _utf8touni(&unistr, str);
     if ((wstr = malloc(sizeof(wchar_t) * (unistr.len + 1))) == NULL)
-	croak("_utf8towchar: Cannot allocate memory");
+	croak("_utf8towstr: Cannot allocate memory");
     for (p = wstr, i = 0; unistr.str && i < unistr.len; i++)
 	*(p++) = (unistr.str)[i];
     *p = 0;

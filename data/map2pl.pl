@@ -20,7 +20,7 @@ foreach my $n (1, 0) {
 	s/\s*\#.*//;
 	next unless /\S/;
 
-	my ($char, $prop) = split /;/, $_;
+	my ($char, $prop) = split /\s*;\s*/, $_;
 	next unless $prop =~ /^\w+$/;
 	my ($start, $end) = ();
 	($start, $end) = split /\.\./, $char;

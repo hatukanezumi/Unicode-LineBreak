@@ -745,20 +745,16 @@ sub config ($@) {
 
     ## Customization of character properties and rules.
     # Resolve AI, SA, SG, XX.  Won't resolve CB.
-    my @sa;
+    my @lb_sa;
     if (Unicode::LineBreak::SouthEastAsian::supported()) {
-	@sa = (LB_SAcmThai() => LB_SA,
-	       LB_SAalThai() => LB_SA,
-	       );
+	@lb_sa = (LB_SAalThai() => LB_SA, LB_SAcmThai() => LB_SA);
     } else {
-	@sa = (LB_SAcmThai() => LB_CM,
-	       LB_SAalThai() => LB_AL,
-	       );
+	@lb_sa = (LB_SAalThai() => LB_AL, LB_SAcmThai() => LB_CM);
     }
     $self->{_lb_hash} = &_packed_table
 	(LB_SAal() => LB_AL,
 	 LB_SAcm() => LB_CM,
-	 @sa,
+	 @lb_sa,
 	 LB_SG() => LB_AL,
 	 LB_XX() => LB_AL,
 	 LB_AI() => ($self->{Context} eq 'EASTASIAN'? LB_ID: LB_AL),
@@ -768,28 +764,23 @@ sub config ($@) {
 	 LB_NSidMasu() => ($self->{NSKanaAsID} =~ /MASU/? LB_ID: LB_NS),
 	 );
     # Resolve ambiguous (A) characters to either neutral (N) or fullwidth (F).
+    my @ea_a;
     if ($self->{Context} eq 'EASTASIAN') {
-	$self->{_ea_hash} = &_packed_table
-	    (EA_NZ() => EA_Z,
-	     EA_AZ() => EA_Z,
-	     EA_WZ() => EA_Z,
-	     EA_A() => EA_F,
-	     EA_AnLat() => ($narrowal? EA_N: EA_F),
-	     EA_AnGre() => ($narrowal? EA_N: EA_F),
-	     EA_AnCyr() => ($narrowal? EA_N: EA_F)
-	     );
+	@ea_a = (EA_A() => EA_F,
+		 EA_AnLat() => ($narrowal? EA_N: EA_F),
+		 EA_AnGre() => ($narrowal? EA_N: EA_F),
+		 EA_AnCyr() => ($narrowal? EA_N: EA_F)
+		 );
     } else {
-	$self->{_ea_hash} = &_packed_table
-	    (EA_NZ() => EA_Z,
-	     EA_AZ() => EA_Z,
-	     EA_WZ() => EA_Z,
-	     EA_A() => EA_N,
-	     EA_AnLat() => EA_N,
-	     EA_AnGre() => EA_N,
-	     EA_AnCyr() => EA_N
-	     );
+	@ea_a = (EA_A() => EA_N,
+		 EA_AnLat() => EA_N,
+		 EA_AnGre() => EA_N,
+		 EA_AnCyr() => EA_N
+		 );
     }
-    # Core rules: No customization.
+    $self->{_ea_hash} = &_packed_table
+	(EA_NZ() => EA_Z, EA_AZ() => EA_Z, EA_WZ() => EA_Z, @ea_a);
+    # Line breaking rules: No customization.
     $self->{_rule_hash} = &_packed_table();
 
     # Other options

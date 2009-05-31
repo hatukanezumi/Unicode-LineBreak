@@ -81,22 +81,23 @@ I<関数>。
 
 I<インスタンスメソッド>。
 Unicode 文字列 STRING の最初の文字の East_Asian_Width 特性を得る。
-EA_Na、EA_N、EA_W、EA_H、EA_F、EA_Z のいずれかの定数が返る。
+返値については L</定数> を参照。
 EA_Z は前進を伴わない (幅のない) ことを意味する。
-特性値 A は適切な値に解決する。
+特性値 A (曖昧) は適切な値に解決する。
 
 =item $self->lbclass (STRING)
 
 I<インスタンスメソッド>。
 Unicode 文字列 STRING の最初の文字の行分割特性 (分類) を得る。
+返値については L</定数> を参照。
 AI、SA、SG、XX の各分類は他の適切な分類に解決する。
 ただし、東南アジアの用字系のための単語分節が有効になっているときは、対応している用字系 (現在はタイ文字のみ) の文字の特性を SA のまま解決しない。
 
 =item $self->lbrule (BEFORE, AFTER)
 
 I<インスタンスメソッド>。
-分類 BEFORE と分類 AFTER の間での行分割規則を得る。
-返値については </定数> を参照。
+分類 BEFORE と分類 AFTER の間での行分割動作を得る。
+返値については L</定数> を参照。
 
 B<注>:
 このメソッドは、BK、CM、CR、LF、NL、SP の各分類に関わる規則については適切な値を返せないかもしれない。
@@ -318,7 +319,7 @@ URI を SOLIDUS (スラッシュ) の前で分割する。
 
 [UAX #11] で定義される 6 つの East_Asian_Width 特性を表す値と、前進を伴わないことを表す EA_Z。
 
-=item C<LB_I<??>>
+=item C<LB_BK>, C<LB_CR>, C<LB_LF>, C<LB_NL>, C<LB_SP>, C<LB_OP>, C<LB_CL>, C<LB_QU>, C<LB_GL>, C<LB_NS>, C<LB_EX>, C<LB_SY>, C<LB_IS>, C<LB_PR>, C<LB_PO>, C<LB_NU>, C<LB_AL>, C<LB_ID>, C<LB_IN>, C<LB_HY>, C<LB_BA>, C<LB_BB>, C<LB_B2>, C<LB_CB>, C<LB_ZW>, C<LB_CM>, C<LB_WJ>, C<LB_H2>, C<LB_H3>, C<LB_JL>, C<LB_JV>, C<LB_JT>, C<LB_SG>, C<LB_AI>, C<LB_SA>, C<LB_XX>
 
 [UAX #14] で定義される 36 の行分割特性 (分類) を表す値。
 
@@ -332,7 +333,7 @@ URI を SOLIDUS (スラッシュ) の前で分割する。
 
 強制分割。直接分割も間接分割も認める。間接分割を認めるが直接分割は禁ずる。分割を禁ずる。
 
-=item Unicode::LineBreak::SouthEastAsian::supported
+=item C<Unicode::LineBreak::SouthEastAsian::supported>
 
 東南アジアの用字系のための単語分節機能が有効かどうかを示すフラグ。
 この機能が有効になっていれば、空でない文字列。
