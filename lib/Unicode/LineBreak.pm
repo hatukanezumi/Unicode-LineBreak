@@ -223,7 +223,7 @@ sub break_partial ($$) {
     # cls: Line breaking class.
     # frg: Unbreakable text fragment.
     # spc: Trailing spaces.
-    # urg: This buffer had been broken by urgent breaking.
+    # urg: This buffer had been broken by urgent/custom/complex breaking.
     # eop: There is a mandatory breaking point at end of this buffer.
     my %before = ('frg' => '', 'spc' => '');
     my %after = ('frg' => '', 'spc' => '');
@@ -237,7 +237,7 @@ sub break_partial ($$) {
 
     ## Result.
     my $result = '';
-    ## Queue of urgent/custom broken fragments.
+    ## Queue of buffers broken by urgent/custom/complex breaking.
     my @custom = ();
     ## Current position and length of STR.
     my $pos = 0;
@@ -329,7 +329,7 @@ sub break_partial ($$) {
 		# Fill custom buffer and retry
 		#
 		my @c;
-		# Custom Breaking.
+		# Try custom breaking.
 		my $len;
 		if (scalar(@c = $s->_test_custom($str, $pos, \$len))) {
 		    # End of input - might be partial match.
@@ -344,7 +344,7 @@ sub break_partial ($$) {
 		    push @custom, @c;
 		    next;
 		}
-		# Break SA sequence.
+		# Try complex breaking - Break SA sequence.
 		my $frg = '';
 		while ($cls == LB_SA) {
 		    $pos++;
@@ -354,7 +354,7 @@ sub break_partial ($$) {
 		    $chr = substr($str, $pos, 1);
 		    $cls = $s->lbclass($chr);
 		}
-		if ($frg) {
+		if (length $frg) {
 		    # End of input - might be partial sequence.
 		    if (!$eot and $str_len <= $pos) {
 			$s->{_line} = \%line;
@@ -362,11 +362,14 @@ sub break_partial ($$) {
 			$s->{_sox} = $sox;
 			return $result;
 		    }
-		    @c = Unicode::LineBreak::Thai::userbreak($frg);
-		    push @custom, map { {'cls' => LB_AL,
-					 'frg' => $_, 'spc' => '',
-				         'urg' => 1}; } @c;
-		    next;
+		    @c = map { {'cls' => LB_AL, 'frg' => $_, 'spc' => '',
+				'urg' => 1}; }
+			     Unicode::LineBreak::SouthEastAsian::break($frg);
+		    if (scalar @c) {
+			$c[$#c]->{urg} = 0;
+			unshift @custom, @c;
+			next;
+		    }
 		}
 
 		#
@@ -743,7 +746,7 @@ sub config ($@) {
     ## Customization of character properties and rules.
     # Resolve AI, SA, SG, XX.  Won't resolve CB.
     my @sa;
-    if (Unicode::LineBreak::Thai::supported()) {
+    if (Unicode::LineBreak::SouthEastAsian::supported()) {
 	@sa = (LB_SAcmThai() => LB_SA,
 	       LB_SAalThai() => LB_SA,
 	       );

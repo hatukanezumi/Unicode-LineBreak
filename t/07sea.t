@@ -4,12 +4,11 @@ require "t/lb.pl";
 
 BEGIN { plan tests => 1 }
 
-my $libthai = Unicode::LineBreak::Thai::supported();
-if ($libthai) {
-    diag("libthai $libthai supported.");
+if (Unicode::LineBreak::SouthEastAsian::supported()) {
+    diag("SA word segmentation supported.");
     dotest('th', 'th');
 } else {
-    diag("libthai not supported.");
+    diag("SA word segmentation not supported.");
     dotest('th.al', 'th.al');
 }
 

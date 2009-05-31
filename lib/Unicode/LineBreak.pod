@@ -365,6 +365,14 @@ Mandatory break; Both direct break and indirect break are allowed;
 Indirect break is allowed but direct break is prohibited;
 Prohibited break.
 
+=item Unicode::LineBreak::SouthEastAsian::supported
+
+Flag to determin if word segmentation for South East Asian scripts is enabled.
+If this feature was enabled, a non-empty string is set. 
+Otherwise, C<undef> is set.
+
+B<N.B.>: Current release supports Thai script of Thai language only.
+
 =item C<$UNICODE_VERSION>
 
 A string to specify version of Unicode standard this module refers.

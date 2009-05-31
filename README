@@ -31,6 +31,12 @@ $ make test
 # make install
 
 Note that non-XS version does not support libthai features.
+If you wish to disable this feature on XS version, do:
+
+$ perl Makefile.PL nolibthai
+$ make
+$ make test
+# make install
 
 Documentations
 ==============

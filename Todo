@@ -1,9 +1,10 @@
-2009-05-29  tuka*nezumi - IKEDA Soji <hatuka(at)nezumi.nu>
+2009-05-29  Hatuka*nezumi - IKEDA Soji <hatuka(at)nezumi.nu>
 
 	* Perform appropriate line breaking for South East Asian complex
 	  contexts (SA), at least on Thai and Khmer scripts.
-	- For Thai, libthai package will be useful.
+	- For Thai, libthai package will be useful. - DONE by 1.000_01.
 	- Some implementations can be found for Khmer.
+	- Burmese, Lao, Tai Le, New Tai Lue - No plan.
 
 2009-05-17  Hatuka*nezumi - IKEDA Soji <hatuka(at)nezumi.nu>
 
@@ -11,8 +12,7 @@
 
 2009-05-11  Hatuka*nezumi - IKEDA Soji <hatuka(at)nezumi.nu>
 
-	* Incremental input
-	- Done by relase 0.005.
+	* Incremental input. - DONE by 0.005.
 
 2009-05-02  Hatuka*nezumi - IKEDA Soji <Hatuka(at)nezumi.nu>
 

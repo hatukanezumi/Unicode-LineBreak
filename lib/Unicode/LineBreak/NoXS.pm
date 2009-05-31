@@ -149,9 +149,9 @@ sub strsize ($$$$$;$) {
     $max? $idx: $len;
 }
 
-package Unicode::LineBreak::Thai;
+package Unicode::LineBreak::SouthEastAsian;
 
-sub userbreak { return (shift); }
-sub supported { return undef; }
+sub break ($) { return (shift); }
+sub supported () { return undef; }
 
 1;

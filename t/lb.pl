@@ -40,5 +40,40 @@ sub dotest {
     is($broken, $outstring);
 }    
 
+sub dotest_partial {
+    my $in = shift;
+    my $out = shift;
+    my $len = shift;
+
+    my $lb = Unicode::LineBreak->new(@_);
+    open IN, "<testin/$in.in" or die "open: $!";
+    my $instring = decode_utf8(join '', <IN>);
+    close IN;
+
+    my $broken = '';
+    while ($instring) {
+	my $p = substr($instring, 0, $len);
+	if (length $instring < $len) {
+	    $instring = '';
+	} else {
+	    $instring = substr($instring, $len);
+	}
+	$broken .= encode_utf8($lb->break_partial($p)); 
+    }
+    $broken .= encode_utf8($lb->break_partial(undef));
+
+    my $outstring = '';
+    if (open OUT, "<testin/$out.out") {
+	$outstring = join '', <OUT>;
+	close OUT;
+    } else {
+	open XXX, ">testin/$out.xxx";
+	print XXX $broken;
+	close XXX;
+    }
+
+    is($broken, $outstring);
+}
+
 1;
 

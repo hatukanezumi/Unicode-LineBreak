@@ -214,7 +214,7 @@ size_t strsize(linebreakObj *obj,
 	    width = eawidth(obj, c);
 	}
 	/*
-	 * After all, possible widths are non-spacing (z), wide (F/W) or
+	 * After all, possible widths are nonspacing, wide (F/W) or
 	 * narrow (H/N/Na).
 	 */
 
@@ -612,11 +612,12 @@ strsize(self, len, pre, spc, str, ...)
     OUTPUT:
 	RETVAL
 
-MODULE = Unicode::LineBreak	PACKAGE = Unicode::LineBreak::Thai
+MODULE = Unicode::LineBreak	PACKAGE = Unicode::LineBreak::SouthEastAsian
 
 void
-userbreak(str)
+break(str)
 	SV *str;
+    PROTOTYPE: $
     INIT:
 #ifdef USE_LIBTHAI
 	SV *utf8;
@@ -647,12 +648,12 @@ userbreak(str)
 
 char *
 supported()
+    PROTOTYPE:
     CODE:
 #ifdef USE_LIBTHAI
-	RETVAL = USE_LIBTHAI;
+	RETVAL = "THAI";
 #else
 	XSRETURN_UNDEF;
 #endif /* USE_LIBTHAI */
     OUTPUT:
 	RETVAL
-
