@@ -45,8 +45,9 @@ our $Config = {
     HangulAsAL => 'NO',
     LegacyCM => 'YES',
     Newline => "\n",
-    NSKanaAsID => 'NO',
     SizingMethod => 'DEFAULT',
+    TailorEA => [],
+    TailorLB => [],
     UrgentBreaking => 'NONBREAK',
     UserBreaking => [],
 };
@@ -54,10 +55,6 @@ eval { require Unicode::LineBreak::Defaults; };
 
 ### Exportable constants
 use Unicode::LineBreak::Constants;
-
-push @EXPORT_OK, @LB_CLASSES;
-push @{$EXPORT_TAGS{'all'}}, @LB_CLASSES;
-$EXPORT_TAGS{'class'} = [@LB_CLASSES];
 
 use constant {
     MANDATORY => M,
@@ -69,7 +66,10 @@ use constant {
 
 use constant 1.01;
 my $package = __PACKAGE__;
-_loadconst(grep { s/^${package}::// } keys %constant::declared);
+my @consts = grep { s/^${package}::(\w\w+)$/$1/ } keys %constant::declared;
+_loadconst(@consts);
+push @EXPORT_OK, @consts;
+push @{$EXPORT_TAGS{'all'}}, @consts;
 
 require Unicode::LineBreak::Rules;
 _loadrule($Unicode::LineBreak::RULES_MAP);
@@ -77,6 +77,7 @@ _loadrule($Unicode::LineBreak::RULES_MAP);
 require Unicode::LineBreak::Data;
 _loadlb($Unicode::LineBreak::lb_MAP);
 _loadea($Unicode::LineBreak::ea_MAP);
+_loadscript($Unicode::LineBreak::script_MAP);
 
 ### Privates
 my $EASTASIAN_CHARSETS = qr{
@@ -136,7 +137,6 @@ my %FORMAT_FUNCS = (
 # Built-in behavior by L</SizingMethod> options.
 my %SIZING_FUNCS = (
     'DEFAULT' => \&strsize,
-    'NARROWAL' => \&strsize,
 );
 
 # Built-in urgent breaking brehaviors specified by C<UrgentBreaking>.
@@ -640,8 +640,8 @@ sub config ($@) {
     my $self = shift;
     my %params = @_;
     my @opts = qw{CharactersMax ColumnsMin ColumnsMax Context Format
-		      HangulAsAL LegacyCM Newline NSKanaAsID
-		      SizingMethod UrgentBreaking UserBreaking};
+		      HangulAsAL LegacyCM Newline SizingMethod
+		      TailorEA TailorLB UrgentBreaking UserBreaking};
 
     # Get config.
     if (scalar @_ == 1) {
@@ -673,13 +673,11 @@ sub config ($@) {
 	$self->{_format_func} = $self->{Format};
     }
     # Sizing method
-    my $narrowal = 0;
     $self->{SizingMethod} ||= $Config->{SizingMethod};
     unless (ref $self->{SizingMethod}) {
 	$self->{SizingMethod} = uc $self->{SizingMethod};
 	$self->{_sizing_func} =
 	    $SIZING_FUNCS{$self->{SizingMethod}} || $SIZING_FUNCS{'DEFAULT'};
-	$narrowal = $self->{SizingMethod} eq 'NARROWAL'? 1: 0;
     } else {
 	$self->{_sizing_func} = $self->{SizingMethod};
     }
@@ -733,55 +731,48 @@ sub config ($@) {
     }
 
     ## Classes
-    my $v = $self->{'NSKanaAsID'};
-    $v = $Config->{NSKanaAsID} unless defined $v;
-    $v = 'ALL' if uc $v =~ m/^(YES|ALL)$/ or $v =~ /^\d/ and $v+0;
-    my @v = ();
-    push @v, 'ITERATION MARKS'          if $v eq 'ALL' or $v =~ /ITER/i;
-    push @v, 'KANA SMALL LETTERS'       if $v eq 'ALL' or $v =~ /SMALL/i;
-    push @v, 'PROLONGED SOUND MARKS'    if $v eq 'ALL' or $v =~ /LONG/i;
-    push @v, 'MASU MARK'                if $v eq 'ALL' or $v =~ /MASU/i;
-    $self->{'NSKanaAsID'} = join(',', @v) || 'NO';
-
-    ## Customization of character properties and rules.
-    # Resolve AI, SA, SG, XX.  Won't resolve CB.
-    my @lb_sa;
-    if (Unicode::LineBreak::SouthEastAsian::supported()) {
-	@lb_sa = (LB_SAalThai() => LB_SA, LB_SAcmThai() => LB_SA);
-    } else {
-	@lb_sa = (LB_SAalThai() => LB_AL, LB_SAcmThai() => LB_CM);
+    foreach $o (qw{TailorLB TailorEA}) {
+	$self->{$o} = [@{$Config->{$o}}]
+	    unless defined $self->{$o} and ref $self->{$o};
+	my @v = @{$self->{$o}};
+	my %map = ();
+	while (scalar @v) {
+	    my $k = shift @v;
+	    my $v = shift @v;
+	    next unless defined $k and defined $v;
+	    if (ref $k) {
+		foreach my $c (@{$k}) {
+		    $map{$c} = $v;
+		}
+	    } else {
+		$map{$k} = $v;
+	    }
+	}
+	my @map = ();
+	my ($beg, $end) = (undef, undef);
+	my $p;
+	foreach my $c (sort {$a <=> $b} keys %map) {
+	    unless ($map{$c}) {
+		next;
+	    } elsif (defined $end and $end + 1 == $c and $p eq $map{$c}) {
+		$end = $c;
+	    } else {
+		if (defined $beg and defined $end) {
+		    push @map, [$beg, $end, $p];
+		}
+		$beg = $end = $c;
+		$p = $map{$c};
+	    }
+	}
+	if (defined $beg and defined $end) {
+	    push @map, [$beg, $end, $p];
+	}
+	if ($o eq 'TailorLB') {
+	    $self->{_lbmap} = \@map;
+	} elsif ($o eq 'TailorEA') {
+	    $self->{_eamap} = \@map;
+	}
     }
-    $self->{_lb_hash} = &_packed_table
-	(LB_SAal() => LB_AL,
-	 LB_SAcm() => LB_CM,
-	 @lb_sa,
-	 LB_SG() => LB_AL,
-	 LB_XX() => LB_AL,
-	 LB_AI() => ($self->{Context} eq 'EASTASIAN'? LB_ID: LB_AL),
-	 LB_NSidIter() => ($self->{NSKanaAsID} =~ /ITER/? LB_ID: LB_NS),
-	 LB_NSidKana() => ($self->{NSKanaAsID} =~ /SMALL/? LB_ID: LB_NS),
-	 LB_NSidLong() => ($self->{NSKanaAsID} =~ /LONG/? LB_ID: LB_NS),
-	 LB_NSidMasu() => ($self->{NSKanaAsID} =~ /MASU/? LB_ID: LB_NS),
-	 );
-    # Resolve ambiguous (A) characters to either neutral (N) or fullwidth (F).
-    my @ea_a;
-    if ($self->{Context} eq 'EASTASIAN') {
-	@ea_a = (EA_A() => EA_F,
-		 EA_AnLat() => ($narrowal? EA_N: EA_F),
-		 EA_AnGre() => ($narrowal? EA_N: EA_F),
-		 EA_AnCyr() => ($narrowal? EA_N: EA_F)
-		 );
-    } else {
-	@ea_a = (EA_A() => EA_N,
-		 EA_AnLat() => EA_N,
-		 EA_AnGre() => EA_N,
-		 EA_AnCyr() => EA_N
-		 );
-    }
-    $self->{_ea_hash} = &_packed_table
-	(EA_NZ() => EA_Z, EA_AZ() => EA_Z, EA_WZ() => EA_Z, @ea_a);
-    # Line breaking rules: No customization.
-    $self->{_rule_hash} = &_packed_table();
 
     # Other options
     foreach $o (qw{CharactersMax ColumnsMin ColumnsMax Newline}) {

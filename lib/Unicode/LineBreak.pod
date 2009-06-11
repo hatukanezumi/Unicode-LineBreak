@@ -33,8 +33,8 @@ between pairs of them, except that other characters provide break
 oppotunities.
 B<Ideographic characters> are characters that usually allow line breaks
 both before and after themselves.
-[UAX #14] classifies most of alphabetic to AL and most of ideographic to ID.
-These terms are inaccurate from the point of view by grammatology.
+[UAX #14] classifies most of alphabetic to AL and most of ideographic to ID
+(These terms are inaccurate from the point of view by grammatology).
 On several scripts, breaking points are not obvious by each characters
 therefore heuristic based on dictionary is used.
 
@@ -94,6 +94,23 @@ See L</Constants> for returned value.
 EA_Z means nonspacing (zero width) character.
 Property value A (ambiguous) will be resolved to other appropriate values. 
 
+=begin comment
+
+=item $self->gcinfo (STR, POS)
+
+I<Instance method>.
+Get information of B<grapheme cluster> of Unicode string STR beginning at position POS.
+For more details about grapheme clusters see [UAX #29].
+
+Returns an array of three elements (CLASS, GLEN, ELEN).
+CLASS is line breaking property (class) of the first character of grapheme cluster, except that SA being resolved to AL or CM.
+GLEN is number of characters of grapheme base, including prepending character(s).
+ELEN is number of characters of grapheme extender.
+
+B<N.B.>: Though [UAX #29] defines that hiragana-katakana voiced/semi-voiced sound marks which are not combining marks may be (a part of) grapheme extender, this module treat them as grapheme base.
+
+=end comment
+
 =item $self->lbclass (STRING)
 
 I<Instance method>.
@@ -102,8 +119,8 @@ STRING.
 See L</Constants> for returned value.
 Classes AI, SA, SG and XX will be resolved to other
 appropriate classes. 
-However, when word segmentation for South East Asian scripts is enabled,
-characters of supported scripts (currently Thai only) will be kept SA.
+However, when word segmentation for South East Asian writing systems is
+enabled, characters of supported scripts (currently Thai only) will be kept SA.
 
 =item $self->lbrule (BEFORE, AFTER)
 
@@ -212,57 +229,6 @@ Default is C<"YES">.
 Unicode string to be used for newline sequence.
 Default is C<"\n">.
 
-=item NSKanaAsID => C<">CLASS...C<">
-
-Treat some nonstarters (NS) as normal ideographic characters (ID)
-based on classification specified by CLASS.
-CLASS may include following substrings.
-
-=over 4
-
-=item C<"ALL">
-
-All of characters below.
-Synonym is C<"YES">.
-
-=item C<"ITERATION MARKS">
-
-Ideographic iteration marks.
-U+3005 IDEOGRAPHIC ITERATION MARK, U+303B VERTICAL IDEOGRAPHIC ITERATION MARK, U+309D HIRAGANA ITERATION MARK, U+309E HIRAGANA VOICED ITERATION MARK, U+30FD KATAKANA ITERATION MARK and U+30FE KATAKANA VOICED ITERATION MARK.
-
-N.B. Some of them are neither hiragana nor katakana.
-
-=item C<"KANA SMALL LETTERS">
-
-=item C<"PROLONGED SOUND MARKS">
-
-Hiragana or katakana small letters.
-
-Hiragana or katakana prolonged sound marks.
-U+30FC KATAKANA-HIRAGANA PROLONGED SOUND MARK and
-U+FF70 HALFWIDTH KATAKANA-HIRAGANA PROLONGED SOUND MARK.
-
-N.B. These letters are optionally treated either as nonstarter or
-as normal ideographic.  See [JIS X 4051] 6.1.1.
-
-=item C<"MASU MARK">
-
-U+303C MASU MARK.
-
-N.B. Although this character is not kana, it is usually regarded as
-abbreviation to sequence of hiragana C<"ます"> or katakana C<"マス">,
-MA and SU.
-
-N.B. This character is classified as nonstarter (NS) by [UAX #14]
-and as Class 13 (corresponding to ID) by [JIS X 4051].
-
-=item C<"NO">
-
-Default.
-None of above are treated as ID characters.
-
-=back
-
 =item SizingMethod => METHOD
 
 Specify method to calculate size of string.
@@ -275,18 +241,32 @@ Following options are available.
 Default method.
 strsize() will be used.
 
-=item C<"NARROWAL">
-
-Some particular letters of Latin, Greek and Cyrillic scripts have ambiguous
-(A) East_Asian_Width property.  Thus, these characters are treated as wide
-in C<"EASTASIAN"> context.
-By this option those characters are always treated as narrow.
-
 =item Subroutine reference
 
 See L</Calculating String Size>.
 
 =back
+
+See also L</TailorEA> option.
+
+=item TailorEA => C<[> ORD C<=E<gt>> CLASS, ... C<]>
+
+Tailor classification of East_Asian_Width property.
+ORD is UCS scalar value of character or array reference of them.
+CLASS is one of East_Asian_Width property values N, Na, W, F and H
+(See L</Constants>).
+
+By default, no tailorings are available.
+See also L</Tailoring Character Properties>.
+
+=item TailorLB => C<[> ORD C<=E<gt>> CLASS, ... C<]>
+
+Tailor classification of line breaking property.
+ORD is UCS scalar value of character or array reference of them.
+CLASS is one of line breaking classes (See L</Constants>).
+
+By default, no tailorings are available.
+See also L</Tailoring Character Classifications>.
 
 =item UrgentBreaking => METHOD
 
@@ -355,10 +335,6 @@ defined by [UAX #11], and EA_Z to specify nonspacing.
 Index values to specify 36 line breaking properties (classes)
 defined by [UAX #14].
 
-=item C<@LB_CLASSES>
-
-An array of all classes above.
-
 =item C<MANDATORY>, C<DIRECT>, C<INDIRECT>, C<PROHIBITED>
 
 4 values to specify line breaking behaviors:
@@ -368,7 +344,8 @@ Prohibited break.
 
 =item C<Unicode::LineBreak::SouthEastAsian::supported>
 
-Flag to determin if word segmentation for South East Asian scripts is enabled.
+Flag to determin if word segmentation for South East Asian writing systems is
+enabled.
 If this feature was enabled, a non-empty string is set. 
 Otherwise, C<undef> is set.
 
@@ -481,10 +458,86 @@ If you don't wish to implement latter format, C<undef> should be returned.
 
 By default, strsize() is used to calculate string sizes.
 
-=head2 Character Classifications and Core Line Breaking Rules
+=head2 Tailoring Character Classifications
+
+Character classifications may be tailored by L</TailorLB> and L</TailorEA>
+options.  Some constants are defined for convenience of tailoring.
+
+=head3 Line Breaking Properties
+
+By default, several hiragana, katakana and characters corresponding to kana
+are treated as nonstarters (NS).
+When the following pair(s) are specified for value of L</TailorLB> option,
+these characters are treated as normal ideographic characters (ID).
+
+=over 4
+
+=item C<KANA_NONSTARTERS() =E<gt> LB_ID>
+
+All of characters below.
+
+=item C<IDEOGRAPHIC_ITERATION MARKS() =E<gt> LB_ID>
+
+Ideographic iteration marks.
+U+3005 IDEOGRAPHIC ITERATION MARK, U+303B VERTICAL IDEOGRAPHIC ITERATION MARK, U+309D HIRAGANA ITERATION MARK, U+309E HIRAGANA VOICED ITERATION MARK, U+30FD KATAKANA ITERATION MARK and U+30FE KATAKANA VOICED ITERATION MARK.
+
+N.B. Some of them are neither hiragana nor katakana.
+
+=item C<KANA_SMALL_LETTERS() =E<gt> LB_ID>
+
+=item C<KANA_PROLONGED_SOUND_MARKS() =E<gt> LB_ID>
+
+Hiragana or katakana small letters.
+
+Hiragana or katakana prolonged sound marks.
+U+30FC KATAKANA-HIRAGANA PROLONGED SOUND MARK and
+U+FF70 HALFWIDTH KATAKANA-HIRAGANA PROLONGED SOUND MARK.
+
+N.B. These letters are optionally treated either as nonstarter or
+as normal ideographic.  See [JIS X 4051] 6.1.1.
+
+=item C<MASU_MARK() =E<gt> LB_ID>
+
+U+303C MASU MARK.
+
+N.B. Although this character is not kana, it is usually regarded as
+abbreviation to sequence of hiragana C<"ます"> or katakana C<"マス">,
+MA and SU.
+
+N.B. This character is classified as nonstarter (NS) by [UAX #14]
+and as Class 13 (corresponding to ID) by [JIS X 4051].
+
+=back
+
+=head3 East_Asian_Width Properties
+
+Some particular letters of Latin, Greek and Cyrillic scripts have ambiguous
+(A) East_Asian_Width property.  Thus, these characters are treated as wide
+in C<"EASTASIAN"> context.
+Specifying C<TailorEA =E<gt> [ AMBIGUOUS_>*C<() =E<gt> EA_N ]>,
+those characters are always treated as narrow.
+
+=over 4
+
+=item C<AMBIGUOUS_ALPHABETIC() =E<gt> EA_N>
+
+Treat all of characters below as East_Asian_Width neutral (N).
+
+=item C<AMBIGUOUS_CYRILLIC() =E<gt> EA_N>
+
+=item C<AMBIGUOUS_GREEK() =E<gt> EA_N>
+
+=item C<AMBIGUOUS_LATIN() =E<gt> EA_N>
+
+Treate letters having ambiguous (A) width of Cyrillic, Greek and Latin scripts
+as neutral (N).
+
+=back
+
+=head2 Core Line Breaking Rules
 
 Classifications of character and core line breaking rules are defined by
-L<Unicode::LineBreak::Data> and L<Unicode::LineBreak::Rules>.
+L<Unicode::LineBreak::Rules>.
 If you wish to customize them, see F<data> directory of source package.
 
 =head2 Configuration File
@@ -533,9 +586,10 @@ Character(s) assigned to CB are not resolved.
 
 =item *
 
-When word segmentation for South East Asian languages is not supported,
+When word segmentation for South East Asian writing systems is not supported,
 characters assigned to SA are resolved to AL,
-except that characters that have General_Category Mn or Mc be resolved to CM.
+except that characters that have Grapheme_Cluster_Break property value
+Extended or SpacingMark be resolved to CM.
 
 =item *
 
@@ -564,6 +618,16 @@ L<http://unicode.org/reports/tr11/>.
 A. Freytag and A. Heninger (2008).
 I<Unicode Standard Annex #14: Unicode Line Breaking Algorithm>, Revision 22.
 L<http://unicode.org/reports/tr14/>.
+
+=begin comment
+
+=item [UAX #29]
+
+Mark Davis (2008).
+I<Unicode Standard Annex #29: Unicode Text Segmentation>, Revision 13.
+L<http://www.unicode.org/reports/tr29/>.
+
+=end comment
 
 =back
 

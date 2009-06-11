@@ -5,15 +5,22 @@ require "lbclasses.pl";
 my $cat = $ARGV[3] || die;
 if ($cat eq 'lb') {
     @CLASSES = @LBCLASSES;
-} else {
+} elsif ($cat eq 'ea') {
     @CLASSES = @EAWIDTHS;
+} elsif ($cat eq 'script') {
+    @CLASSES = @SCRIPTS;
+} else {
+    @CLASSES = ();
 }
 %CLASSES = map { ($_ => 1) } @CLASSES;
 
-my @PROPS;
-my %PROP_EXCEPTIONS;
+my @PROPS = ();
+my %CHARACTER_CLASS = ();
+my %CHARACTER_GROUP = ();
+my %PROP_EXCEPTIONS = ();
 
 foreach my $n (1, 0) {
+    next unless $ARGV[$n];
     open DATA, $ARGV[$n] || die $!;
     while (<DATA>) {
 	chomp $_;
@@ -21,12 +28,20 @@ foreach my $n (1, 0) {
 	next unless /\S/;
 
 	my ($char, $prop) = split /\s*;\s*/, $_;
-	next unless $prop =~ /^\w+$/;
+	next unless $prop =~ /^(\@[\w:]+|\w+)$/;
 	my ($start, $end) = ();
 	($start, $end) = split /\.\./, $char;
 	$end ||= $start;
 	foreach my $c (hex("0x$start") .. hex("0x$end")) {
 	    if ($n) {
+		if ($prop =~ /^\@([\w:]+)/) {
+		    my $g = $1;
+		    foreach my $p (split /:/, $g) {
+			$CHARACTER_CLASS{$p} ||= [];
+			push @{$CHARACTER_CLASS{$p}}, $c;
+		    }
+		    next;
+		}
 		$PROP_EXCEPTIONS{$c} = $prop;
 	    } else {
 		my $p = $PROP_EXCEPTIONS{$c} || $prop;
@@ -49,7 +64,7 @@ print <<EOF;
 our \$${cat}_MAP = [
 EOF
 
-my ($start, $end);
+my ($beg, $end);
 my ($c, $p);
 for ($c = 0; $c <= $#PROPS; $c++) {
     unless ($PROPS[$c]) {
@@ -57,22 +72,35 @@ for ($c = 0; $c <= $#PROPS; $c++) {
     } elsif (defined $end and $end + 1 == $c and $p eq $PROPS[$c]) {
 	$end = $c;
     } else {
-	if (defined $start and defined $end) {
-	    printf "    [0x%04X, 0x%04X, %s_%s],\n", $start, $end, uc($cat), $p;
+	if (defined $beg and defined $end) {
+	    printf "    [0x%04X, 0x%04X, %s_%s],\n", $beg, $end, uc($cat), $p;
 	}
-
-	$start = $end = $c;
+	$beg = $end = $c;
 	$p = $PROPS[$c];
     }
 }
-printf "    [0x%04X, 0x%04X, %s_%s],\n", $start, $end, uc($cat), $p;
+printf "    [0x%04X, 0x%04X, %s_%s],\n", $beg, $end, uc($cat), $p;
 print "];\n\n";
 
-open CONSTANTS, ">", $ARGV[2] || die;
+open CONSTANTS, ">", $ARGV[2] || die $!;
 print CONSTANTS "use constant {\n";
 my $i;
 for ($i = 0; $i < scalar @CLASSES; $i++) {
     print CONSTANTS "    ".uc($cat)."_$CLASSES[$i] => $i,\n";
 }
-print CONSTANTS "};\n\n";
+print CONSTANTS <<"EOF";
+};
 
+EOF
+
+if (keys %CHARACTER_CLASS) {
+    print CONSTANTS "use constant {\n";
+    foreach my $class (sort keys %CHARACTER_CLASS) {
+	print CONSTANTS "    ".uc($class)." => [";
+	foreach my $c (sort {$a <=> $b} @{$CHARACTER_CLASS{$class}}) {
+	    printf CONSTANTS "0x%04X, ", $c;
+	}
+	print CONSTANTS "],\n";
+    }
+    print CONSTANTS "};\n\n";
+}

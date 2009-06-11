@@ -9,6 +9,8 @@ UCD_BASE = http://www.unicode.org/Public/$(UNICODE_VERSION)/ucd/
 UNICODEDATA = UnicodeData-$(UNICODE_VERSION).txt
 LINEBREAK = LineBreak-$(UNICODE_VERSION).txt
 EASTASIANWIDTH = EastAsianWidth-$(UNICODE_VERSION).txt
+GRAPHEMEBREAK = GraphemeBreakProperty-$(UNICODE_VERSION).txt
+SCRIPTS = Scripts-$(UNICODE_VERSION).txt
 DATA_PM = ../lib/Unicode/LineBreak/Data.pm
 CONSTANTS_PM = ../lib/Unicode/LineBreak/Constants.pm
 RULES_PM = ../lib/Unicode/LineBreak/Rules.pm
@@ -17,7 +19,7 @@ META_YML = ../META.yml
 
 all: $(DATA_PM) $(RULES_PM) $(VERSION_PM) $(CONSTANTS_PM)
 
-$(DATA_PM): $(EASTASIANWIDTH) $(LINEBREAK) EastAsianWidth.custom LineBreak.custom map2pl.pl lbclasses.pl
+$(DATA_PM): $(EASTASIANWIDTH) $(LINEBREAK) SAScripts.txt EastAsianWidth.custom LineBreak.custom map2pl.pl lbclasses.pl
 	( \
 	  echo '#-*- perl -*-'; \
 	  echo ''; \
@@ -31,11 +33,12 @@ $(DATA_PM): $(EASTASIANWIDTH) $(LINEBREAK) EastAsianWidth.custom LineBreak.custo
 	  echo ''; \
 	  perl map2pl.pl $(LINEBREAK) LineBreak.custom Constants.lb lb; \
 	  perl map2pl.pl $(EASTASIANWIDTH) EastAsianWidth.custom Constants.ea ea; \
+	  perl map2pl.pl SAScripts.txt '' Constants.script script; \
 	  echo '1;' \
 	) > $@
 
 $(RULES_PM): Rules rules2pl.pl lbclasses.pl
-	perl rules2pl.pl $< Constants.rules $(RULES_PM)
+	perl rules2pl.pl $< $(RULES_PM)
 
 $(CONSTANTS_PM): $(DATA_PM) $(RULES_PM)
 	( \
@@ -47,11 +50,13 @@ $(CONSTANTS_PM): $(DATA_PM) $(RULES_PM)
 	  echo ""; \
 	  echo "package Unicode::LineBreak;"; \
 	  echo ""; \
-	  cat Constants.rules Constants.lb Constants.ea; \
+	  echo 'use constant { M => 4, D => 3, I => 2, P => 1,};'; \
+	  echo ''; \
+	  cat Constants.lb Constants.ea Constants.script; \
 	  echo "1;"; \
 	) > $@;
 
-$(VERSION_PM): $(DATA_PM) $(RULES_PM) makefile
+$(VERSION_PM): $(DATA_PM) $(RULES_PM) $(CONSTANTS_PM) makefile
 	VER=$(MODULE_VERSION); \
 	[ -n "$(BETA_VERSION)" ] && VER=$${VER}_$(BETA_VERSION); \
 	[ -z "$(BETA_VERSION)" ] && VER=$${VER}.`echo -n $(UNICODE_VERSION) | perl -pe 's/\.//g'`; \
@@ -73,47 +78,18 @@ $(VERSION_PM): $(DATA_PM) $(RULES_PM) makefile
 	) > $@; \
 	perl -i.bak -pe 's/^version:.+/version:             '$${VER}'/' $(META_YML)
 
-EastAsianWidth.custom: $(UNICODEDATA) $(EASTASIANWIDTH)
-	( \
-	  echo '## Zero-width characters.'; \
-	  perl -ne '/^([^;]*);[^;]*;(Me|Mn|Cc|Cf|Zl|Zp);/ && print "$$1\n"' \
-	  $(UNICODEDATA) | \
-	  perl -ne 'BEGIN { while (<STDIN>) {chomp $$_; $$Z{$$_}=1} }' \
-	  -e 's/^([^;]+)(;\w+)/$$1$${2}Z/; print "$$_" if $$Z{$$1}' \
-	  $(EASTASIANWIDTH); \
-	  echo ''; \
-	  echo '## Ambiguous width alphabetics.'; \
-	  perl -ne '/# LATIN (CAPITAL|SMALL) (LETTER|LIGATURE)/ && s/;A /;AnLat / && print;' \
-	  -e '/# GREEK (CAPITAL|SMALL) (LETTER|LIGATURE)/ && s/;A /;AnGre / && print;' \
-	  -e '/# CYRILLIC (CAPITAL|SMALL) (LETTER|LIGATURE)/ && s/;A /;AnCyr / && print;' \
-	  $(EASTASIANWIDTH); \
-	) > $@
+custom: $(UNICODEDATA) $(LINEBREAK) $(EASTASIANWIDTH) $(GRAPHEMEBREAK) $(SCRIPTS)
+	for f in EastAsianWidth.custom LineBreak.custom SAScripts.txt; do \
+	    if [ -e $$f ]; then mv $$f $$f.old; fi; done
+	perl custom.pl ea $(UNICODE_VERSION) > EastAsianWidth.custom
+	perl custom.pl lb $(UNICODE_VERSION) > LineBreak.custom
 
-LineBreak.custom: $(UNICODEDATA) $(LINEBREAK)
-	( \
-	  echo '## SA characters optionally treated as CM (see UAX #14, 6.1 LB1)'; \
-	  echo '## which has general category Mc or Mn.'; \
-	  sed -ne 's/^\([^;]*\);SA .*/\1/p' $(LINEBREAK) | \
-	  perl -ne 'BEGIN { while (<STDIN>) {chomp $$_; $$SA{$$_}=1} }' \
-	  -e '@_=split(/;/);' \
-	  -e 'if ($$SA{$$_[0]}) { $$l = ($$_[1] =~ /^THAI /)? "Thai": ""; if ($$_[2]=~/Mc|Mn/) { print "$$_[0];SAcm$$l # $$_[1]\n" } else { print "$$_[0];SAal$$l # $$_[1]\n" } }' \
-	  $(UNICODEDATA); \
-	  echo ''; \
-	  echo '## NS characters optionally treated as ID.'; \
-	  sed -ne '/LETTER SMALL/s/;NS /;NSidKana /p' \
-	      -e '/PROLONGED SOUND MARK/s/;NS /;NSidLong /p' \
-	      -e '/ITERATION MARK/s/;NS /;NSidIter /p' \
-	      -e '/MASU MARK/s/;NS /;NSidMasu /p' \
-	  $(LINEBREAK) \
-	) > $@
-
-unicodedata: $(UNICODEDATA) $(LINEBREAK) $(EASTASIANWIDTH)
-$(UNICODEDATA):
-	$(WGET) -O $@ $(UCD_BASE)UnicodeData.txt
-$(LINEBREAK):
-	$(WGET) -O $@ $(UCD_BASE)LineBreak.txt
-$(EASTASIANWIDTH):
-	$(WGET) -O $@ $(UCD_BASE)EastAsianWidth.txt
+unicodedata:
+	$(WGET) -O $(UNICODEDATA) $(UCD_BASE)UnicodeData.txt
+	$(WGET) -O $(LINEBREAK) $(UCD_BASE)LineBreak.txt
+	$(WGET) -O $(EASTASIANWIDTH) $(UCD_BASE)EastAsianWidth.txt
+	$(WGET) -O $(GRAPHEMEBREAK) $(UCD_BASE)auxiliary/GraphemeBreakProperty.txt
+	$(WGET) -O $(SCRIPTS) $(UCD_BASE)Scripts.txt
 
 clean:
 	rm -f $(DATA_PM) Constants.* $(CONSTANTS_PM) $(RULES_PM) $(VERSION_PM)

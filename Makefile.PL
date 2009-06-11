@@ -9,7 +9,7 @@ if ($ARGV[0] eq 'noxs') {
     chomp $libthai;
     if ($libthai) {
 	print "Use libthai $libthai\n";
-	@opts = ('DEFINE' => "-DUSE_LIBTHAI=\\\"$libthai\\\"",
+	@opts = ('DEFINE' => "-DUSE_LIBTHAI=\\\"libthai/$libthai\\\"",
 		 'INC' => `pkg-config --cflags libthai`,
 		 'LIBS' => `pkg-config --libs libthai`,
 		 );

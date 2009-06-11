@@ -24,19 +24,31 @@ typedef struct {
 } mapent_t;
 
 typedef struct {
-    unsigned int *lb_tbl;
-    unsigned int *ea_tbl;
-    unsigned int *rule_tbl;
+    mapent_t *lbmap;
+    size_t lbmapsiz;
+    mapent_t *eamap;
+    size_t eamapsiz;
+    unsigned int options;
 } linebreakObj;
+#define LINEBREAK_OPTION_EASTASIAN_CONTEXT (1)
 
-static propval_t LB_CM, LB_H2, LB_H3, LB_JL, LB_JV, LB_JT, LB_XX;
-static propval_t EA_Z, EA_A, EA_W, EA_F;
+static propval_t LB_BK, LB_CR, LB_LF, LB_NL, LB_SP, LB_ZW, LB_WJ,
+    LB_AL, LB_CM, LB_ID,
+    LB_H2, LB_H3, LB_JL, LB_JV, LB_JT,
+    LB_AI, LB_SA, LB_SG, LB_XX,
+    LB_SAprepend, LB_SAbase, LB_SAextend;
+static propval_t EA_Z, EA_N, EA_A, EA_W, EA_F;
+#ifdef USE_LIBTHAI
+static propval_t SCRIPT_Thai;
+#endif /* USE_LIBTHAI */
 static propval_t DIRECT;
 
 static mapent_t *lbmap = NULL;
 static size_t lbmapsiz = 0;
 static mapent_t *eamap = NULL;
 static size_t eamapsiz = 0;
+static mapent_t *scriptmap = NULL;
+static size_t scriptmapsiz = 0;
 static propval_t **rulemap = NULL;
 static size_t rulemapsiz = 0;
 
@@ -77,27 +89,8 @@ unistr_t *_unistr_concat(unistr_t *buf, unistr_t *a, unistr_t *b)
     return buf;
 }
 
-static
-propval_t _search_packed_table(unsigned int *tbl, propval_t val)
-{
-    size_t tbllen, i;
-    unsigned int *p;
-
-    if (!tbl)
-	return PROP_UNKNOWN;
-    if (!(tbllen = (size_t)tbl[0]))
-	return PROP_UNKNOWN;
-
-    for (i = 0, p = tbl + 1; i < tbllen && *p != -1; i++, p += 2)
-	if (val == *p) {
-	    val = p[1];
-	    break;
-	}
-    return val;
-}
-
 /*
- * _bsearch (map, mapsize, c, default, tbl)
+ * _bsearch (map, mapsize, c)
  * Examine binary search on property map table with following structure:
  * [
  *     [start, stop, property_value],
@@ -107,17 +100,16 @@ propval_t _search_packed_table(unsigned int *tbl, propval_t val)
  * are assigned property_value.
  */
 static
-propval_t _bsearch(mapent_t* map, size_t mapsiz, unichar_t c, propval_t def,
-    unsigned int *tbl)
+propval_t _bsearch(mapent_t* map, size_t mapsiz, unichar_t c)
 {
     mapent_t *top, *bot, *cur;
     propval_t result;
-	
-    assert(map && mapsiz);
+
+    if (!map || !mapsiz)
+	return PROP_UNKNOWN;
     top = map;
     bot = map + mapsiz - 1;
     result = PROP_UNKNOWN;
-
     while (top <= bot) {
 	cur = top + (bot - top) / 2;
 	if (c < cur->beg)
@@ -129,9 +121,7 @@ propval_t _bsearch(mapent_t* map, size_t mapsiz, unichar_t c, propval_t def,
 	    break;
 	}
     }
-    if (result == PROP_UNKNOWN)
-	result = def;
-    return _search_packed_table(tbl, result);
+    return result;
 }
 
 /*
@@ -140,12 +130,177 @@ propval_t _bsearch(mapent_t* map, size_t mapsiz, unichar_t c, propval_t def,
 
 propval_t eawidth(linebreakObj *obj, unichar_t c)
 {
-    return _bsearch(eamap, eamapsiz, c, EA_A, obj->ea_tbl);
+    propval_t ret;
+    assert(eamap && eamapsiz);
+
+    ret = _bsearch(obj->eamap, obj->eamapsiz, c);
+    if (ret == PROP_UNKNOWN)
+	ret = _bsearch(eamap, eamapsiz, c);
+    if (ret == PROP_UNKNOWN)
+	ret = EA_N;
+    if (ret == EA_A) {
+	if (obj->options & LINEBREAK_OPTION_EASTASIAN_CONTEXT)
+	    return EA_F;
+	return EA_N;
+    }
+    return ret;
+}
+
+propval_t _gbclass(linebreakObj *obj, unichar_t c)
+{
+    propval_t ret;
+    assert(lbmap && lbmapsiz);
+
+    ret = _bsearch(obj->lbmap, obj->lbmapsiz, c);
+    if (ret == PROP_UNKNOWN)
+	ret = _bsearch(lbmap, lbmapsiz, c);
+    if (ret == PROP_UNKNOWN)
+	ret = LB_XX;
+    if (ret == LB_AI) {
+	if (obj->options & LINEBREAK_OPTION_EASTASIAN_CONTEXT)
+	    return LB_ID;
+	else
+	    return LB_AL;
+    } else if (ret == LB_SG || ret == LB_XX)
+	return LB_AL;
+    return ret;
+}
+propval_t lbrule(linebreakObj *obj, propval_t b_idx, propval_t a_idx);
+
+void gcinfo(linebreakObj *obj, unistr_t *str, size_t pos,
+    propval_t *gclsptr, size_t *glenptr, size_t *elenptr)
+{
+    propval_t gcls = PROP_UNKNOWN;
+    size_t glen, elen;
+    unichar_t chr, nchr;
+    propval_t cls, ncls;
+    size_t str_len;
+
+    if (!str || !str->str || !str->len) {
+	*gclsptr = PROP_UNKNOWN;
+	*glenptr = 0;
+	*elenptr = 0;
+	return;
+    }
+
+    chr = str->str[pos];
+    cls = _gbclass(obj, chr);
+    glen = 1;
+    elen = 0;
+    str_len = str->len;
+
+    if (cls == LB_BK || cls == LB_LF || cls == LB_NL) {
+	*gclsptr = cls;
+	*glenptr = 1;
+	*elenptr = 0;
+	return;
+    } else if (cls == LB_CR) {
+	pos++;
+	*gclsptr = cls;
+	if (pos < str_len) {
+	    chr = str->str[pos];
+	    cls = _gbclass(obj, chr);
+	    if (cls == LB_LF)
+		glen++;
+	}
+	*glenptr = glen;
+	*elenptr = 0;
+	return;
+    } else if (cls == LB_SP || cls == LB_ZW || cls == LB_WJ) {
+        pos++;
+        *gclsptr = cls;
+        while (1) {
+	    if (str_len <= pos)
+		break;
+	    chr = str->str[pos];
+	    cls = _gbclass(obj, chr);
+ 	    if (cls != *gclsptr)
+		break;
+	    pos++;
+	    glen++;
+        }
+	*glenptr = glen;
+	*elenptr = 0;
+	return;
+    /* Hangul syllable block */
+    } else if (cls == LB_H2 || cls == LB_H3 ||
+	       cls == LB_JL || cls == LB_JV || cls == LB_JT) {
+	pos++;
+	*gclsptr = cls;
+	while (1) {
+	    if (str_len <= pos)
+		break;
+	    nchr = str->str[pos];
+	    ncls = _gbclass(obj, nchr);
+	    if ((ncls == LB_H2 || ncls == LB_H3 ||
+		 ncls == LB_JL || ncls == LB_JV || ncls == LB_JT) &&
+		lbrule(obj, cls, ncls) != DIRECT) {
+		pos++;
+		glen++;
+		cls = ncls;
+		continue;
+	    }
+	    break;
+	} 
+    /* Extended grapheme base of South East Asian scripts */
+    } else if (cls == LB_SAprepend || cls == LB_SAbase) {
+	pos++;
+	gcls = LB_AL;
+	while (1) {
+	    if (str_len <= pos)
+		break;
+	    if (cls == LB_SAbase)
+		break;
+	    nchr = str->str[pos];
+	    ncls = _gbclass(obj, nchr);
+	    if (ncls == LB_SAprepend || ncls == LB_SAbase) {
+		pos++;
+		glen++;
+		cls = ncls;
+		continue;
+	    }
+	    break;
+	} 
+    } else if (cls == LB_SAextend) {
+	pos++;
+	gcls = LB_CM;
+    } else {
+	pos++;
+	gcls = cls;
+    }
+
+    while (1) {
+	if (str_len <= pos)
+	    break;
+	chr = str->str[pos];
+	cls = _gbclass(obj, chr);
+	if (cls != LB_CM && cls != LB_SAextend)
+	    break;
+	pos++;
+	elen++;
+	if (gcls == PROP_UNKNOWN)
+	    gcls = LB_CM;
+    }
+    *gclsptr = gcls;
+    *glenptr = glen;
+    *elenptr = elen;
+    return;
 }
 
 propval_t lbclass(linebreakObj *obj, unichar_t c)
 {
-    return _bsearch(lbmap, lbmapsiz, c, LB_XX, obj->lb_tbl);
+    propval_t ret;
+    ret = _gbclass(obj, c);
+#ifdef USE_LIBTHAI
+    if ((ret == LB_SAprepend || ret == LB_SAbase || ret == LB_SAextend) &&
+	_bsearch(scriptmap, scriptmapsiz, c) == SCRIPT_Thai)
+	return LB_SA;
+#endif /* USE_LIBTHAI */
+    if (ret == LB_SAprepend || ret == LB_SAbase)
+	return LB_AL;
+    if (ret == LB_SAextend)
+	return LB_CM;
+    return ret;
 }
 
 propval_t lbrule(linebreakObj *obj, propval_t b_idx, propval_t a_idx)
@@ -159,8 +314,8 @@ propval_t lbrule(linebreakObj *obj, propval_t b_idx, propval_t a_idx)
     else
 	result = rulemap[b_idx][a_idx];
     if (result == PROP_UNKNOWN)
-	result = DIRECT;
-    return _search_packed_table(obj->rule_tbl, result);
+	return DIRECT;
+    return result;
 }
 
 size_t strsize(linebreakObj *obj,
@@ -261,16 +416,35 @@ typedef struct {
 static
 constent_t _constent[] = {
     { "EA_Z", &EA_Z }, 
+    { "EA_N", &EA_N }, 
     { "EA_A", &EA_A }, 
     { "EA_W", &EA_W }, 
     { "EA_F", &EA_F }, 
+    { "LB_BK", &LB_BK },
+    { "LB_CR", &LB_CR },
+    { "LB_LF", &LB_LF },
+    { "LB_NL", &LB_NL },
+    { "LB_SP", &LB_SP },
+    { "LB_ZW", &LB_ZW },
+    { "LB_WJ", &LB_WJ },
+    { "LB_AL", &LB_AL },
     { "LB_CM", &LB_CM },
+    { "LB_ID", &LB_ID },
     { "LB_H2", &LB_H2 },
     { "LB_H3", &LB_H3 },
     { "LB_JL", &LB_JL },
     { "LB_JV", &LB_JV },
     { "LB_JT", &LB_JT },
+    { "LB_AI", &LB_AI },
+    { "LB_SA", &LB_SA },
+    { "LB_SG", &LB_SG },
     { "LB_XX", &LB_XX },
+    { "LB_SAprepend", &LB_SAprepend },
+    { "LB_SAbase", &LB_SAbase },
+    { "LB_SAextend", &LB_SAextend },
+#ifdef USE_LIBTHAI
+    { "SCRIPT_Thai", &SCRIPT_Thai },
+#endif /* USE_LIBTHAI */
     { "DIRECT", &DIRECT },
     { NULL, NULL },
 };
@@ -302,25 +476,6 @@ mapent_t *_loadmap(mapent_t *propmap, SV *mapref, size_t *mapsiz)
 	}
     }
     return propmap;
-}
-
-static
-unsigned int *_get_packed_table(SV *obj, char *name)
-{
-    SV *sv;
-    STRLEN l;
-    unsigned int *tbl;
-
-    sv = *hv_fetch((HV *)SvRV(obj), name, strlen(name), 0);
-    l = SvCUR(sv);
-    if (l) {
-	tbl = (unsigned int *)SvPV(sv, l);
-	if (l < tbl[0] * sizeof(unsigned int) * 2 + sizeof(unsigned int))
-	    croak("_get_packed_table: Actual len %d; reported %d", l, tbl[0]);
-    } else {
-	tbl = NULL;
-    }
-    return tbl;
 }
 
 static
@@ -412,11 +567,30 @@ SV *_wstrtoutf8(wchar_t *unistr, size_t unilen)
 static
 linebreakObj *_selftoobj(linebreakObj *obj, SV *self)
 {
-    if (!obj && (obj = malloc(sizeof(linebreakObj))) == NULL)
-	croak("_selftoobj: Cannot allocate memory");
-    obj->lb_tbl = _get_packed_table(self, "_lb_hash");
-    obj->ea_tbl = _get_packed_table(self, "_ea_hash");
-    obj->rule_tbl = _get_packed_table(self, "_rule_hash");
+    SV *sv;
+    char *opt;
+    size_t mapsiz;
+
+    if (!obj) {
+	if ((obj = malloc(sizeof(linebreakObj))) == NULL)
+	    croak("_selftoobj: Cannot allocate memory");
+	else
+	    obj->lbmap = obj->eamap = NULL;
+    }
+    obj->lbmap = _loadmap(obj->lbmap,
+			  *hv_fetch((HV *)SvRV(self), "_lbmap", 6, 0),
+			  &mapsiz);
+    obj->lbmapsiz = mapsiz;
+    obj->eamap = _loadmap(obj->eamap,
+			  *hv_fetch((HV *)SvRV(self), "_eamap", 6, 0),
+			  &mapsiz);
+    obj->eamapsiz = mapsiz;
+
+    obj->options = 0;
+    sv = *hv_fetch((HV *)SvRV(self), "Context", 7, 0);
+    opt = (char *)SvPV_nolen(sv);
+    if (opt && strcmp(opt, "EASTASIAN") == 0)
+	obj->options |= LINEBREAK_OPTION_EASTASIAN_CONTEXT;
     return obj;
 }
 
@@ -466,6 +640,12 @@ _loadea(mapref)
 	eamap = _loadmap(eamap, mapref, &eamapsiz);
 
 void
+_loadscript(mapref)
+	SV *mapref;
+    CODE:
+	scriptmap = _loadmap(scriptmap, mapref, &scriptmapsiz);
+
+void
 _loadrule(mapref)
 	SV *	mapref;
     PROTOTYPE: $
@@ -507,35 +687,13 @@ _loadrule(mapref)
 	    }
 	}
 
-# _packed_table (ITEM...)
-#     Equvalent to
-#     pack('I*', (scalar(@_) + 2) / 2, @_, -1, -1);
-SV *
-_packed_table(...)
-    PROTOTYPE: @
-    PREINIT:
-	unsigned int *packed = NULL;
-	size_t i;
-    CODE:
-	if ((packed = malloc(sizeof(unsigned int) * (items + 3))) == NULL)
-	    croak("_packed_table: Memory exausted");
-	packed[0] = (unsigned int)((items + 2) / 2);
-	for (i = 1; i < items + 1; i++)
-	    packed[i] = (unsigned int)SvIV(ST(i-1));
-	packed[i++] = -1;
-	packed[i++] = -1;
-	RETVAL = newSVpvn((char *)(void *)packed, sizeof(unsigned int) * i);
-	free(packed);
-    OUTPUT:
-	RETVAL
-
 propval_t
 eawidth(self, str)
 	SV *self;
 	SV *str;
     PROTOTYPE: $$
     INIT:
-	linebreakObj obj;
+	linebreakObj obj = {0, 0, 0, 0, 0};
 	unichar_t c;
 	propval_t prop;
     CODE:
@@ -545,6 +703,9 @@ eawidth(self, str)
 	_selftoobj(&obj, self);
 	c = utf8_to_uvuni((U8 *)SvPV_nolen(str), NULL);
 	prop = eawidth(&obj, c);
+	if (obj.lbmap) free(obj.lbmap);
+	if (obj.eamap) free(obj.eamap);
+
 	if (prop == PROP_UNKNOWN)
 	    XSRETURN_UNDEF;
 	RETVAL = prop;	
@@ -557,7 +718,7 @@ lbclass(self, str)
 	SV *str;
     PROTOTYPE: $$
     INIT:
-	linebreakObj obj;
+	linebreakObj obj = {0, 0, 0, 0, 0};
 	unichar_t c;
 	propval_t prop;
     CODE:
@@ -567,6 +728,9 @@ lbclass(self, str)
 	_selftoobj(&obj, self);
 	c = utf8_to_uvuni((U8 *)SvPV_nolen(str), NULL);
 	prop = lbclass(&obj, c);
+	if (obj.lbmap) free(obj.lbmap);
+	if (obj.eamap) free(obj.eamap);
+
 	if (prop == PROP_UNKNOWN)
 	    XSRETURN_UNDEF;
 	RETVAL = prop;	
@@ -580,13 +744,16 @@ lbrule(self, b_idx, a_idx)
 	propval_t a_idx;
     PROTOTYPE: $$$
     INIT:
-	linebreakObj obj;
+	linebreakObj obj = {0, 0, 0, 0, 0};
 	propval_t prop;
     CODE:
 	if (!SvOK(ST(1)) || !SvOK(ST(2)))
 	    XSRETURN_UNDEF;
 	_selftoobj(&obj, self);
 	prop = lbrule(&obj, b_idx, a_idx);
+	if (obj.lbmap) free(obj.lbmap);
+	if (obj.eamap) free(obj.eamap);
+
 	if (prop == PROP_UNKNOWN)
 	    XSRETURN_UNDEF;
 	RETVAL = prop;
@@ -602,7 +769,7 @@ strsize(self, len, pre, spc, str, ...)
 	SV *str;
     PROTOTYPE: $$$$$;$
     INIT:
-	linebreakObj obj;
+	linebreakObj obj = {0, 0, 0, 0, 0};
 	unistr_t unipre = {0, 0}, unispc = {0, 0}, unistr = {0, 0};
 	size_t max;
     CODE:
@@ -616,6 +783,9 @@ strsize(self, len, pre, spc, str, ...)
 	    max = 0;
 
 	RETVAL = strsize(&obj, len, &unipre, &unispc, &unistr, max);
+
+	if (obj.lbmap) free(obj.lbmap);
+	if (obj.eamap) free(obj.eamap);
 	if (unipre.str) free(unipre.str);
 	if (unispc.str) free(unispc.str);
 	if (unistr.str) free(unistr.str);
@@ -623,6 +793,31 @@ strsize(self, len, pre, spc, str, ...)
 	    croak("strsize: Can't allocate memory");
     OUTPUT:
 	RETVAL
+
+void
+gcinfo(self, str, pos)
+	SV *self;
+	SV *str;
+	size_t pos;
+    INIT:
+	linebreakObj obj = {0, 0, 0, 0, 0};
+	unistr_t unistr = {0, 0};
+	propval_t gcls;
+	size_t glen, elen;
+    PPCODE:
+	if (!SvCUR(str))
+	    XSRETURN_UNDEF;
+	_selftoobj(&obj, self);
+	_utf8touni(&unistr, str);
+	gcinfo(&obj, &unistr, pos, &gcls, &glen, &elen);
+	XPUSHs(sv_2mortal(newSViv(gcls)));
+	XPUSHs(sv_2mortal(newSViv(glen)));
+	XPUSHs(sv_2mortal(newSViv(elen)));
+
+	if (obj.lbmap) free(obj.lbmap);
+	if (obj.eamap) free(obj.eamap);
+	if (unistr.str) free(unistr.str);
+	return;
 
 MODULE = Unicode::LineBreak	PACKAGE = Unicode::LineBreak::SouthEastAsian
 
@@ -663,7 +858,7 @@ supported()
     PROTOTYPE:
     CODE:
 #ifdef USE_LIBTHAI
-	RETVAL = "THAI";
+	RETVAL = "Thai:" USE_LIBTHAI;
 #else
 	XSRETURN_UNDEF;
 #endif /* USE_LIBTHAI */

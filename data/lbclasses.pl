@@ -7,8 +7,8 @@ SG AI SA XX};
 #$OMIT = qr{BK|CM|CR|LF|NL|SP|AI|SA|SG|XX|...};
 $OMIT = qr{AI|SA|SG|XX|...};
 @LBCLASSES = (grep(!/$OMIT/, @LBCLASSES), grep(/$OMIT/, @LBCLASSES));
-
 @EAWIDTHS = qw{Z Na N A W H F};
+@SCRIPTS = qw(Common Inherited);
 
 1;
 

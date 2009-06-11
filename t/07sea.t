@@ -4,12 +4,13 @@ require "t/lb.pl";
 
 BEGIN { plan tests => 1 }
 
-if (Unicode::LineBreak::SouthEastAsian::supported()) {
-    diag("SA word segmentation supported.");
+my $sea = Unicode::LineBreak::SouthEastAsian::supported();
+if ($sea) {
+    diag("SA word segmentation supported. $sea");
     dotest('th', 'th');
 } else {
     diag("SA word segmentation not supported.");
-    dotest('th.al', 'th.al');
+    dotest('th', 'th.al');
 }
 
 1;

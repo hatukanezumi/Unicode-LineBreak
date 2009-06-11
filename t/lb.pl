@@ -1,6 +1,6 @@
 use strict;
 use Encode qw(decode_utf8 encode_utf8);
-use Unicode::LineBreak;
+use Unicode::LineBreak qw(:all);
 
 $Unicode::LineBreak::Config = {
     CharactersMax => 998,
@@ -11,8 +11,9 @@ $Unicode::LineBreak::Config = {
     HangulAsAL => 'NO',
     LegacyCM => "YES",
     Newline => "\n",
-    NSKanaAsID => "NO",
     SizingMethod => "DEFAULT",
+    TailorEA => [],
+    TailorLB => [],
     UrgentBreaking => 'NONBREAK',
     UserBreaking => [],
 };

@@ -1,8 +1,15 @@
 1.000_02  Xxx Xxx XX 2009
 
-	* Fix: correct th tests.
-	* Imp: strsize(): Take care of combining character sequence.
-
+	* Fix: Correct Thai (th) tests.
+	* Fix: Unassigned code points are given N, not A (except those of SIP are W).
+	* Imp: strsize(): Now texts are broken at boundaries of graphame cluster.
+	* Chg: SA characters are resolved by Grapheme_Cluster_Break property,
+	  as some suffixing vowels have General_Category Lo and some others have
+		Grapheme_Cluster_Break Prepend property.
+	* Added tests for incremental input.
+	* Chg: Remove @LB_CLASSES which may not be used;
+	* Chg: Remove NarrowAL and NSKanaAsID options: use TailorEA/TailorLB options.
+	
 1.000_01  Sat May 30 2009
 
 	* Fix: broken non-XS strsize().

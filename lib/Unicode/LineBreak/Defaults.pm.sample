@@ -33,9 +33,11 @@ Following settings are available.
 
 =item Newline
 
-=item NSKanaAsID
-
 =item SizingMethod
+
+=item TailorEA
+
+=item TailorLB
 
 =item UrgentBreaking
 
@@ -62,8 +64,9 @@ L<Unicode::LineBreak>
 # $Config->{HangulAsAL} = 'NO';
 # $Config->{LegacyCM} = 'YES';
 # $Config->{Newline} = "\n";
-# $Config->{NSKanaAsID} = 'NO';
 # $Config->{SizingMethod} = 'DEFAULT';
+# $config->{TailorEA} = [];
+# $config->{TailorLB} = [];
 # $Config->{UrgentBreaking} = 'NONBREAK';
 # $Config->{UserBreaking} = [];
 
