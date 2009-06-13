@@ -226,7 +226,7 @@ void gcinfo(linebreakObj *obj, unistr_t *str, size_t pos,
     } else if (cls == LB_H2 || cls == LB_H3 ||
 	       cls == LB_JL || cls == LB_JV || cls == LB_JT) {
 	pos++;
-	*gclsptr = cls;
+	gcls = cls;
 	while (1) {
 	    if (str_len <= pos)
 		break;
@@ -244,6 +244,27 @@ void gcinfo(linebreakObj *obj, unistr_t *str, size_t pos,
 	} 
     /* Extended grapheme base of South East Asian scripts */
     } else if (cls == LB_SAprepend || cls == LB_SAbase) {
+#ifdef USE_LIBTHAI
+	propval_t gscript ;
+	gscript = _bsearch(scriptmap, scriptmapsiz, chr);
+	if (gscript == 	SCRIPT_Thai) {
+	    pos++;
+	    *gclsptr = LB_SA;
+	    while (1) {
+		if (str_len <= pos)
+		    break;
+		chr = str->str[pos];
+		gscript = _bsearch(scriptmap, scriptmapsiz, chr);
+		if (gscript != SCRIPT_Thai)
+		    break;
+		pos++;
+		glen++;
+	    }
+	    *glenptr = glen;
+	    *elenptr = 0;
+	    return;
+	}
+#endif /* USE_LIBTHAI */
 	pos++;
 	gcls = LB_AL;
 	while (1) {
@@ -335,60 +356,31 @@ size_t strsize(linebreakObj *obj,
     idx = 0;
     pos = 0;
     while (1) {
-	size_t clen, w;
-	unichar_t c, nc;
-	propval_t cls, ncls, width;
+	size_t glen, elen, w, npos;
+	unichar_t c;
+	propval_t gcls, width;
 
 	if (length <= pos)
 	    break;
-	c = spcstr.str[pos];
-	cls = lbclass(obj, c);
-	clen = 1;
+	gcinfo(obj, &spcstr, pos, &gcls, &glen, &elen);
+	npos = pos + glen + elen;
+	w = 0;
 
 	/* Hangul syllable block */
-	if (cls == LB_H2 || cls == LB_H3 ||
-	    cls == LB_JL || cls == LB_JV || cls == LB_JT) {
-	    while (1) {
-		pos++;
-		if (length <= pos)
-		    break;
-		nc = spcstr.str[pos];
-		ncls = lbclass(obj, nc);
-		if ((ncls == LB_H2 || ncls == LB_H3 ||
-		    ncls == LB_JL || ncls == LB_JV || ncls == LB_JT) &&
-		    lbrule(obj, cls, ncls) != DIRECT) {
-		    cls = ncls;
-		    clen++;
-		    continue;
-		}
-		break;
-	    } 
+	if (gcls == LB_H2 || gcls == LB_H3 ||
+	    gcls == LB_JL || gcls == LB_JV || gcls == LB_JT) {
 	    w = 2;
-	} else {
-	    pos++;
-	    width = eawidth(obj, c);
-	    if (width == EA_Z)
-		w = 0;
-	    else if (width == EA_F || width == EA_W)
-		w = 2;
-	    else
-		w = 1;
+	    pos += glen;
 	}
-	while (pos < length) {
+	while (pos < npos) {
 	    c = spcstr.str[pos];
-	    cls = lbclass(obj, c);
-	    if (cls != LB_CM)
-		break;
-	    pos++;
-	    clen++;
 	    width = eawidth(obj, c);
-	    if (width == EA_Z)
-		;
-	    else if (width == EA_F || width == EA_W)
+	    if (width == EA_F || width == EA_W)
 		w += 2;
-	    else
+	    else if (width != EA_Z)
 		w += 1;
-        }
+	    pos++;
+	}
 
 	if (max && max < len + w) {
 	    idx -= spc->len;
@@ -396,7 +388,7 @@ size_t strsize(linebreakObj *obj,
 		idx = 0;
 	    break;
 	}
-	idx += clen;
+	idx += glen + elen;
 	len += w;
     }
 

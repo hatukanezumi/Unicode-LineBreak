@@ -248,7 +248,7 @@ sub break_partial ($$) {
 
       CHARACTER_PAIR:
 	while (1) {
-	    my ($chr, $cls);
+	    my ($gcls, $glen, $elen);
 
 	    # End of input.
 	    last CHARACTER_PAIR if !scalar(@custom) and $str_len <= $pos;
@@ -264,62 +264,48 @@ sub break_partial ($$) {
 		#
 
 		while (1) {
-		    $chr = substr($str, $pos, 1);
-		    $cls = $s->lbclass($chr);
+		    ($gcls, $glen, $elen) = $s->gcinfo($str, $pos);
 
 		    # - Explicit breaks and non-breaks
 
 		    # LB7(1): × SP+
-		    while ($cls == LB_SP) {
-			$pos++;
-			$before{spc} .= $chr;
+		    if ($gcls == LB_SP) {
+			$before{spc} .= substr($str, $pos, $glen);
+			$pos += $glen;
 			# Treat (sot | eop) SP+  as if it were WJ.
 			$before{cls} = LB_WJ unless defined $before{cls};
 
 			# End of input.
 			last CHARACTER_PAIR if $str_len <= $pos;
-			$chr = substr($str, $pos, 1);
-			$cls = $s->lbclass($chr);
+			($gcls, $glen, $elen) = $s->gcinfo($str, $pos);
 		    }
 
 		    # - Mandatory breaks
 
 		    # LB4 - LB7: × SP* (BK | CR LF | CR | LF | NL) !
-		    if ($cls == LB_BK or $cls == LB_CR or $cls == LB_LF or
-			$cls == LB_NL) {
-			$pos++;
-			$before{spc} .= $chr; # $before{spc} = SP* (NEWLINE)
-			$before{cls} = $cls;
-			# LB5(1): CR × LF
-			if ($cls == LB_CR) {
-			    # End of input - might be partial newline seq.
-			    last CHARACTER_PAIR if $str_len <= $pos;
-			    $chr = substr($str, $pos, 1);
-			    $cls = $s->lbclass($chr);
-			    if ($cls == LB_LF) {
-				$pos++;
-				$before{spc} .= $chr;
-			    }
-			}
-			$before{eop} = 1;
+		    if ($gcls == LB_BK or $gcls == LB_CR or $gcls == LB_LF or
+			$gcls == LB_NL) {
+			$before{spc} .= substr($str, $pos, $glen);
+			$pos += $glen;
+			$before{cls} = $gcls;
+			$before{eop} = 1
+			    unless !$eot and $gcls == LB_CR and
+			    $glen == 1 and $str_len <= $pos;
 			last CHARACTER_PAIR;
 		    }
 
 		    # - Explicit breaks and non-breaks
 
 		    # LB7(2): × (SP* ZW+)+
-		    if ($cls == LB_ZW) {
-			while ($cls == LB_ZW) {
-			    $pos++;
-			    $before{frg} .= $before{spc}.$chr;
-			    $before{spc} = '';
-			    $before{cls} = LB_ZW;
+		    if ($gcls == LB_ZW) {
+			$before{frg} .= $before{spc}.substr($str, $pos, $glen);
+			$pos += $glen;
+			$before{spc} = '';
+			$before{cls} = LB_ZW;
 
-			    # End of input
-			    last CHARACTER_PAIR if $str_len <= $pos;
-			    $chr = substr($str, $pos, 1);
-			    $cls = $s->lbclass($chr);
-			}
+			# End of input
+			last CHARACTER_PAIR if $str_len <= $pos;
+			($gcls, $glen, $elen) = $s->gcinfo($str, $pos);
 			next;
 		    }
 		    last;
@@ -344,17 +330,13 @@ sub break_partial ($$) {
 		    push @custom, @c;
 		    next;
 		}
+
 		# Try complex breaking - Break SA sequence.
-		my $frg = '';
-		while ($cls == LB_SA) {
-		    $pos++;
-		    $frg .= $chr;
-		    # End of input.
-		    last if $str_len <= $pos;
-		    $chr = substr($str, $pos, 1);
-		    $cls = $s->lbclass($chr);
-		}
-		if (length $frg) {
+		if ($gcls == LB_SA) {
+		    my $frg = '';
+		    $frg .= substr($str, $pos, $glen + $elen);
+		    $pos += $glen + $elen;
+
 		    # End of input - might be partial sequence.
 		    if (!$eot and $str_len <= $pos) {
 			$s->{_line} = \%line;
@@ -370,6 +352,7 @@ sub break_partial ($$) {
 			unshift @custom, @c;
 			next;
 		    }
+		    ($gcls, $glen, $elen) = $s->gcinfo($str, $pos);
 		}
 
 		#
@@ -379,52 +362,16 @@ sub break_partial ($$) {
 		# - Rules for other line breaking classes
 
 		# LB1: Assign a line breaking class to each characters.
-		$pos++;
-		%after = ('cls' => $cls, 'frg' => $chr, 'spc' => '');
-
-		# LB26, LB27: Treat
-		#   (JL* H3 JT* | JL* H2 JV* JT* | JL* JV+ JT* | JL+ | JT+)
-		# as if it were ID or, optionally, AL.
-		# N.B.: [UAX #14] allows some morbid "Korean syllable blocks"
-		# such as
-		#   JL CM JV JT
-		# which might be broken to JL CM and rest.  Maybe this rule is
-		# non-tailorable: cf. Unicode Standard section 3.12
-		# `Conjoining Jamo Behavior'.
-		if ($cls == LB_JL or $cls == LB_JV or $cls == LB_JT or
-		    $cls == LB_H2 or $cls == LB_H3) {
-		    my $pcls = $cls;
-		    while ($pos < $str_len) {
-			$chr = substr($str, $pos, 1);
-			$cls = $s->lbclass($chr);
-			if (($cls == LB_JL or $cls == LB_JV or $cls == LB_JT or
-			     $cls == LB_H2 or $cls == LB_H3) and
-			    $s->lbrule($pcls, $cls) != DIRECT) {
-			    $pos++;
-			    $after{frg} .= $chr;
-			    $pcls = $cls;
-			    next;
-			}
-			last;
-		    }
+		%after = ('frg' => substr($str, $pos, $glen + $elen),
+			  'spc' => '');
+		$pos += $glen + $elen;
+		# LB27: Treate hangul syllable as if it were ID (or AL).
+		if ($gcls == LB_H2 or $gcls == LB_H3 or
+		    $gcls == LB_JL or $gcls == LB_JV or $gcls == LB_JT) {
 		    $after{cls} = ($s->{HangulAsAL} eq 'YES')? LB_AL: LB_ID;
-		}
-
-		# - Combining marks
-
-		# LB9: Treat X CM+ as if it were X
-		# where X is anything except BK, CR, LF, NL, SP or ZW
-		while ($pos < $str_len) {
-		    $chr = substr($str, $pos, 1);
-		    $cls = $s->lbclass($chr);
-		    last unless $cls == LB_CM;
-		    $pos++;
-		    $after{frg} .= $chr;
-		}		    
-
 		# Legacy-CM: Treat SP CM+ as if it were ID.  cf. [UAX #14] 9.1.
 		# LB10: Treat any remaining CM+ as if it were AL.
-		if ($after{cls} == LB_CM) {
+		} elsif ($gcls == LB_CM) {
 		    if ($s->{LegacyCM} eq 'YES' and
 			defined $before{cls} and length $before{spc} and
 			$s->lbclass(substr($before{spc}, -1)) == LB_SP) {
@@ -439,6 +386,8 @@ sub break_partial ($$) {
 		    } else {
 			$after{cls} = LB_AL;
 		    }
+		} else {
+		    $after{cls} = $gcls;
 		}
 	    } else {
 		%after = (%{shift @custom});

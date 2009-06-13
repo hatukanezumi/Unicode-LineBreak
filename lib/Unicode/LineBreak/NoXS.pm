@@ -223,48 +223,27 @@ sub strsize ($$$$$;$) {
     my $idx = 0;
     my $pos = 0;
     while (1) {
-	my ($clen, $c, $cls, $nc, $ncls, $width, $w);
+	my ($c, $width, $w);
+	my ($gcls, $glen, $elen);
+	my $npos;
 
 	last if $length <= $pos;
-	$c = substr($spcstr, $pos, 1);
-	$cls = $self->lbclass($c);
-	$clen = 1;
+	($gcls, $glen, $elen) = $self->gcinfo($spcstr, $pos);
+	$npos = $pos + $glen + $elen;
+	$w = 0;
 
 	# Hangul syllable block
-	if ($cls == LB_H2 or $cls == LB_H3 or
-	    $cls == LB_JL or $cls == LB_JV or $cls == LB_JT) {
-	    while (1) {
-		$pos++;
-		last if $length <= $pos;
-		$nc = substr($spcstr, $pos, 1);
-		$ncls = $self->lbclass($nc);
-		if (($ncls == LB_H2 or $ncls == LB_H3 or
-		    $ncls == LB_JL or $ncls == LB_JV or $ncls == LB_JT) and
-		    $self->lbrule($cls, $ncls) != DIRECT) {
-		    $cls = $ncls;
-		    $clen++;
-		    next;
-		}
-		last;
-	    } 
+	if ($gcls == LB_H2 or $gcls == LB_H3 or
+	    $gcls == LB_JL or $gcls == LB_JV or $gcls == LB_JT) {
 	    $w = 2;
-	} else {
-	    $pos++;
-	    $width = $self->eawidth($c);
-	    if ($width == EA_Z) { $w = 0; }
-	    elsif ($width == EA_F or $width == EA_W) { $w = 2; }
-	    else { $w = 1; }
+	    $pos += $glen;
 	}
-	while ($pos < $length) {
+	while ($pos < $npos) {
 	    $c = substr($spcstr, $pos, 1);
-	    $cls = $self->lbclass($c);
-	    last unless $cls == LB_CM;
-	    $pos++;
-	    $clen++;
 	    $width = $self->eawidth($c);
-	    if ($width == EA_Z) { ; }
-	    elsif ($width == EA_F or $width == EA_W) { $w += 2; }
-	    else { $w += 1; }
+	    if ($width == EA_F or $width == EA_W) { $w += 2; }
+	    elsif ($width != EA_Z) { $w += 1; }
+	    $pos++;
 	}
 
 	if ($max and $max < $len + $w) {
@@ -272,7 +251,7 @@ sub strsize ($$$$$;$) {
 	    $idx = 0 unless 0 < $idx;
 	    last;
 	}
-	$idx += $clen;
+	$idx += $glen + $elen;
 	$len += $w;
     }
 
