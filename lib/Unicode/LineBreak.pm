@@ -350,9 +350,8 @@ sub break_partial ($$) {
 		    if (scalar @c) {
 			$c[$#c]->{urg} = 0;
 			unshift @custom, @c;
-			next;
 		    }
-		    ($gcls, $glen, $elen) = $s->gcinfo($str, $pos);
+		    next;
 		}
 
 		#
@@ -727,6 +726,8 @@ sub config ($@) {
     foreach $o (qw{CharactersMax ColumnsMin ColumnsMax Newline}) {
 	$self->{$o} = $Config->{$o} unless defined $self->{$o};
     }
+
+    &_config($self);
 }
 
 sub context (@) {

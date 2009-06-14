@@ -94,11 +94,11 @@ while (<EA>) {
     ($code, $prop) = split /;/;
     if ($prop eq 'A') {
 	if ($name =~ /^LATIN (CAPITAL|SMALL) (LETTER|LIGATURE)/) {
-	    $A{$code} = '@AMBIGUOUS_ALPHABETIC:AMBIGUOUS_LATIN';
+	    $A{$code} = '@AMBIGUOUS_ALPHABETICS:AMBIGUOUS_LATIN';
 	} elsif ($name =~ /^GREEK (CAPITAL|SMALL) (LETTER|LIGATURE)/) {
-	    $A{$code} = '@AMBIGUOUS_ALPHABETIC:AMBIGUOUS_GREEK';
+	    $A{$code} = '@AMBIGUOUS_ALPHABETICS:AMBIGUOUS_GREEK';
 	} elsif ($name =~ /^CYRILLIC (CAPITAL|SMALL) (LETTER|LIGATURE)/) {
-	    $A{$code} = '@AMBIGUOUS_ALPHABETIC:AMBIGUOUS_CYRILLIC';
+	    $A{$code} = '@AMBIGUOUS_ALPHABETICS:AMBIGUOUS_CYRILLIC';
 	}
     }
 }

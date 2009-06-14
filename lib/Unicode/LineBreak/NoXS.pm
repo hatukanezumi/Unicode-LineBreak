@@ -9,6 +9,7 @@ sub _loadlb { }
 sub _loadea { }
 sub _loadscript { }
 sub _loadrule { }
+sub _config { }
 
 # _bsearch IDX, VAL
 # Examine binary search on property map table with following structure:

@@ -557,33 +557,12 @@ SV *_wstrtoutf8(wchar_t *unistr, size_t unilen)
 #endif /* USE_LIBTHAI */
 
 static
-linebreakObj *_selftoobj(linebreakObj *obj, SV *self)
+linebreakObj *_selftoobj(SV *self)
 {
-    SV *sv;
-    char *opt;
-    size_t mapsiz;
-
-    if (!obj) {
-	if ((obj = malloc(sizeof(linebreakObj))) == NULL)
-	    croak("_selftoobj: Cannot allocate memory");
-	else
-	    obj->lbmap = obj->eamap = NULL;
-    }
-    obj->lbmap = _loadmap(obj->lbmap,
-			  *hv_fetch((HV *)SvRV(self), "_lbmap", 6, 0),
-			  &mapsiz);
-    obj->lbmapsiz = mapsiz;
-    obj->eamap = _loadmap(obj->eamap,
-			  *hv_fetch((HV *)SvRV(self), "_eamap", 6, 0),
-			  &mapsiz);
-    obj->eamapsiz = mapsiz;
-
-    obj->options = 0;
-    sv = *hv_fetch((HV *)SvRV(self), "Context", 7, 0);
-    opt = (char *)SvPV_nolen(sv);
-    if (opt && strcmp(opt, "EASTASIAN") == 0)
-	obj->options |= LINEBREAK_OPTION_EASTASIAN_CONTEXT;
-    return obj;
+    SV **svp;
+    if ((svp = hv_fetch((HV *)SvRV(self), "_obj", 4, 0)) == NULL)
+	return NULL;
+    return INT2PTR(linebreakObj *, SvUV(*svp));
 }
 
 MODULE = Unicode::LineBreak	PACKAGE = Unicode::LineBreak	
@@ -679,24 +658,86 @@ _loadrule(mapref)
 	    }
 	}
 
+void
+_config(self)
+	SV *self;
+    PROTOTYPE: $
+    INIT:
+	SV **svp;
+	char *opt;
+	size_t mapsiz;
+	linebreakObj *obj;
+    CODE:
+	if ((obj = _selftoobj(self)) == NULL) {
+	    if ((obj = malloc(sizeof(linebreakObj))) == NULL)
+		croak("_config: Cannot allocate memory");
+	    else
+		obj->lbmap = obj->eamap = NULL;
+	    if (hv_store((HV *)SvRV(self), "_obj", 4,
+			 newSVuv(PTR2UV(obj)), 0) == NULL)
+		croak("_config: Internal error");
+	}
+
+	if ((svp = hv_fetch((HV *)SvRV(self), "_lbmap", 6, 0)) == NULL) {
+	    if (obj->lbmap) {
+		free(obj->lbmap);
+		obj->lbmap = NULL;
+		obj->lbmapsiz = 0;
+	    }
+	} else {
+	    obj->lbmap = _loadmap(obj->lbmap, *svp, &mapsiz);
+	    obj->lbmapsiz = mapsiz;
+	}
+	if ((svp = hv_fetch((HV *)SvRV(self), "_eamap", 6, 0)) == NULL) {
+	    if (obj->eamap) {
+		free(obj->eamap);
+		obj->eamap = NULL;
+		obj->eamapsiz = 0;
+	    }
+	} else {
+	    obj->eamap = _loadmap(obj->eamap, *svp, &mapsiz);
+	    obj->eamapsiz = mapsiz;
+	}
+
+	obj->options = 0;
+	if ((svp = hv_fetch((HV *)SvRV(self), "Context", 7, 0)) != NULL)
+	    opt = (char *)SvPV_nolen(*svp);
+	else
+	    opt = NULL;
+	if (opt && strcmp(opt, "EASTASIAN") == 0)
+	    obj->options |= LINEBREAK_OPTION_EASTASIAN_CONTEXT;
+
+void
+DESTROY(self)
+	SV *self;
+    PROTOTYPE: $
+    INIT:
+	linebreakObj *obj;
+    CODE:
+	obj = _selftoobj(self);
+	if (!obj)
+	    return;
+	if (obj->eamap) free(obj->eamap);
+	if (obj->lbmap) free(obj->lbmap);
+	free(obj);
+	return;
+
 propval_t
 eawidth(self, str)
 	SV *self;
 	SV *str;
     PROTOTYPE: $$
     INIT:
-	linebreakObj obj = {0, 0, 0, 0, 0};
+	linebreakObj *obj;
 	unichar_t c;
 	propval_t prop;
     CODE:
 	/* FIXME: return undef unless (defined $str and length $str); */
 	if (!SvCUR(str))
 	    XSRETURN_UNDEF;
-	_selftoobj(&obj, self);
+	obj = _selftoobj(self);
 	c = utf8_to_uvuni((U8 *)SvPV_nolen(str), NULL);
-	prop = eawidth(&obj, c);
-	if (obj.lbmap) free(obj.lbmap);
-	if (obj.eamap) free(obj.eamap);
+	prop = eawidth(obj, c);
 
 	if (prop == PROP_UNKNOWN)
 	    XSRETURN_UNDEF;
@@ -710,18 +751,16 @@ lbclass(self, str)
 	SV *str;
     PROTOTYPE: $$
     INIT:
-	linebreakObj obj = {0, 0, 0, 0, 0};
+	linebreakObj *obj;
 	unichar_t c;
 	propval_t prop;
     CODE:
 	/* FIXME: return undef unless (defined $str and length $str); */
 	if (!SvCUR(str))
 	    XSRETURN_UNDEF;
-	_selftoobj(&obj, self);
+	obj = _selftoobj(self);
 	c = utf8_to_uvuni((U8 *)SvPV_nolen(str), NULL);
-	prop = lbclass(&obj, c);
-	if (obj.lbmap) free(obj.lbmap);
-	if (obj.eamap) free(obj.eamap);
+	prop = lbclass(obj, c);
 
 	if (prop == PROP_UNKNOWN)
 	    XSRETURN_UNDEF;
@@ -736,15 +775,13 @@ lbrule(self, b_idx, a_idx)
 	propval_t a_idx;
     PROTOTYPE: $$$
     INIT:
-	linebreakObj obj = {0, 0, 0, 0, 0};
+	linebreakObj *obj;
 	propval_t prop;
     CODE:
 	if (!SvOK(ST(1)) || !SvOK(ST(2)))
 	    XSRETURN_UNDEF;
-	_selftoobj(&obj, self);
-	prop = lbrule(&obj, b_idx, a_idx);
-	if (obj.lbmap) free(obj.lbmap);
-	if (obj.eamap) free(obj.eamap);
+	obj = _selftoobj(self);
+	prop = lbrule(obj, b_idx, a_idx);
 
 	if (prop == PROP_UNKNOWN)
 	    XSRETURN_UNDEF;
@@ -761,11 +798,11 @@ strsize(self, len, pre, spc, str, ...)
 	SV *str;
     PROTOTYPE: $$$$$;$
     INIT:
-	linebreakObj obj = {0, 0, 0, 0, 0};
+	linebreakObj *obj;
 	unistr_t unipre = {0, 0}, unispc = {0, 0}, unistr = {0, 0};
 	size_t max;
     CODE:
-	_selftoobj(&obj, self);
+	obj = _selftoobj(self);
 	_utf8touni(&unipre, pre);
 	_utf8touni(&unispc, spc);
 	_utf8touni(&unistr, str);
@@ -774,10 +811,8 @@ strsize(self, len, pre, spc, str, ...)
 	else
 	    max = 0;
 
-	RETVAL = strsize(&obj, len, &unipre, &unispc, &unistr, max);
+	RETVAL = strsize(obj, len, &unipre, &unispc, &unistr, max);
 
-	if (obj.lbmap) free(obj.lbmap);
-	if (obj.eamap) free(obj.eamap);
 	if (unipre.str) free(unipre.str);
 	if (unispc.str) free(unispc.str);
 	if (unistr.str) free(unistr.str);
@@ -792,22 +827,20 @@ gcinfo(self, str, pos)
 	SV *str;
 	size_t pos;
     INIT:
-	linebreakObj obj = {0, 0, 0, 0, 0};
+	linebreakObj *obj;
 	unistr_t unistr = {0, 0};
 	propval_t gcls;
 	size_t glen, elen;
     PPCODE:
 	if (!SvCUR(str))
 	    XSRETURN_UNDEF;
-	_selftoobj(&obj, self);
+	obj = _selftoobj(self);
 	_utf8touni(&unistr, str);
-	gcinfo(&obj, &unistr, pos, &gcls, &glen, &elen);
+	gcinfo(obj, &unistr, pos, &gcls, &glen, &elen);
 	XPUSHs(sv_2mortal(newSViv(gcls)));
 	XPUSHs(sv_2mortal(newSViv(glen)));
 	XPUSHs(sv_2mortal(newSViv(elen)));
 
-	if (obj.lbmap) free(obj.lbmap);
-	if (obj.eamap) free(obj.eamap);
 	if (unistr.str) free(unistr.str);
 	return;
 

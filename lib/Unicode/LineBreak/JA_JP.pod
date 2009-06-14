@@ -414,7 +414,7 @@ L</TailorLB> オプションおよび L</TailorEA> オプションで個々の�
 =head3 行分割特性
 
 初期値では、若干の平仮名や片仮名や仮名に準ずるものを行頭禁則文字 (NS) と扱う。
-以下の対を L<TailorLB> オプションに指定すれば、これらの文字を通常の表語文字的な文字 (ID) と扱う。
+以下の対を L<TailorLB> オプションに指定すれば、これらの文字を通常の表語文字的な文字 (ID) と扱える。
 
 =over 4
 
@@ -434,11 +434,17 @@ U+3005 繰返し記号、U+303B ゆすり点、U+309D 平仮名繰返し記号�
 =item C<KANA_PROLONGED_SOUND_MARKS() =E<gt> LB_ID>
 
 小書き仮名。
+小書き平仮名 U+3041 ぁ, U+3043 ぃ, U+3045 ぅ, U+3047 ぇ, U+3049 ぉ, U+3063 っ, U+3083 ゃ, U+3085 ゅ, U+3087 ょ, U+308E ゎ, U+3095 E<0x3095>, U+3096 E<0x3096>。
+小書き片仮名 U+30A1 ァ, U+30A3 ィ, U+30A5 ゥ, U+30A7 ェ, U+30A9 ォ, U+30C3 ッ, U+30E3 ャ, U+30E5 ュ, U+30E7 ョ, U+30EE ヮ, U+30F5 ヵ, U+30F6 ヶ。
+片仮名表音拡張 U+31F0 E<0x31F0> - U+31FF E<0x31FF>。
+小書き片仮名 (代替名称) U+FF67 E<0xFF67> - U+FF6F E<0xFF6F>。
 
 長音記号。
 U+30FC 長音記号、U+FF70 長音記号 (代替名称)。
 
 注。これらの文字は行頭禁則文字と扱われることも、通常の表語文字的な文字と扱われることもある。[JIS X 4051] 6.1.1 参照。
+
+注。U+3095 E<0x3095>, U+3096 E<0x3096>, U+30F5 ヵ, U+30F6 ヶ は仮名ではないとされる。
 
 =item C<MASU_MARK() =E<gt> LB_ID>
 
@@ -457,7 +463,7 @@ C<TailorEA =E<gt> [ AMBIGUOUS_>*C<() =E<gt> EA_N ]> と指定することで、�
 
 =over 4
 
-=item C<AMBIGUOUS_ALPHABETIC() =E<gt> EA_N>
+=item C<AMBIGUOUS_ALPHABETICS() =E<gt> EA_N>
 
 下記の文字すべてを East_Asian_Width 特性 N (中立) の文字と扱う。
 
@@ -470,11 +476,6 @@ C<TailorEA =E<gt> [ AMBIGUOUS_>*C<() =E<gt> EA_N ]> と指定することで、�
 曖昧 (A) の幅を持つキリル、ギリシア、ラテン用字系の文字を中立 (N) の文字と扱う。
 
 =back
-
-=head2 行分割の基本規則
-
-文字の分類と行分割の基本的な規則は L<Unicode::LineBreak::Rules> で定義している。
-これをカスタマイズしたい場合は、ソースパッケージの F<data> ディレクトリの中を見ること。
 
 =head2 設定ファイル
 
@@ -522,7 +523,7 @@ CB に分類される文字は解決しない。
 
 東南アジアの表記体系の単語分節に対応しない場合は、
 SA に分類される文字は AL に解決する。
-ただし、Grapheme_Cluster_Break 特性の値が Extended か SpacingMark である文字は CM に解決する。
+ただし、Grapheme_Break 特性の値が Extend か SpacingMark である文字は CM に解決する。
 
 =item *
 

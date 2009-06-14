@@ -266,7 +266,7 @@ ORD is UCS scalar value of character or array reference of them.
 CLASS is one of line breaking classes (See L</Constants>).
 
 By default, no tailorings are available.
-See also L</Tailoring Character Classifications>.
+See also L</Tailoring Character Properties>.
 
 =item UrgentBreaking => METHOD
 
@@ -458,9 +458,9 @@ If you don't wish to implement latter format, C<undef> should be returned.
 
 By default, strsize() is used to calculate string sizes.
 
-=head2 Tailoring Character Classifications
+=head2 Tailoring Character Properties
 
-Character classifications may be tailored by L</TailorLB> and L</TailorEA>
+Character properties may be tailored by L</TailorLB> and L</TailorEA>
 options.  Some constants are defined for convenience of tailoring.
 
 =head3 Line Breaking Properties
@@ -487,14 +487,21 @@ N.B. Some of them are neither hiragana nor katakana.
 
 =item C<KANA_PROLONGED_SOUND_MARKS() =E<gt> LB_ID>
 
-Hiragana or katakana small letters.
+Hiragana or katakana small letters:
+Hiragana small letters U+3041 A, U+3043 I, U+3045 U, U+3047 E, U+3049 O, U+3063 TU, U+3083 YA, U+3085 YU, U+3087 YO, U+308E WA, U+3095 KA, U+3096 KE. 
+Katakana small letters U+30A1 A, U+30A3 I, U+30A5 U, U+30A7 E, U+30A9 O, U+30C3 TU, U+30E3 YA, U+30E5 YU, U+30E7 YO, U+30EE WA, U+30F5 KA, U+30F6 KE.
+Katakana phonetic extensions U+31F0 KU - U+31FF RO.
+Halfwidth katakana small letters U+FF67 A - U+FF6F TU.
 
-Hiragana or katakana prolonged sound marks.
+Hiragana or katakana prolonged sound marks:
 U+30FC KATAKANA-HIRAGANA PROLONGED SOUND MARK and
 U+FF70 HALFWIDTH KATAKANA-HIRAGANA PROLONGED SOUND MARK.
 
 N.B. These letters are optionally treated either as nonstarter or
 as normal ideographic.  See [JIS X 4051] 6.1.1.
+
+N.B. U+3095, U+3096, U+30F5, U+30F6 are considered to be
+neither hiragana nor katakana.
 
 =item C<MASU_MARK() =E<gt> LB_ID>
 
@@ -519,7 +526,7 @@ those characters are always treated as narrow.
 
 =over 4
 
-=item C<AMBIGUOUS_ALPHABETIC() =E<gt> EA_N>
+=item C<AMBIGUOUS_ALPHABETICS() =E<gt> EA_N>
 
 Treat all of characters below as East_Asian_Width neutral (N).
 
@@ -533,12 +540,6 @@ Treate letters having ambiguous (A) width of Cyrillic, Greek and Latin scripts
 as neutral (N).
 
 =back
-
-=head2 Core Line Breaking Rules
-
-Classifications of character and core line breaking rules are defined by
-L<Unicode::LineBreak::Rules>.
-If you wish to customize them, see F<data> directory of source package.
 
 =head2 Configuration File
 
@@ -588,8 +589,8 @@ Character(s) assigned to CB are not resolved.
 
 When word segmentation for South East Asian writing systems is not supported,
 characters assigned to SA are resolved to AL,
-except that characters that have Grapheme_Cluster_Break property value
-Extended or SpacingMark be resolved to CM.
+except that characters that have Grapheme_Break property value
+Extend or SpacingMark be resolved to CM.
 
 =item *
 
