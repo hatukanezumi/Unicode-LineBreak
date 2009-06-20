@@ -7,7 +7,7 @@
 #    include "thai/thwbrk.h"
 #endif /* USE_LIBTHAI */
 
-#define PROP_UNKNOWN ((propval_t)(-1))
+#define PROP_UNKNOWN ((propval_t)~0)
 
 typedef unsigned int unichar_t;
 typedef size_t propval_t;
@@ -578,7 +578,7 @@ _loadconst(...)
     CODE:
 	p = _constent;
 	while (p->name) {
-	    *(p->ptr) = -1;
+	    *(p->ptr) = PROP_UNKNOWN;
 	    for (i = 0; i < items; i++) {
 		name = (char *)SvPV_nolen(ST(i));
 		if (strcmp(name, p->name) == 0) {

@@ -44,7 +44,7 @@ use Unicode::LineBreak qw(:all);
 ### Globals
 
 ### The package version, both in 1.23 style *and* usable by MakeMaker:
-our $VERSION = '0.005';
+our $VERSION = '0.006';
 
 ### Public Configuration Attributes
 our $Config = {
@@ -187,9 +187,11 @@ Default is the value of Charset option.
 
 =item Newline
 
-=item NSKanaAsID
-
 =item SizingMethod
+
+=item TailorEA
+
+=item TailorLB
 
 =item UrgentBreaking
 
@@ -208,8 +210,8 @@ sub config {
     my %params = @_;
     my @opts = qw{Charset Language OutputCharset};
     my @lbopts = qw{CharactersMax ColumnsMin ColumnsMax
-			HangulAsAL LegacyCM Newline NSKanaAsID
-			SizingMethod UrgentBreaking UserBreaking};
+			HangulAsAL LegacyCM Newline SizingMethod
+			TailorEA TailorLB UrgentBreaking UserBreaking};
 
     # Get config.
     if (scalar @_ == 1) {

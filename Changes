@@ -1,4 +1,11 @@
-1.000_02  Xxx Xxx XX 2009
+1.000.510  Sat Jun 20 2009
+
+	* Fix: broken testin/th.in
+	* Imp: Added QUESTIONABLE_NARROW_SIGNS constant.
+	* Chg: $UNICODE_VERSION to constant UNICODE_VERSION
+	* Fix: Sync options of Text::LineFold->new() with base class.
+
+1.000_02  Sat Jun 13 2009
 
 	* Fix: Correct Thai (th) tests.
 	* Fix: Unassigned code points are given N, not A (except those of SIP are W).

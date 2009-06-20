@@ -320,9 +320,9 @@ URI を SOLIDUS (スラッシュ) の前で分割する。
 この機能が有効になっていれば、空でない文字列。
 そうでなければ C<undef>。
 
-B<注>: 現リリースではタイ語のタイ文字にのみ対応している。
+B<注>: 現リリースでは現代タイ語のタイ文字にのみ対応している。
 
-=item C<$UNICODE_VERSION>
+=item C<UNICODE_VERSION>
 
 このモジュールが参照する Unicode 標準の版を示す文字列。
 
@@ -474,6 +474,16 @@ C<TailorEA =E<gt> [ AMBIGUOUS_>*C<() =E<gt> EA_N ]> と指定することで、�
 =item C<AMBIGUOUS_LATIN() =E<gt> EA_N>
 
 曖昧 (A) の幅を持つキリル、ギリシア、ラテン用字系の文字を中立 (N) の文字と扱う。
+
+=back
+
+いっぽう、東アジアの符号化文字集合に対する多くの実装でたびたび広い文字に描画されてきたにもかかわらず、Unicode 標準では全角 (F) の互換文字を持つがゆえに狭い (Na) 文字とされている文字が若干ある。L<TailorEA> オプションに以下のように指定することで、これらの文字を C<"EASTASIAN"> 文脈で広い文字と扱える。
+
+=over 4
+
+=item C<QUESTIONABLE_NARROW_SIGNS() =E<gt> EA_A>
+
+U+00A2 セント記号、U+00A3 ポンド記号、U+00A5 円記号 (または元記号)、U+00A6 破断線、U+00AC 否定、U+00AF マクロン。
 
 =back
 

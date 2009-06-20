@@ -100,6 +100,9 @@ while (<EA>) {
 	} elsif ($name =~ /^CYRILLIC (CAPITAL|SMALL) (LETTER|LIGATURE)/) {
 	    $A{$code} = '@AMBIGUOUS_ALPHABETICS:AMBIGUOUS_CYRILLIC';
 	}
+    } elsif ($prop eq 'Na' and 0x7F < hex("0x$code") and
+	     $name !~ /^MATHEMATICAL/ and $name !~ /WHITE PARENTHESIS/) {
+	$Na{$code} = '@QUESTIONABLE_NARROW_SIGNS';
     }
 }
 close EA;
@@ -111,6 +114,8 @@ while (<UD>) {
 	print "$code;Z # $name\n";
     } elsif ($A{$code}) {
 	print "$code;$A{$code} # $name\n";
+    } elsif ($Na{$code}) {
+	print "$code;$Na{$code} # $name\n";
     }
 }
 close UD;

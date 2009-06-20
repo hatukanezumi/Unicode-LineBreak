@@ -69,9 +69,11 @@ fold()/unfold() の結果を符号化するキャラクタセット。
 
 =item Newline
 
-=item NSKanaAsID
-
 =item SizingMethod
+
+=item TailorEA
+
+=item TailorLB
 
 =item UrgentBreaking
 

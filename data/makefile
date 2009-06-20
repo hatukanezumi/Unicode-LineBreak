@@ -1,7 +1,7 @@
 ## 
 
 MODULE_VERSION = 1.000
-BETA_VERSION = 02
+#BETA_VERSION = 03
 UNICODE_VERSION = 5.1.0
 
 WGET = wget
@@ -72,7 +72,7 @@ $(VERSION_PM): $(DATA_PM) $(RULES_PM) $(CONSTANTS_PM) makefile
           echo '=cut'; \
           echo ''; \
 	  echo 'our $$VERSION = '"'"$$VER"';"; \
-	  echo 'our $$UNICODE_VERSION = '"'"$(UNICODE_VERSION)"';"; \
+	  echo 'use constant { UNICODE_VERSION => '"'"$(UNICODE_VERSION)"' };"; \
 	  echo ''; \
 	  echo '1;' \
 	) > $@; \

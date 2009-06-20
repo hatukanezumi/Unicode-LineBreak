@@ -349,9 +349,9 @@ enabled.
 If this feature was enabled, a non-empty string is set. 
 Otherwise, C<undef> is set.
 
-B<N.B.>: Current release supports Thai script of Thai language only.
+B<N.B.>: Current release supports Thai script of modern Thai language only.
 
-=item C<$UNICODE_VERSION>
+=item C<UNICODE_VERSION>
 
 A string to specify version of Unicode standard this module refers.
 
@@ -538,6 +538,19 @@ Treat all of characters below as East_Asian_Width neutral (N).
 
 Treate letters having ambiguous (A) width of Cyrillic, Greek and Latin scripts
 as neutral (N).
+
+=back
+
+On the other hand, despite several characters were occasionally rendered as wide characters by number of implementations for East Asian character sets, they are give narrow (Na) East_Asian_Width property just because they have fullwidth (F) compatibility characters.
+Specifying C<TailorEA> as below, those characters are treated as ambiguous
+--- wide on C<"EASTASIAN"> context.
+
+=over 4
+
+=item C<QUESTIONABLE_NARROW_SIGNS() =E<gt> EA_A>
+
+U+00A2 CENT SIGN, U+00A3 POUND SIGN, U+00A5 YEN SIGN (or yuan sign),
+U+00A6 BROKEN BAR, U+00AC NOT SIGN, U+00AF MACRON.
 
 =back
 
