@@ -308,8 +308,8 @@ Currently HTTP(S) and (S)FTP(S) URIs are supported.
 
 =item C<"BREAKURI">
 
-Break URIs at the positions before SOLIDUSes (slashes).
-By default, URIs are broken at the positions I<after> SOLIDUSes.
+Break URIs according to a rule suitable for printed materials.
+For more details see [CMOS], sections 6.17 and 7.11.
 
 =item C<[> REGEX, SUBREF C<]>
 
@@ -614,6 +614,11 @@ Characters assigned to SG or XX are resolved to AL.
 =head1 REFERENCES
 
 =over 4
+
+=item [CMOS]
+
+I<The Chicago Manual of Style>, 15th edition,
+Chicago University Press, 2003.
 
 =item [JIS X 4051]
 

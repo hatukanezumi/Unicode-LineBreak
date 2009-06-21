@@ -284,8 +284,8 @@ URI を分割しない。
 
 =item C<"BREAKURI">
 
-URI を SOLIDUS (スラッシュ) の前で分割する。
-初期設定では、URI を SOLIDUS のI<後>で分割する。
+URI を、印刷物に適した規則で分割する。
+詳しくは [CMOS] の 6.17 節と 7.11 節を参照。
 
 =item C<[> REGEX, SUBREF C<]>
 
@@ -544,6 +544,11 @@ SG や XX に分類される文字は AL に解決する。
 =head1 REFERENCES
 
 =over 4
+
+=item [CMOS]
+
+I<The Chicago Manual of Style>, 15th edition,
+Chicago University Press, 2003.
 
 =item [JIS X 4051]
 

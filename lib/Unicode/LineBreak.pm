@@ -170,11 +170,31 @@ my %URGENT_BREAKING_FUNCS = (
 );
 
 # Built-in custom breaking behaviors specified by C<UserBreaking>.
-my $URIre = qr{(?:https?|s?ftps?)://[\x{0021}-\x{007E}]+}io;
+my $URIre = qr{(?:https?|s?ftps?)://[\x21-\x7E]+}io;
 my %USER_BREAKING_FUNCS = (
     'NONBREAKURI' => [ $URIre, sub { ($_[1]) } ],
+    # Breaking URIs according to CMOS:
+    # 7.11 1-1: [/] ÷ [^/]
+    # 7.11 2:   [-] ×
+    # 6.17 2:   [.] ×
+    # 7.11 1-2: ÷ [-~.,_?#%]
+    # 7.11 1-3: ÷ [=&]
+    # 7.11 1-3: [=&] ÷
+    # Default:  ALL × ALL
     'BREAKURI' => [ $URIre,
-		    sub { ($_[1] =~ m{(?:^.+?//[^/]*|/[^/]*)}go) } ],
+		    sub {
+			my @c = split m{
+			    (?<=[/]) (?=[^/]) |
+			    (?<=[^-.]) (?=[-~.,_?\#%=&]) |
+			    (?<=[=&]) (?=.)
+			}ox, $_[1];
+			# Won't break punctuations at end of matches.
+			while (2 <= scalar @c and $c[$#c] =~ /^[.:;,>]+$/) {
+			    my $c = pop @c;
+			    $c[$#c] .= $c;
+			}
+			@c;
+		    }],
 );
 
 sub new ($) {
