@@ -6,24 +6,23 @@ my $cat = $ARGV[3] || die;
 my @CLASSES;
 my $default;
 my $id_prop;
-my @MODULO = qw(20201 20219 20231 20233 20249 20261 20269 20287 20297);
-my $RATE = 0.61803398875;
+my @MODULO;
 
 if ($cat eq 'lb') {
     @CLASSES = @LBCLASSES;
     $default = 'XX';
     $id_prop = 'ID';
-    #XXX@MODULO = qw(30529 30539 30553 30557 30559);
+    @MODULO = qw(30529 30539 30553 30557 30559);
 } elsif ($cat eq 'ea') {
     @CLASSES = @EAWIDTHS;
     $default = 'N';
     $id_prop = 'W';
-    #XXX@MODULO = qw(16619 16631 16633 16649 16651);
+    @MODULO = qw(16619 16631 16633 16649 16651);
 } elsif ($cat eq 'script') {
     @CLASSES = @SCRIPTS;
     $default = 'Unknown';
     $id_prop = 'Han';
-    #XXX@MODULO = qw(593 599 601 607 613);
+    @MODULO = qw(593 599 601 607 613);
 }
 my %CLASSES = map { ($_ => 1) } @CLASSES;
 
@@ -150,7 +149,7 @@ MODULO: while (1) {
 	my ($beg, $end, $prop) = @{$TBL[$i]};
 	my $c;
 	for ($c = $beg; $c <= $end; $c++) {
-	    next MODULO unless &add_key($mod, $MODULO[0], $MODULO[1], 32767, $c, $i);
+	    next MODULO unless &add_key($mod, $c, $i);
 	    $count++;
 	}
     }
@@ -160,35 +159,25 @@ MODULO: while (1) {
 print STDERR "COUNT = $count; MODULUS = $mod\n";
 print 'our $'.$cat.'_IDX = [';
 my $pos;
-my $siz = 2**int(log($mod)/log(2)+1.5);
-for ($pos = 0; $pos < $siz; $pos++) {
+for ($pos = 0; $pos < $mod; $pos++) {
     my $ent = $IDX[$pos];
     if (defined $ent) {
 	print "$ent->[1],";
     } else {
 	print "undef,";
     }
-    print "\n" if $pos % 10 == 9;
+    print "\n    " if $pos % 10 == 9;
 }
 print "\n];\n\n";
 
 sub add_key {
     my $mod = shift;
-    my $mod2 = shift;
-    my $mod3 = shift;
-    my $siz = shift;
-    my $key = shift; my $x = $key * $RATE; $x = int(($x - int($x)) * $siz);
+    my $key = shift;
     my $val = shift;
-    my @alt = #(($key + 1) % $mod,
-              # ($key >> 4 | ($key & 0x0F) << 16) % $mod,
-              # ($key >> 8 | ($key & 0xFF) << 12) % $mod,
-              # );
-	      ((($key + 1) * $mod) & $siz,
-	       (($key >> 8 | ($key & 0xFF) << 12) * $mod) & $siz,
-	      #XXX #XXX(int($key+$mod3) * $mod3) & $siz,
-	      #XXX);
-	      #X($x,
-	     );
+    my @alt = (($key + 1) % $mod,
+               ($key >> 4 | ($key & 0x0F) << 16) % $mod,
+               ($key >> 8 | ($key & 0xFF) << 12) % $mod,
+               );
     my $loop;
     for ($loop = 0; $loop < 256; $loop++) {
         my $pos;

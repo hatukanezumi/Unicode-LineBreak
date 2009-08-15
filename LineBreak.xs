@@ -136,8 +136,19 @@ propval_t eawidth(linebreakObj *obj, unichar_t c)
     ret = _bsearch(obj->eamap, obj->eamapsiz, c);
     if (ret == PROP_UNKNOWN)
 	ret = _bsearch(eamap, eamapsiz, c);
-    if (ret == PROP_UNKNOWN)
-	ret = EA_N;
+    if (ret == PROP_UNKNOWN) {
+	if (0x3400 <= c && c <= 0x9FFF ||
+	 0xF900 <= c && c <= 0xFAFF ||
+	 0x20000 <= c && c <= 0x2FFFD ||
+	 0x30000 <= c && c <= 0x3FFFD)
+	    return EA_W;
+	else if (0xE000 <= c && c <= 0xF8FF ||
+		 0xF0000 <= c && c <= 0xFFFFD ||
+		 0x100000 <= c && c <= 0x10FFFD)
+	    ret = EA_A;
+	else
+	    return EA_N;
+    }
     if (ret == EA_A) {
 	if (obj->options & LINEBREAK_OPTION_EASTASIAN_CONTEXT)
 	    return EA_F;
@@ -154,8 +165,15 @@ propval_t _gbclass(linebreakObj *obj, unichar_t c)
     ret = _bsearch(obj->lbmap, obj->lbmapsiz, c);
     if (ret == PROP_UNKNOWN)
 	ret = _bsearch(lbmap, lbmapsiz, c);
-    if (ret == PROP_UNKNOWN)
-	ret = LB_XX;
+    if (ret == PROP_UNKNOWN) {
+	if (0x3400 <= c && c <= 0x9FFF ||
+	    0xF900 <= c && c <= 0xFAFF ||
+	    0x20000 <= c && c <= 0x2FFFD ||
+	    0x30000 <= c && c <= 0x3FFFD)
+	    return LB_ID;
+	else
+	    ret = LB_XX;
+    }
     if (ret == LB_AI) {
 	if (obj->options & LINEBREAK_OPTION_EASTASIAN_CONTEXT)
 	    return LB_ID;

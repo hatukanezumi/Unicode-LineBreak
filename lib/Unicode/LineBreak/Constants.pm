@@ -79,12 +79,13 @@ use constant {
 use constant {
     SCRIPT_Common => 0,
     SCRIPT_Inherited => 1,
-    SCRIPT_Thai => 2,
-    SCRIPT_Lao => 3,
-    SCRIPT_Myanmar => 4,
-    SCRIPT_Khmer => 5,
-    SCRIPT_Tai_Le => 6,
-    SCRIPT_New_Tai_Lue => 7,
+    SCRIPT_Unknown => 2,
+    SCRIPT_Thai => 3,
+    SCRIPT_Lao => 4,
+    SCRIPT_Myanmar => 5,
+    SCRIPT_Khmer => 6,
+    SCRIPT_Tai_Le => 7,
+    SCRIPT_New_Tai_Lue => 8,
 };
 
 1;

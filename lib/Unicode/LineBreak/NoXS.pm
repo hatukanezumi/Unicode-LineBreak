@@ -43,16 +43,57 @@ sub _bsearch {
     $result;
 }
 
+sub _hsearch {
+    my $map = shift;
+    my $idx = shift;
+    my $mod = scalar @{$idx};
+    my $val = shift;
+
+    my ($i, $beg, $end, $prop);
+    $i = $idx->[($val + 1) % $mod];
+    if (defined $i) {
+	($beg, $end, $prop) = @{$map->[$i]};
+	return $prop if $beg <= $val and $val <= $end;
+    }
+    $i = $idx->[($val >> 8 | ($val & 0xFF) << 12) % $mod];
+    if (defined $i) {
+	($beg, $end, $prop) = @{$map->[$i]};
+	return $prop if $beg <= $val and $val <= $end;
+    }
+    $i = $idx->[($val >> 4 | ($val & 0x0F) << 16) % $mod];
+    if (defined $i) {
+	($beg, $end, $prop) = @{$map->[$i]};
+	return $prop if $beg <= $val and $val <= $end;
+    }
+    return undef;
+}
+
 sub eawidth ($$) {
     my $self = shift;
     my $str = shift;
     return undef unless defined $str and length $str;
+    my $c = ord($str);
     my $ret;
-    $ret = &_bsearch($self->{_eamap}, ord($str));
-    $ret = &_bsearch($Unicode::LineBreak::ea_MAP, ord($str))
+
+    $ret = &_bsearch($self->{_eamap}, $c);
+    #$ret = &_bsearch($Unicode::LineBreak::ea_MAP, $c)
+    $ret = &_hsearch($Unicode::LineBreak::ea_MAP,
+		     $Unicode::LineBreak::ea_IDX, $c)
 	unless defined $ret;
-    $ret = EA_N
-	unless defined $ret;
+    unless (defined $ret) {
+	if (0x3400 <= $c and $c <= 0x9FFF or
+	    0xF900 <= $c and $c <= 0xFAFF or
+	    0x20000 <= $c and $c <= 0x2FFFD or
+	    0x30000 <= $c and $c <= 0x3FFFD) {
+	    return EA_W;
+	} elsif (0xE000 <= $c and $c <= 0xF8FF or
+		 0xF0000 <= $c and $c <= 0xFFFFD or
+		 0x100000 <= $c and $c <= 0x10FFFD) {
+	    $ret = EA_A;
+	} else {
+	    return EA_N;
+	}
+    }
     if ($ret == EA_A) {
         if ($self->{Context} eq 'EASTASIAN') {
 	    return EA_F;
@@ -66,12 +107,23 @@ sub _gbclass ($$) {
     my $self = shift;
     my $str = shift;
     return undef unless defined $str and length $str;
+    my $c = ord($str);
     my $ret;
-    $ret = &_bsearch($self->{_lbmap}, ord($str));
-    $ret = &_bsearch($Unicode::LineBreak::lb_MAP, ord($str))
+    $ret = &_bsearch($self->{_lbmap}, $c);
+    #$ret = &_bsearch($Unicode::LineBreak::lb_MAP, $c)
+    $ret = &_hsearch($Unicode::LineBreak::lb_MAP,
+		     $Unicode::LineBreak::lb_IDX, $c)
 	unless defined $ret;
-    $ret = LB_XX
-	unless defined $ret;
+    unless (defined $ret) {
+	if (0x3400 <= $c and $c <= 0x9FFF or
+	    0xF900 <= $c and $c <= 0xFAFF or
+	    0x20000 <= $c and $c <= 0x2FFFD or
+	    0x30000 <= $c and $c <= 0x3FFFD) {
+	    return LB_ID;
+	} else {
+	    $ret = LB_XX;
+	}
+    }
     if ($ret == LB_AI) {
 	return ($self->{Context} eq 'EASTASIAN')? LB_ID: LB_AL;
     } elsif ($ret == LB_SG or $ret == LB_XX) {
