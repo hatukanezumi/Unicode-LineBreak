@@ -1,8 +1,9 @@
 ## 
 
-MODULE_VERSION = 1.002
-#BETA_VERSION = 03
-UNICODE_VERSION = 5.1.0
+MODULE_VERSION = 1.003
+BETA_VERSION = 01
+UNICODE_VERSIONS = 5.1.0
+CURRENT_UNICODE_VERSION = 5.1.0
 
 WGET = wget
 UCD_BASE = http://www.unicode.org/Public/$(UNICODE_VERSION)/ucd/
@@ -11,15 +12,22 @@ LINEBREAK = LineBreak-$(UNICODE_VERSION).txt
 EASTASIANWIDTH = EastAsianWidth-$(UNICODE_VERSION).txt
 GRAPHEMEBREAK = GraphemeBreakProperty-$(UNICODE_VERSION).txt
 SCRIPTS = Scripts-$(UNICODE_VERSION).txt
-DATA_PM = ../lib/Unicode/LineBreak/Data.pm
+RULES = Rules-$(UNICODE_VERSION).txt
+DATA_PM = ../lib/Unicode/LineBreak/$(UNICODE_VERSION).pm
 CONSTANTS_PM = ../lib/Unicode/LineBreak/Constants.pm
-RULES_PM = ../lib/Unicode/LineBreak/Rules.pm
 VERSION_PM = ../lib/Unicode/LineBreak/Version.pm
 META_YML = ../META.yml
 
-all: $(DATA_PM) $(RULES_PM) $(VERSION_PM) $(CONSTANTS_PM)
+all:
+	$(MAKE) data $(CONSTANTS_PM) $(VERSION_PM) \
+		UNICODE_VERSION=$(CURRENT_UNICODE_VERSION)
+	for v in $(UNICODE_VERSIONS); do \
+		test $$v == $(CURRENT_UNICODE_VERSION) || \
+			$(MAKE) data UNICODE_VERSION=$$v; done
 
-$(DATA_PM): Rules $(EASTASIANWIDTH) $(LINEBREAK) SAScripts.txt EastAsianWidth.custom LineBreak.custom rules2pl.pl map2pl.pl lbclasses.pl
+data: $(DATA_PM)
+
+$(DATA_PM): $(RULES) $(EASTASIANWIDTH) $(LINEBREAK) SAScripts.txt EastAsianWidth.custom LineBreak.custom rules2pl.pl map2pl.pl lbclasses.pl
 	( \
 	  echo '#-*- perl -*-'; \
 	  echo ''; \
@@ -34,16 +42,13 @@ $(DATA_PM): Rules $(EASTASIANWIDTH) $(LINEBREAK) SAScripts.txt EastAsianWidth.cu
           echo 'use constant { UNICODE_VERSION => '"'"$(UNICODE_VERSION)"' };"; \
 	  echo ''; \
 	) > $@
-	perl rules2pl.pl Rules >> $@
+	perl rules2pl.pl $(RULES) >> $@
 	perl map2pl.pl $(LINEBREAK) LineBreak.custom Constants.lb lb >> $@
 	perl map2pl.pl $(EASTASIANWIDTH) EastAsianWidth.custom Constants.ea ea >> $@
 	perl map2pl.pl SAScripts.txt '' Constants.script script >> $@
 	echo '1;' >> $@
 
-$(RULES_PM): Rules rules2pl.pl lbclasses.pl
-	perl rules2pl.pl $< > $(RULES_PM)
-
-$(CONSTANTS_PM): $(DATA_PM) $(RULES_PM)
+$(CONSTANTS_PM): $(DATA_PM)
 	( \
 	  echo "=encoding utf8"; \
 	  echo ""; \
@@ -56,14 +61,16 @@ $(CONSTANTS_PM): $(DATA_PM) $(RULES_PM)
 	  echo 'use constant { M => 4, D => 3, I => 2, P => 1,};'; \
 	  echo 'use constant { MANDATORY => M, DIRECT => D, INDIRECT => I, PROHIBITED => P, URGENT => 200,};'; \
 	  echo ''; \
-	  cat Constants.lb Constants.ea Constants.script; \
-	  echo "1;"; \
-	) > $@;
+	) > $@
+	cat Constants.lb >> $@
+	cat Constants.ea >> $@
+	cat Constants.script >> $@
+	echo "1;" >> $@
 
-$(VERSION_PM): $(DATA_PM) $(RULES_PM) $(CONSTANTS_PM) makefile
+$(VERSION_PM): makefile
 	VER=$(MODULE_VERSION); \
 	[ -n "$(BETA_VERSION)" ] && VER=$${VER}_$(BETA_VERSION); \
-	[ -z "$(BETA_VERSION)" ] && VER=$${VER}.`echo -n $(UNICODE_VERSION) | perl -pe 's/\.//g'`; \
+	[ -z "$(BETA_VERSION)" ] && VER=$${VER}.`echo -n $(CURRENT_UNICODE_VERSION) | perl -pe 's/\.//g'`; \
 	( \
 	  echo '#-*- perl -*-'; \
 	  echo ''; \
@@ -76,6 +83,7 @@ $(VERSION_PM): $(DATA_PM) $(RULES_PM) $(CONSTANTS_PM) makefile
           echo '=cut'; \
           echo ''; \
 	  echo 'our $$VERSION = '"'"$$VER"';"; \
+	  echo 'use constant { DEFAULT_UNICODE_VERSION => '"'"$(CURRENT_UNICODE_VERSION)"' };"; \
 	  echo ''; \
 	  echo '1;' \
 	) > $@; \
@@ -94,6 +102,10 @@ unicodedata:
 	$(WGET) -O $(GRAPHEMEBREAK) $(UCD_BASE)auxiliary/GraphemeBreakProperty.txt
 	$(WGET) -O $(SCRIPTS) $(UCD_BASE)Scripts.txt
 
+clean-data:
+	rm -f $(DATA_PM)
+
 clean:
-	rm -f $(DATA_PM) Constants.* $(CONSTANTS_PM) $(RULES_PM) $(VERSION_PM)
+	rm -f Constants.* $(CONSTANTS_PM) $(VERSION_PM)
+	for v in $(UNICODE_VERSIONS); do $(MAKE) clean-data UNICODE_VERSION=$$v; done
 

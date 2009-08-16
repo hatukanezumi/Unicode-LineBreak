@@ -82,7 +82,9 @@ for ($c = 0; $c <= $#PROPS; $c++) {
 printf "    [0x%04X, 0x%04X, %s_%s],\n", $beg, $end, uc($cat), $p;
 print "];\n\n";
 
-open CONSTANTS, ">", $ARGV[2] || die $!;
+unless (-e $ARGV[2]) {
+    open CONSTANTS, ">", $ARGV[2] || die $!;
+}
 print CONSTANTS "use constant {\n";
 my $i;
 for ($i = 0; $i < scalar @CLASSES; $i++) {

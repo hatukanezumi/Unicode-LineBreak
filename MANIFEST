@@ -6,7 +6,7 @@ data/lbclasses.pl
 data/LineBreak.custom
 data/makefile
 data/map2pl.pl
-data/Rules
+data/Rules-5.1.0.txt
 data/rules2pl.pl
 data/SAScripts.txt
 GPL
@@ -14,12 +14,11 @@ lib/Text/LineFold.pm
 lib/Text/LineFold/JA_JP.pod
 lib/Unicode/LineBreak.pm
 lib/Unicode/LineBreak.pod
+lib/Unicode/LineBreak/5.1.0.pm
 lib/Unicode/LineBreak/Constants.pm
-lib/Unicode/LineBreak/Data.pm
 lib/Unicode/LineBreak/Defaults.pm.sample
 lib/Unicode/LineBreak/JA_JP.pod
 lib/Unicode/LineBreak/NoXS.pm
-lib/Unicode/LineBreak/Rules.pm
 lib/Unicode/LineBreak/Version.pm
 LineBreak.xs
 Makefile.PL

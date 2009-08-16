@@ -10,7 +10,7 @@ use vars qw($VERSION @EXPORT_OK @ISA @LB_CLASSES $Config);
 
 ### Exporting:
 use Exporter;
-our @EXPORT_OK = qw(context MANDATORY DIRECT INDIRECT PROHIBITED);
+our @EXPORT_OK = qw(UNICODE_VERSION context);
 our %EXPORT_TAGS = ('all' => [@EXPORT_OK]);
 
 ### Inheritance:
@@ -55,15 +55,7 @@ our $Config = {
 eval { require Unicode::LineBreak::Defaults; };
 
 ### Exportable constants
-my $inc;
-BEGIN {
-    foreach my $dir (@INC) {
-	$inc = File::Spec->catfile($dir, 'Unicode', 'LineBreak');
-	last if -e File::Spec->catfile($inc, 'Version.pm');
-    }
-    require File::Spec->catfile($inc, 'Constants.pm');
-}
-
+use Unicode::LineBreak::Constants;
 use constant 1.01;
 my $package = __PACKAGE__;
 my @consts = grep { s/^${package}::(\w\w+)$/$1/ } keys %constant::declared;
@@ -71,11 +63,26 @@ _loadconst(@consts);
 push @EXPORT_OK, @consts;
 push @{$EXPORT_TAGS{'all'}}, @consts;
 
-require File::Spec->catfile($inc, 'Data.pm');
-_loadrule($Unicode::LineBreak::RULES_MAP);
-_loadlb($Unicode::LineBreak::lb_MAP);
-_loadea($Unicode::LineBreak::ea_MAP);
-_loadscript($Unicode::LineBreak::script_MAP);
+### Import data specific to Unicode version.
+sub import {
+    my $package = shift;
+    my $version = Unicode::LineBreak::DEFAULT_UNICODE_VERSION();
+    $version = shift if $_[0] =~ /^\d+\.\d+[-.\w]*$/;
+
+    foreach my $dir (@INC) {
+	eval {
+	    require File::Spec->catfile($dir, 'Unicode', 'LineBreak',
+					$version.'.pm');
+	};
+	last unless $@;
+    }
+    croak "Unknown Unicode version $version" if $@;
+    Unicode::LineBreak->export_to_level(1, $package, @_);
+    _loadrule($Unicode::LineBreak::RULES_MAP);
+    _loadlb($Unicode::LineBreak::lb_MAP);
+    _loadea($Unicode::LineBreak::ea_MAP);
+    _loadscript($Unicode::LineBreak::script_MAP);
+}
 
 ### Privates
 my $EASTASIAN_CHARSETS = qr{
