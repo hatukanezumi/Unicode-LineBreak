@@ -22,8 +22,7 @@ VERSION_PM = ../lib/Unicode/LineBreak/Version.pm
 META_YML = ../META.yml
 
 all:
-	$(MAKE) data $(CONSTANTS_PM) $(VERSION_PM) \
-		UNICODE_VERSION=$(CURRENT_UNICODE_VERSION)
+	$(MAKE) data $(CONSTANTS_PM) $(VERSION_PM) UNICODE_VERSION=$(CURRENT_UNICODE_VERSION)
 	for v in $(UNICODE_VERSIONS); do \
 		test $$v == $(CURRENT_UNICODE_VERSION) || \
 			$(MAKE) data UNICODE_VERSION=$$v; done
@@ -65,9 +64,7 @@ $(CONSTANTS_PM): $(DATA_PM)
 	  echo 'use constant { MANDATORY => M, DIRECT => D, INDIRECT => I, PROHIBITED => P, URGENT => 200,};'; \
 	  echo ''; \
 	) > $@
-	cat Constants.lb >> $@
-	cat Constants.ea >> $@
-	cat Constants.script >> $@
+	cat Constants.lb Constants.ea Constants.script >> $@
 	echo "1;" >> $@
 
 $(VERSION_PM): makefile

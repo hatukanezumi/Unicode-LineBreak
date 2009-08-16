@@ -42,13 +42,14 @@ use constant {
     LB_JL => 29,
     LB_JV => 30,
     LB_JT => 31,
-    LB_SG => 32,
-    LB_AI => 33,
-    LB_SA => 34,
-    LB_XX => 35,
-    LB_SAbase => 36,
-    LB_SAextend => 37,
-    LB_SAprepend => 38,
+    LB_CP => 32,
+    LB_SG => 33,
+    LB_AI => 34,
+    LB_SA => 35,
+    LB_XX => 36,
+    LB_SAbase => 37,
+    LB_SAextend => 38,
+    LB_SAprepend => 39,
 };
 
 use constant {

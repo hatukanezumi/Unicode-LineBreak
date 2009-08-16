@@ -5,6 +5,7 @@ use constant DIRECT_ALLOWED => 2;
 use constant DIRECT_PROHIBITED => -1;
 use constant INDIRECT_PROHIBITED => -2;
 
+$unicode_version = $ARGV[1];
 require "lbclasses.pl";
 
 my %ACTIONS = ('!' => MANDATORY,
