@@ -6,7 +6,7 @@ require 5.008;
 ### Pragmas:
 use strict;
 use warnings;
-use vars qw($VERSION @EXPORT_OK @ISA $UNICODE_VERSION @LB_CLASSES $Config);
+use vars qw($VERSION @EXPORT_OK @ISA @LB_CLASSES $Config);
 
 ### Exporting:
 use Exporter;
@@ -20,6 +20,7 @@ our @ISA = qw(Exporter);
 use Carp qw(croak carp);
 use Encode qw(is_utf8);
 use MIME::Charset;
+use File::Spec;
 
 ### Globals
 
@@ -54,15 +55,14 @@ our $Config = {
 eval { require Unicode::LineBreak::Defaults; };
 
 ### Exportable constants
-use Unicode::LineBreak::Constants;
-
-use constant {
-    MANDATORY => M,
-    DIRECT => D,
-    INDIRECT => I,
-    PROHIBITED => P,
-    URGENT => 200,
-};
+my $inc;
+BEGIN {
+    foreach my $dir (@INC) {
+	$inc = File::Spec->catfile($dir, 'Unicode', 'LineBreak');
+	last if -e File::Spec->catfile($inc, 'Version.pm');
+    }
+    require File::Spec->catfile($inc, 'Constants.pm');
+}
 
 use constant 1.01;
 my $package = __PACKAGE__;
@@ -71,10 +71,8 @@ _loadconst(@consts);
 push @EXPORT_OK, @consts;
 push @{$EXPORT_TAGS{'all'}}, @consts;
 
-require Unicode::LineBreak::Rules;
+require File::Spec->catfile($inc, 'Data.pm');
 _loadrule($Unicode::LineBreak::RULES_MAP);
-
-require Unicode::LineBreak::Data;
 _loadlb($Unicode::LineBreak::lb_MAP);
 _loadea($Unicode::LineBreak::ea_MAP);
 _loadscript($Unicode::LineBreak::script_MAP);

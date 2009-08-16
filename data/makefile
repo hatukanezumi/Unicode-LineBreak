@@ -19,7 +19,7 @@ META_YML = ../META.yml
 
 all: $(DATA_PM) $(RULES_PM) $(VERSION_PM) $(CONSTANTS_PM)
 
-$(DATA_PM): $(EASTASIANWIDTH) $(LINEBREAK) SAScripts.txt EastAsianWidth.custom LineBreak.custom map2pl.pl lbclasses.pl
+$(DATA_PM): Rules $(EASTASIANWIDTH) $(LINEBREAK) SAScripts.txt EastAsianWidth.custom LineBreak.custom rules2pl.pl map2pl.pl lbclasses.pl
 	( \
 	  echo '#-*- perl -*-'; \
 	  echo ''; \
@@ -31,14 +31,17 @@ $(DATA_PM): $(EASTASIANWIDTH) $(LINEBREAK) SAScripts.txt EastAsianWidth.custom L
 	  echo ''; \
 	  echo '=cut'; \
 	  echo ''; \
-	  perl map2pl.pl $(LINEBREAK) LineBreak.custom Constants.lb lb; \
-	  perl map2pl.pl $(EASTASIANWIDTH) EastAsianWidth.custom Constants.ea ea; \
-	  perl map2pl.pl SAScripts.txt '' Constants.script script; \
-	  echo '1;' \
+          echo 'use constant { UNICODE_VERSION => '"'"$(UNICODE_VERSION)"' };"; \
+	  echo ''; \
 	) > $@
+	perl rules2pl.pl Rules >> $@
+	perl map2pl.pl $(LINEBREAK) LineBreak.custom Constants.lb lb >> $@
+	perl map2pl.pl $(EASTASIANWIDTH) EastAsianWidth.custom Constants.ea ea >> $@
+	perl map2pl.pl SAScripts.txt '' Constants.script script >> $@
+	echo '1;' >> $@
 
 $(RULES_PM): Rules rules2pl.pl lbclasses.pl
-	perl rules2pl.pl $< $(RULES_PM)
+	perl rules2pl.pl $< > $(RULES_PM)
 
 $(CONSTANTS_PM): $(DATA_PM) $(RULES_PM)
 	( \
@@ -51,6 +54,7 @@ $(CONSTANTS_PM): $(DATA_PM) $(RULES_PM)
 	  echo "package Unicode::LineBreak;"; \
 	  echo ""; \
 	  echo 'use constant { M => 4, D => 3, I => 2, P => 1,};'; \
+	  echo 'use constant { MANDATORY => M, DIRECT => D, INDIRECT => I, PROHIBITED => P, URGENT => 200,};'; \
 	  echo ''; \
 	  cat Constants.lb Constants.ea Constants.script; \
 	  echo "1;"; \
@@ -72,7 +76,6 @@ $(VERSION_PM): $(DATA_PM) $(RULES_PM) $(CONSTANTS_PM) makefile
           echo '=cut'; \
           echo ''; \
 	  echo 'our $$VERSION = '"'"$$VER"';"; \
-	  echo 'use constant { UNICODE_VERSION => '"'"$(UNICODE_VERSION)"' };"; \
 	  echo ''; \
 	  echo '1;' \
 	) > $@; \
