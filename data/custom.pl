@@ -67,7 +67,7 @@ while (<SCR>) {
 }
 
 open UD, '<', "UnicodeData-$ARGV[1].txt";
-open SASCR, '>', 'SAScripts.txt';
+open SASCR, '>', "SAScripts-$ARGV[1].txt";
 while (<UD>) {
     ($code, $name, $cat) = split /;/;
     if ($SA{$code}) {

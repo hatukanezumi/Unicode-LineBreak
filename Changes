@@ -1,3 +1,9 @@
+1.003_01  Sun Aug 16 2009
+
+	* Imp: Supports multiple Unicode versions.
+	* Added character informations from Unicode 5.2.0 beta (at Aug 04).
+	* Small fixes on documentations.
+	
 1.002.510  Sun Jun 21 2009
 
 	* Chg: Apply CMOS rules to "BREAKURI".

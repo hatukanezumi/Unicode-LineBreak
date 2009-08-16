@@ -25,7 +25,8 @@ WriteMakefile(
 	'PREREQ_PM'	=> {
 	    'Encode'		=> 1.98,
 	    'MIME::Charset'	=> '1.006.2',
-	    'Test::More'	=> 0,
+	    'File::Spec'	=> '0.83',
+	    'Test::More'	=> '0.45',
 	},
 	# Un-comment this if you add C files to link with later:
 	# 'OBJECT'	=> '$(O_FILES)', # link all the C files too

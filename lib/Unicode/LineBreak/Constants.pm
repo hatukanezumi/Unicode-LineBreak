@@ -86,6 +86,8 @@ use constant {
     SCRIPT_Khmer => 5,
     SCRIPT_Tai_Le => 6,
     SCRIPT_New_Tai_Lue => 7,
+    SCRIPT_Tai_Tham => 8,
+    SCRIPT_Tai_Viet => 9,
 };
 
 1;
