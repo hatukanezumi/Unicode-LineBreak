@@ -1,26 +1,38 @@
 use 5.008;
 use strict;
 
+package MY;
 use ExtUtils::MakeMaker;
+use vars qw(@ISA);
+@ISA = qw(ExtUtils::MakeMaker);
+require 'lib/Unicode/LineBreak/Version.pm';
+
+sub postamble {
+    my $ret = '';
+    foreach my $version (@{Unicode::LineBreak::UNICODE_VERSIONS()}) {
+	$ret .= $version.'$(OBJ_EXT)'.": c/$version.c\n";
+	$ret .= "\t".'$(CCCMD) $(CCCDLFLAGS) "-I$(PERL_INC)" $(PASTHRU_DEFINE) $(DEFINE) -o $@ '."c/$version.c\n";
+    }
+    $ret;
+}
 
 my @opts = ();
 if ($ARGV[0] eq 'noxs') {
     @opts = ('XS' => {}, 'C' => []);
 } else {
     if ($ARGV[0] and $ARGV[0] eq 'nolibthai') {
-	;
+	push @opts, ('INC' => '-I./c');
     } else {
 	my $libthai = `pkg-config --modversion libthai`;
 	chomp $libthai;
 	if ($libthai) {
 	    print "Use libthai $libthai\n";
 	    push @opts, ('DEFINE' => "-DUSE_LIBTHAI=\\\"libthai/$libthai\\\"",
-			 'INC' => `pkg-config --cflags libthai`,
+			 'INC' => '-I./c ' . `pkg-config --cflags libthai`,
 			 'LIBS' => `pkg-config --libs libthai`,
 			);
 	}
     }
-    require 'lib/Unicode/LineBreak/Version.pm';
     my $object = '$(BASEEXT)$(OBJ_EXT)';
     $object .= ' ';
     $object .= Unicode::LineBreak::DEFAULT_UNICODE_VERSION().'$(OBJ_EXT)';

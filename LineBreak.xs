@@ -1,4 +1,8 @@
-#include "LineBreak.h"
+#include "EXTERN.h"
+#include "perl.h"
+#include "XSUB.h"
+#include "ppport.h"
+#include "linebreak.h"
 
 extern const unsigned char *linebreak_unicode_version;
 extern mapent_t linebreak_lbmap[];

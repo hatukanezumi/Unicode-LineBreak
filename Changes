@@ -1,10 +1,9 @@
 1.003_01  Fri Aug 28 2009
 
-  * XS'ized character data.  Removed _load*() functions.
+	* XS'ized character data.  Removed _load*() functions.
 	* Remove trivial entries (e.g. XX on lbmap) from character data.
 	* Some typos on documentations.
-	* Start working on support for multiple Unicode versions (incomplete).
-	
+
 1.002.510  Sun Jun 21 2009
 
 	* Chg: Apply CMOS rules to "BREAKURI".

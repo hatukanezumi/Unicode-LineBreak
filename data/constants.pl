@@ -138,7 +138,7 @@ foreach my $attr (@attr) {
 }
 $LBCLASSES .= ");\n\n1;\n";
 
-open LINEBREAK_H, '>', '../LineBreak.h' || die $!;
+open LINEBREAK_H, '>', '../c/linebreak.h' || die $!;
 open CONSTANTS_PM, '>', '../lib/Unicode/LineBreak/Constants.pm' || die $!;
 open LBCLASSES, '>', 'LBCLASSES' || $!;
 
@@ -147,7 +147,7 @@ s/([^\n]*<<<[^\n]*)(.*)(\n[^\n]*>>>[^\n]*)/$1\n$CONSTANTS_PM$3/s;
 print CONSTANTS_PM $_;
 close CONSTANTS_PM;
 
-open IN, '<', 'LineBreak.h.in' || die $!; $_ = join '', <IN>; close IN;
+open IN, '<', 'linebreak.h.in' || die $!; $_ = join '', <IN>; close IN;
 s/([^\n]*<<<[^\n]*)(.*)(\n[^\n]*>>>[^\n]*)/$1\n$LINEBREAK_H$3/s;
 print LINEBREAK_H $_;
 close LINEBREAK_H;
