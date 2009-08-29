@@ -4,11 +4,6 @@ require 5.008;
 use strict;
 use warnings;
 
-sub _loadconst { }
-sub _loadlb { }
-sub _loadea { }
-sub _loadscript { }
-sub _loadrule { }
 sub _config { }
 
 # _bsearch IDX, VAL

@@ -355,7 +355,7 @@ SELF はオブジェクトのインスタンス、EVENT はサブルーチンが
 たとえば次のコードは、行末の空白を取り除いて行折りをする。
 
     sub fmt {
-        if ($_[2] =~ /^eo/) {
+        if ($_[1] =~ /^eo/) {
             return "\n";
       	}
         return undef;
@@ -533,7 +533,7 @@ CB に分類される文字は解決しない。
 
 東南アジアの表記体系の単語分節に対応しない場合は、
 SA に分類される文字は AL に解決する。
-ただし、Grapheme_Break 特性の値が Extend か SpacingMark である文字は CM に解決する。
+ただし、Grapheme_Cluster_Break 特性の値が Extend か SpacingMark である文字は CM に解決する。
 
 =item *
 

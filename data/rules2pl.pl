@@ -5,8 +5,10 @@ use constant DIRECT_ALLOWED => 2;
 use constant DIRECT_PROHIBITED => -1;
 use constant INDIRECT_PROHIBITED => -2;
 
-$unicode_version = $ARGV[1];
-require "lbclasses.pl";
+my $lang = shift @ARGV;
+
+require "LBCLASSES";
+my @LBCLASSES = @{$indexedclasses{'lb'}->{$ARGV[1]}};
 
 my %ACTIONS = ('!' => MANDATORY,
 	       'SP*×' => INDIRECT_PROHIBITED,
@@ -82,18 +84,10 @@ sub exclusive2re {
     return qr{$class};
 }
 
-my @rule_classes = grep !/$OMIT/, @LBCLASSES;
-print <<EOF;
-# Note: Entries related to BK, CR, CM, LF, NL, SP aren't used by break().
-our \$RULES_MAP = [
-EOF
-print "    #";
-foreach my $c (@rule_classes) { $c =~ /(.)(.)/; print $1.lc($2) }
-print "\n";
-foreach my $b (@rule_classes) {
-    print "    [";
-
-    foreach my $a (@rule_classes) {
+my @rows = ();
+foreach my $b (@LBCLASSES) {
+    my @actions = ();
+    foreach my $a (@LBCLASSES) {
 	my $direct = undef;
 	my $indirect = undef;
 	my $mandatory = undef;
@@ -135,9 +129,34 @@ foreach my $b (@rule_classes) {
 	    $action = 'P'; # '^'
 	}
 
-	print "$action,";
+	push @actions, $action;
     }
-    print "], # $b\n";
+    push @rows, [$b, [@actions]];
 }
-print "];\n\n";
 
+if ($lang eq 'perl') {
+    print "# Note: Entries related to BK, CR, CM, LF, NL, SP aren't used by break().\n";
+    print "our \$RULES_MAP = [\n";
+    print "  #";
+    foreach my $c (@LBCLASSES) { $c =~ /(.)(.)/; print $1.lc($2) }
+    print "\n";
+    print join "\n", map {
+	my $b = $_->[0];
+	my @actions = @{$_->[1]};
+	"  [" . join(',',@actions) . "], #$b";
+    } @rows;
+    print "\n];\n\n";
+} else {
+    print "/* Note: Entries related to BK, CR, CM, LF, NL, SP aren't used by break(). */\n";
+    print "propval_t linebreak_rulemap[".(scalar @LBCLASSES)."][".(scalar @LBCLASSES)."] = {\n";
+    print "     /*";
+    foreach my $c (@LBCLASSES) { $c =~ /(.)(.)/; print $1.lc($2) }
+    print "*/\n";
+    print join ",\n", map {
+	my $b = $_->[0];
+	my @actions = @{$_->[1]};
+	"/*$b*/{" . join(',',@actions) . "}";
+    } @rows;
+    print "\n};\n\n";
+    print "size_t linebreak_rulemapsiz = ".scalar(@LBCLASSES).";\n\n";
+}

@@ -1,19 +1,30 @@
 use 5.008;
+use strict;
+
 use ExtUtils::MakeMaker;
 
 my @opts = ();
 if ($ARGV[0] eq 'noxs') {
     @opts = ('XS' => {}, 'C' => []);
-} elsif (!$ARGV[0] or $ARGV[0] ne 'nolibthai') {
-    my $libthai = `pkg-config --modversion libthai`;
-    chomp $libthai;
-    if ($libthai) {
-	print "Use libthai $libthai\n";
-	@opts = ('DEFINE' => "-DUSE_LIBTHAI=\\\"libthai/$libthai\\\"",
-		 'INC' => `pkg-config --cflags libthai`,
-		 'LIBS' => `pkg-config --libs libthai`,
-		 );
+} else {
+    if ($ARGV[0] and $ARGV[0] eq 'nolibthai') {
+	;
+    } else {
+	my $libthai = `pkg-config --modversion libthai`;
+	chomp $libthai;
+	if ($libthai) {
+	    print "Use libthai $libthai\n";
+	    push @opts, ('DEFINE' => "-DUSE_LIBTHAI=\\\"libthai/$libthai\\\"",
+			 'INC' => `pkg-config --cflags libthai`,
+			 'LIBS' => `pkg-config --libs libthai`,
+			);
+	}
     }
+    require 'lib/Unicode/LineBreak/Version.pm';
+    my $object = '$(BASEEXT)$(OBJ_EXT)';
+    $object .= ' ';
+    $object .= Unicode::LineBreak::DEFAULT_UNICODE_VERSION().'$(OBJ_EXT)';
+    push @opts, ('OBJECT' => $object);
 }
 
 WriteMakefile(

@@ -391,7 +391,7 @@ affect decision of successive breaking positions while in the others won't.
 For example, following code folds lines removing trailing spaces:
 
     sub fmt {
-        if ($_[2] =~ /^eo/) {
+        if ($_[1] =~ /^eo/) {
             return "\n";
         }
         return undef;
@@ -602,7 +602,7 @@ Character(s) assigned to CB are not resolved.
 
 When word segmentation for South East Asian writing systems is not supported,
 characters assigned to SA are resolved to AL,
-except that characters that have Grapheme_Break property value
+except that characters that have Grapheme_Cluster_Break property value
 Extend or SpacingMark be resolved to CM.
 
 =item *

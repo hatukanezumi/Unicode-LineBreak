@@ -1,8 +1,9 @@
-1.003_01  Sun Aug 16 2009
+1.003_01  Fri Aug 28 2009
 
-	* Imp: Supports multiple Unicode versions.
-	* Added character informations from Unicode 5.2.0 beta (at Aug 04).
-	* Small fixes on documentations.
+  * XS'ized character data.  Removed _load*() functions.
+	* Remove trivial entries (e.g. XX on lbmap) from character data.
+	* Some typos on documentations.
+	* Start working on support for multiple Unicode versions (incomplete).
 	
 1.002.510  Sun Jun 21 2009
 

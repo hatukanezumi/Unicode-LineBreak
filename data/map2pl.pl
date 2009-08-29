@@ -1,21 +1,10 @@
 #-*- perl -*-
 
-require "lbclasses.pl";
+my $lang = shift @ARGV;
 
-my $cat = $ARGV[3] || die;
-if ($cat eq 'lb') {
-    @CLASSES = @LBCLASSES;
-} elsif ($cat eq 'ea') {
-    @CLASSES = @EAWIDTHS;
-} elsif ($cat eq 'script') {
-    @CLASSES = @SCRIPTS;
-} else {
-    @CLASSES = ();
-}
-%CLASSES = map { ($_ => 1) } @CLASSES;
+my $cat = $ARGV[2] || die;
 
 my @PROPS = ();
-my %CHARACTER_CLASS = ();
 my %CHARACTER_GROUP = ();
 my %PROP_EXCEPTIONS = ();
 
@@ -35,22 +24,15 @@ foreach my $n (1, 0) {
 	foreach my $c (hex("0x$start") .. hex("0x$end")) {
 	    if ($n) {
 		if ($prop =~ /^\@([\w:]+)/) {
-		    my $g = $1;
-		    foreach my $p (split /:/, $g) {
-			$CHARACTER_CLASS{$p} ||= [];
-			push @{$CHARACTER_CLASS{$p}}, $c;
-		    }
 		    next;
 		}
 		$PROP_EXCEPTIONS{$c} = $prop;
 	    } else {
 		my $p = $PROP_EXCEPTIONS{$c} || $prop;
+		next if $cat eq 'lb' and $p =~ /^(AL|SG|XX)$/ or
+			$cat eq 'ea' and $p eq 'N' or
+			$cat eq 'script' and $p eq 'Common';
 		$PROPS[$c] = $p;
-
-		unless ($CLASSES{$p}) {
-		    push @CLASSES, $p;
-		    $CLASSES{$p} = 1;
-		}
 	    }
 	}
 	#print STDERR "$start..$end\n";
@@ -60,12 +42,15 @@ foreach my $n (1, 0) {
 
 #print STDERR "WRITE\n";
 
-print <<EOF;
-our \$${cat}_MAP = [
-EOF
+
+if ($lang eq 'perl') {
+    print "our \$${cat}_MAP = [\n";
+} else {
+    print "mapent_t linebreak_${cat}map[] = {\n";
+}
 
 my ($beg, $end);
-my ($c, $p);
+my ($c, $p, $siz);
 for ($c = 0; $c <= $#PROPS; $c++) {
     unless ($PROPS[$c]) {
 	next;
@@ -73,34 +58,25 @@ for ($c = 0; $c <= $#PROPS; $c++) {
 	$end = $c;
     } else {
 	if (defined $beg and defined $end) {
-	    printf "    [0x%04X, 0x%04X, %s_%s],\n", $beg, $end, uc($cat), $p;
+	    if ($lang eq 'perl') {
+		printf "    [0x%04X, 0x%04X, %s_%s],\n", $beg, $end, uc($cat), $p;
+	    } else {
+		printf "    {0x%04X, 0x%04X, %s_%s},\n", $beg, $end, uc($cat), $p;
+		$siz++;
+	    }
 	}
 	$beg = $end = $c;
 	$p = $PROPS[$c];
     }
 }
-printf "    [0x%04X, 0x%04X, %s_%s],\n", $beg, $end, uc($cat), $p;
-print "];\n\n";
-
-open CONSTANTS, ">", $ARGV[2] || die $!;
-print CONSTANTS "use constant {\n";
-my $i;
-for ($i = 0; $i < scalar @CLASSES; $i++) {
-    print CONSTANTS "    ".uc($cat)."_$CLASSES[$i] => $i,\n";
+if ($lang eq 'perl') {
+    printf "    [0x%04X, 0x%04X, %s_%s],\n", $beg, $end, uc($cat), $p;
+    print "];\n\n";
+} else {
+    printf "    {0x%04X, 0x%04X, %s_%s},\n", $beg, $end, uc($cat), $p;
+    $siz++;
+    print "    {0, 0, PROP_UNKNOWN}\n";
+    print "};\n\n";
+    print "size_t linebreak_${cat}mapsiz = $siz;\n\n";
 }
-print CONSTANTS <<"EOF";
-};
 
-EOF
-
-if (keys %CHARACTER_CLASS) {
-    print CONSTANTS "use constant {\n";
-    foreach my $class (sort keys %CHARACTER_CLASS) {
-	print CONSTANTS "    ".uc($class)." => [";
-	foreach my $c (sort {$a <=> $b} @{$CHARACTER_CLASS{$class}}) {
-	    printf CONSTANTS "0x%04X, ", $c;
-	}
-	print CONSTANTS "],\n";
-    }
-    print CONSTANTS "};\n\n";
-}

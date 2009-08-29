@@ -27,15 +27,6 @@ use File::Spec;
 ### The package version
 require Unicode::LineBreak::Version;
 
-### Load XS or Non-XS module
-eval {
-    require XSLoader;
-    XSLoader::load('Unicode::LineBreak', $VERSION);
-};
-if ($@) {
-    require Unicode::LineBreak::NoXS;
-}
-
 ### Public Configuration Attributes
 our $Config = {
     CharactersMax => 998,
@@ -59,16 +50,17 @@ use Unicode::LineBreak::Constants;
 use constant 1.01;
 my $package = __PACKAGE__;
 my @consts = grep { s/^${package}::(\w\w+)$/$1/ } keys %constant::declared;
-_loadconst(@consts);
 push @EXPORT_OK, @consts;
 push @{$EXPORT_TAGS{'all'}}, @consts;
 
-### Import data specific to Unicode version.
-sub import {
-    my $package = shift;
+### Load XS or Non-XS module
+eval {
+    require XSLoader;
+    XSLoader::load('Unicode::LineBreak', $VERSION);
+};
+if ($@) {
+    require Unicode::LineBreak::NoXS;
     my $version = Unicode::LineBreak::DEFAULT_UNICODE_VERSION();
-    $version = shift if $_[0] =~ /^\d+\.\d+[-.\w]*$/;
-
     foreach my $dir (@INC) {
 	eval {
 	    require File::Spec->catfile($dir, 'Unicode', 'LineBreak',
@@ -77,11 +69,6 @@ sub import {
 	last unless $@;
     }
     croak "Unknown Unicode version $version" if $@;
-    Unicode::LineBreak->export_to_level(1, $package, @_);
-    _loadrule($Unicode::LineBreak::RULES_MAP);
-    _loadlb($Unicode::LineBreak::lb_MAP);
-    _loadea($Unicode::LineBreak::ea_MAP);
-    _loadscript($Unicode::LineBreak::script_MAP);
 }
 
 ### Privates
@@ -389,7 +376,7 @@ sub break_partial ($$) {
 		%after = ('frg' => substr($str, $pos, $glen + $elen),
 			  'spc' => '');
 		$pos += $glen + $elen;
-		# LB27: Treate hangul syllable as if it were ID (or AL).
+		# LB27: Treat hangul syllable as if it were ID (or AL).
 		if ($gcls == LB_H2 or $gcls == LB_H3 or
 		    $gcls == LB_JL or $gcls == LB_JV or $gcls == LB_JT) {
 		    $after{cls} = ($s->{HangulAsAL} eq 'YES')? LB_AL: LB_ID;

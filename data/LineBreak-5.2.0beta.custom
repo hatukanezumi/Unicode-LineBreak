@@ -1,4 +1,4 @@
-## SA characters may be categorized by their Grapheme_Break properties.
+## SA characters may be categorized by their Grapheme_Cluster_Break properties.
 ## See [UAX #29].
 0E01;SAbase # THAI CHARACTER KO KAI
 0E02;SAbase # THAI CHARACTER KHO KHAI

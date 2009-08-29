@@ -48,7 +48,7 @@ I<インスタンスメソッド>。
 
 Charset オプションとともに、言語/地域の文脈を決めるのに使える。
 初期値は C<"XX">。
-L<Unicode::LineBreak/Context> オプションも参照。
+L<Unicode::LineBreak::JA_JP/Context> オプションも参照。
 
 =item OutputCharset => CHARSET
 

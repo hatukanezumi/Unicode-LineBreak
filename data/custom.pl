@@ -9,7 +9,7 @@ if ($ARGV[0] eq 'lb') {
 LB_CUSTOM:
 
 print <<'EOF';
-## SA characters may be categorized by their Grapheme_Break properties.
+## SA characters may be categorized by their Grapheme_Cluster_Break properties.
 ## See [UAX #29].
 EOF
 
