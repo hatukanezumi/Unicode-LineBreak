@@ -26,12 +26,20 @@ sub isPrivateUse {
 	0xF0000 <= $c && $c <= 0xFFFFD ||
 	0x100000 <= $c && $c <= 0x10FFFD;
 }
+sub isTag {
+    my $c = shift;
+    return 0xE0000 <= $c && $c <= 0xE0FFF;
+}
 sub isDefaultIgnorable {
     my $c = shift;
     return
 	0x2060 <= $c && $c <= 0x206F ||
 	0xFFF0 <= $c && $c <= 0xFFFB ||
 	0xE0000 <= $c && $c <= 0xE0FFF;
+}
+sub isYiSyllable {
+    my $c = shift;
+    return 0xA000 <= $c && $c <= 0xA48C && $c != 0xA015;
 }
 
 # _bsearch IDX, VAL
@@ -73,7 +81,7 @@ sub eawidth ($$) {
     my $ret;
     my $c = ord($str);
 
-    if (isCJKIdeograph($c) or isHangulSyllable($c)) {
+    if (isCJKIdeograph($c) or isHangulSyllable($c) or isYiSyllable($c)) {
 	return EA_W;
     }
     if (isDefaultIgnorable($c)) {
@@ -105,7 +113,7 @@ sub _gbclass ($$) {
     my $ret;
     my $c = ord($str);
 
-    if (isCJKIdeograph($c)) {
+    if (isCJKIdeograph($c) || isYiSyllable($c)) {
 	return LB_ID;
     }
     if (isHangulSyllable($c)) {
@@ -114,6 +122,9 @@ sub _gbclass ($$) {
 	} else {
 	    return LB_H3;
 	}
+    }
+    if (isTag($c)) {
+	return LB_CM;
     }
 
     if (isPrivateUse($c)) {

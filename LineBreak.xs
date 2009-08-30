@@ -9,16 +9,18 @@ extern mapent_t linebreak_lbmap[];
 extern size_t linebreak_lbmapsiz;
 extern const unsigned short linebreak_lbhash[];
 extern const unsigned short linebreak_lbhashidx[];
+extern size_t linebreak_lbhashsiz;
 extern mapent_t linebreak_eamap[];
 extern size_t linebreak_eamapsiz;
 extern const unsigned short linebreak_eahash[];
 extern const unsigned short linebreak_eahashidx[];
+extern size_t linebreak_eahashsiz;
 extern mapent_t linebreak_scriptmap[];
 extern size_t linebreak_scriptmapsiz;
 extern propval_t linebreak_rulemap[32][32];
 extern size_t linebreak_rulemapsiz;
 
-#define HASH_MODULUS (1U << 12)
+#define HASH_MODULUS (1U << 11)
 #define isCJKIdeograph(c) \
 	( (0x3400 <= (c) && (c) <= 0x4DBF) ||	\
 	  (0x4E00 <= (c) && (c) <= 0x9FFF) ||	\
@@ -31,10 +33,14 @@ extern size_t linebreak_rulemapsiz;
 	( (0xE000 <= (c) && (c) <= 0xF8FF) ||	\
 	  (0xF0000 <= (c) && (c) <= 0xFFFFD) ||	\
 	  (0x100000 <= (c) && (c) <= 0x10FFFD) )
+#define isTag(c) \
+	(0xE0000 <= (c) && (c) <= 0xE0FFF)
 #define isDefaultIgnorable(c) \
 	( (0x2060 <= (c) && (c) <= 0x206F) ||	\
 	  (0xFFF0 <= (c) && (c) <= 0xFFFB) ||	\
-	  (0xE0000 <= (c) && (c) <= 0xE0FFF) )
+	  isTag(c) )
+#define isYiSyllable(c) \
+	(0xA000 <= (c) && (c) <= 0xA48C && (c) != 0xA015)
 
 /*
  * Utilities
@@ -86,7 +92,7 @@ unistr_t *_unistr_concat(unistr_t *buf, unistr_t *a, unistr_t *b)
 static
 propval_t _bsearch(mapent_t* map, size_t mapsiz, unichar_t c)
 {
-    register mapent_t *top, *bot, *cur;
+    mapent_t *top, *bot, *cur;
 
     if (!map || !mapsiz)
 	return PROP_UNKNOWN;
@@ -105,27 +111,31 @@ propval_t _bsearch(mapent_t* map, size_t mapsiz, unichar_t c)
 }
 
 /*
- * _hsearch (map, hash, hashidx, c)
+ * _hsearch (map, hash, hashidx, hashsiz, c)
  * Examine hash table search.
  */
 static
 propval_t _hsearch(mapent_t *map,
 		   const unsigned short* hash, const unsigned short* hashidx,
-		   unichar_t c)
+		   size_t hashsiz, unichar_t c)
 {
-    register size_t idx;
-    unichar_t beg = UINT_MAX;
+    size_t key, idx, end;
     mapent_t *cur;
-    for (idx = hashidx[c % HASH_MODULUS]; ; idx--) {
+
+    key = c % HASH_MODULUS;
+    idx = hashidx[key];
+    if (hashsiz <= idx)
+	return PROP_UNKNOWN;
+    end = hashidx[key + 1];
+
+    for ( ; idx < end; idx++) {
 	cur = map + (size_t)(hash[idx]);
-	if (beg < cur->end)
-	    return PROP_UNKNOWN;    
-	if (cur->beg <= c && c <= cur->end)
+	if (c < cur->beg)
+	    break;
+	else if (c <= cur->end)
 	    return cur->prop;
-	if (idx == 0)
-	    return PROP_UNKNOWN;    
-	beg = cur->beg;
     }
+    return PROP_UNKNOWN;
 }
 
 /*
@@ -136,7 +146,7 @@ propval_t linebreak_eawidth(linebreakObj *obj, unichar_t c)
 {
     propval_t ret;
 
-    if (isCJKIdeograph(c) || isHangulSyllable(c))
+    if (isCJKIdeograph(c) || isHangulSyllable(c) || isYiSyllable(c))
 	return EA_W;
     if (isDefaultIgnorable(c))
 	return EA_Z;
@@ -147,7 +157,7 @@ propval_t linebreak_eawidth(linebreakObj *obj, unichar_t c)
 	assert(linebreak_eamap && linebreak_eamapsiz);
 	ret = _bsearch(obj->eamap, obj->eamapsiz, c);
 	if (ret == PROP_UNKNOWN)
-	    ret = _hsearch(linebreak_eamap, linebreak_eahash, linebreak_eahashidx, c);
+	    ret = _hsearch(linebreak_eamap, linebreak_eahash, linebreak_eahashidx, linebreak_eahashsiz, c);
 	if (ret == PROP_UNKNOWN)
 	    ret = EA_N;
     }
@@ -163,7 +173,7 @@ propval_t _gbclass(linebreakObj *obj, unichar_t c)
 {
     propval_t ret;
 
-    if (isCJKIdeograph(c))
+    if (isCJKIdeograph(c) || isYiSyllable(c))
 	return LB_ID;
     if (isHangulSyllable(c)) {
 	if (c % 28 == 16)
@@ -171,6 +181,8 @@ propval_t _gbclass(linebreakObj *obj, unichar_t c)
 	else
 	    return LB_H3;
     }
+    if (isTag(c))
+	return LB_CM;
 
     if (isPrivateUse(c))
 	ret = LB_XX;
@@ -178,7 +190,7 @@ propval_t _gbclass(linebreakObj *obj, unichar_t c)
 	assert(linebreak_lbmap && linebreak_lbmapsiz);
 	ret = _bsearch(obj->lbmap, obj->lbmapsiz, c);
 	if (ret == PROP_UNKNOWN)
-	    ret = _hsearch(linebreak_lbmap, linebreak_lbhash, linebreak_lbhashidx, c);
+	    ret = _hsearch(linebreak_lbmap, linebreak_lbhash, linebreak_lbhashidx, linebreak_lbhashsiz, c);
 	if (ret == PROP_UNKNOWN)
 	    ret = LB_XX;
     }

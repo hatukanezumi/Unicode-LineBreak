@@ -1,12 +1,13 @@
 1.003_01  Fri Aug 28 2009
 
 	* XS'ized character data.  Removed _load*() functions.
-	* Removed trivial entries (e.g. XX on lbmap), renages reserved for CJK
-	  ideographs, hangul syllables and default ignorable characters (Cf)
-	  from character data.
-	* Hash index for searching.  Approx. 10% faster in speed, 30KB more
-	  in memory usage.
-	* Some typos on documentations.
+	* Removed trivial entries (e.g. XX on lbmap), ranges reserved for CJK
+	  ideographs, hangul syllables, Yi syllables (except U+A015) and
+	  default ignorable characters (Cf; see Unicode Book section 5.3)
+	  from character data maps.
+	* Hash index for searching (XS version only).  Approx. 10% faster in
+	  speed, 10KB more in memory usage.
+	* Doc: Fixed attributes for some UCS ranges.  Correct several typos.
 
 1.002.510  Sun Jun 21 2009
 

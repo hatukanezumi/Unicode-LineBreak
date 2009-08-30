@@ -83,10 +83,27 @@ foreach my $n (1, 0) {
 			next;
 		    }
 		}
+		if ($cat eq 'lb'
+		    and
+		    (0xE0000 <= $c and $c <= 0xE0FFF)) {
+		    if ($p ne 'CM') {
+			die sprintf 'U+%04X have %s proprty %s', $c, $cat, $p;
+		    } else {
+			next;
+		    }
+		}
+		# reduce Yi syllables.
+		if (0xA000 <= $c and $c <= 0xA48C and $c != 0xA015) {
+		    if ($cat eq 'lb' and $p ne 'ID' or
+			$cat eq 'ea' and $p ne 'W') {
+			die sprintf 'U+%04X have %s proprty %s', $c, $cat, $p;
+		    } else {
+			next;
+		    }
+		}
 		$PROPS[$c] = $p;
 	    }
 	}
-	#print STDERR "$start..$end\n";
     }
     close DATA;
 }
@@ -143,7 +160,7 @@ exit 0 unless $cat eq 'lb' or $cat eq 'ea';
 #Construct hash table.
 my @HASH = ();
 my @INDEX = ();
-my $MODULUS = 1 << 12;
+my $MODULUS = 1 << 11;
 for (my $idx = 0; $idx <= $#MAP; $idx++) {
     my ($beg, $end, $p) = @{$MAP[$idx]};
     for (my $c = $beg; $c <= $end; $c++) {
@@ -160,18 +177,24 @@ my $MAXBUCKETLEN = 0;
 for (my $idx = 0; $idx < $MODULUS; $idx++) {
     my $len = scalar @{$HASH[$idx] || []};
     if ($len) {
+	$INDEX[$idx] = $HASHLEN; # Index points start of bucket.
 	$HASHLEN += $len;
-	$INDEX[$idx] = $HASHLEN - 1; # index points end of bucket.
     }
-    $MAXBUCKETLEN = $len if $MAXBUCKETLEN < $len;
+    if ($MAXBUCKETLEN <= $len) {
+	#XXXprint STDERR join(' ',
+	#XXX		  map { sprintf '[%04X..%04X %s]', @{$MAP[$_]} }
+	#XXX		      @{$HASH[$idx] || []})."\n";
+	$MAXBUCKETLEN = $len;
+    }
 }
+$INDEX[$MODULUS] = $HASHLEN; # Sentinel.
 
 # Print hash table index.
 my $output = '';
 my $line = '';
-for (my $idx = 0; $idx < $MODULUS; $idx++) {
+for (my $idx = 0; $idx < $MODULUS + 1; $idx++) {
     my $hidx = $INDEX[$idx];
-    $hidx = 0 unless defined $hidx; # null index points first entry.
+    $hidx = $HASHLEN unless defined $hidx; # null index points out of table.
     if (76 < 4 + length($line) + length(", $hidx")) {
 	$output .= ",\n" if length $output;
 	$output .= "    $line";
@@ -185,7 +208,7 @@ $output .= "    $line";
 
 if ($lang eq 'perl') {
 } else {
-    print "const unsigned short linebreak_${cat}hashidx[".$MODULUS."] = {\n$output\n};\n\n";
+    print "const unsigned short linebreak_${cat}hashidx[".$MODULUS." + 1] = {\n$output\n};\n\n";
 }
 
 # Print hash table.
@@ -211,6 +234,10 @@ $output .= "    $line";
 if ($lang eq 'perl') {
 } else {
     print "const unsigned short linebreak_${cat}hash[".$HASHLEN."] = {\n$output\n};\n\n";
+    print "size_t linebreak_${cat}hashsiz = $HASHLEN;\n\n";
 }
 
-print STDERR "Hash size: $HASHLEN; max bucket size: $MAXBUCKETLEN\n";
+print STDERR "Hash size: $HASHLEN; ".
+	     "Index load ratio: ".scalar(grep {defined $_} @INDEX)." / $MODULUS; ".
+	     "Max bucket size: $MAXBUCKETLEN\n";
+

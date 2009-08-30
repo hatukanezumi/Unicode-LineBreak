@@ -539,6 +539,30 @@ SA に分類される文字は AL に解決する。
 
 SG や XX に分類される文字は AL に解決する。
 
+=item *
+
+以下の UCS の範囲にあるコードポイントは、文字が割り当てられていなくても決まった特性値を持つ。
+
+    範囲               | lbclass()  | eawidth()  | 説明
+    -------------------------------------------------------------
+    U+2060..U+206F     |      -     | nonspacing | 書式制御文字
+    U+3400..U+4DBF     | ID         | W          | CJK漢字
+    U+4E00..U+9FFF     | ID         | W          | CJK漢字
+    U+F900..U+FAFF     | ID         | W          | CJK漢字
+    U+E000..U+F8FF     | AL (XX)    | A          | 私用領域
+    U+FFF0..U+FFFB     |      -     | nonspacing | 制御文字
+    U+20000..U+2FFFD   | ID         | W          | CJK漢字
+    U+30000..U+3FFFD   | ID         | W          | CJK漢字
+    U+E0000..U+E0FFF   | CM         | nonspacing | タグ
+    U+F0000..U+FFFFD   | AL (XX)    | A          | 私用領域
+    U+100000..U+10FFFD | AL (XX)    | A          | 私用領域
+    その他未割り当て   | AL (XX)    | N          |
+    -------------------------------------------------------------
+
+=item *
+
+一般カテゴリ特性が Mn、Me、Cc、Cf、Zl、Zp のいずれかである文字は、[UAX #11] で割り当てられた East_Asian_Width 特性の値に関わらず、当モジュールで定義した特性値 Z (前進を伴わない) を持つ。
+
 =back
 
 =head1 REFERENCES
