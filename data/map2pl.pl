@@ -8,6 +8,7 @@ my @PROPS = ();
 my %CHARACTER_GROUP = ();
 my %PROP_EXCEPTIONS = ();
 
+# Read data
 foreach my $n (1, 0) {
     next unless $ARGV[$n];
     open DATA, $ARGV[$n] || die $!;
@@ -29,9 +30,59 @@ foreach my $n (1, 0) {
 		$PROP_EXCEPTIONS{$c} = $prop;
 	    } else {
 		my $p = $PROP_EXCEPTIONS{$c} || $prop;
+		# reduce trivial values.
 		next if $cat eq 'lb' and $p =~ /^(AL|SG|XX)$/ or
 			$cat eq 'ea' and $p eq 'N' or
-			$cat eq 'script' and $p eq 'Common';
+			$cat eq 'script' and $p eq 'Unknown';
+		# reduce ranges reserved for CJK ideographs.
+		if (0x3400 <= $c and $c <= 0x4DBF or
+		    0x4E00 <= $c and $c <= 0x9FFF or
+		    0xF900 <= $c and $c <= 0xFAFF or
+		    0x20000 <= $c and $c <= 0x2FFFD or
+		    0x30000 <= $c and $c <= 0x3FFFD) {
+		    if ($cat eq 'lb' and $p ne 'ID' or
+			$cat eq 'ea' and $p ne 'W' or
+			$cat eq 'script' and $p ne 'Unknown') {
+			die sprintf 'U+%04X have %s proprty %s', $c, $cat, $p;
+		    } else {
+			next;
+		    }
+		}
+		# reduce private use areas.
+		if (0xE000 <= $c and $c <= 0xF8FF or
+		    0xF0000 <= $c and $c <= 0xFFFFD or
+		    0x100000 <= $c and $c <= 0x10FFFD) {
+		    if ($cat eq 'lb' and $p ne 'XX' or
+			$cat eq 'ea' and $p ne 'A' or
+			$cat eq 'script' and $p ne 'Unknown') {
+			die sprintf 'U+%04X have %s proprty %s', $c, $cat, $p;
+		    } else {
+			next;
+		    }
+		}
+		# reduce Hangul syllables.
+		if (0xAC00 <= $c and $c <= 0xD7A3) {
+		    if ($cat eq 'lb' and ($c % 28 == 16 and $p ne 'H2' or
+					  $c % 28 != 16 and $p ne 'H3') or
+			$cat eq 'ea' and $p ne 'W' or
+			$cat eq 'script' and $p ne 'Hangul') {
+			die sprintf 'U+%04X have %s proprty %s', $c, $cat, $p;
+		    } else {
+			next;
+		    }
+		}
+		# reduce default ignorable code points.
+		if ($cat eq 'ea'
+		    and
+		    (0x2060 <= $c and $c <= 0x206F or
+		     0xFFF0 <= $c and $c <= 0xFFFB or
+		     0xE0000 <= $c and $c <= 0xE0FFF)) {
+		    if ($p ne 'Z') {
+			die sprintf 'U+%04X have %s proprty %s', $c, $cat, $p;
+		    } else {
+			next;
+		    }
+		}
 		$PROPS[$c] = $p;
 	    }
 	}
@@ -40,17 +91,10 @@ foreach my $n (1, 0) {
     close DATA;
 }
 
-#print STDERR "WRITE\n";
-
-
-if ($lang eq 'perl') {
-    print "our \$${cat}_MAP = [\n";
-} else {
-    print "mapent_t linebreak_${cat}map[] = {\n";
-}
-
+# Construct b-search table.
 my ($beg, $end);
-my ($c, $p, $siz);
+my ($c, $p);
+my @MAP = ();
 for ($c = 0; $c <= $#PROPS; $c++) {
     unless ($PROPS[$c]) {
 	next;
@@ -58,25 +102,115 @@ for ($c = 0; $c <= $#PROPS; $c++) {
 	$end = $c;
     } else {
 	if (defined $beg and defined $end) {
-	    if ($lang eq 'perl') {
-		printf "    [0x%04X, 0x%04X, %s_%s],\n", $beg, $end, uc($cat), $p;
-	    } else {
-		printf "    {0x%04X, 0x%04X, %s_%s},\n", $beg, $end, uc($cat), $p;
-		$siz++;
-	    }
+	    push @MAP, [$beg, $end, $p];
 	}
 	$beg = $end = $c;
 	$p = $PROPS[$c];
     }
 }
+push @MAP, [$beg, $end, $p];
+
+# Print b-search table
 if ($lang eq 'perl') {
-    printf "    [0x%04X, 0x%04X, %s_%s],\n", $beg, $end, uc($cat), $p;
-    print "];\n\n";
+    print "our \$${cat}_MAP = [\n";
 } else {
-    printf "    {0x%04X, 0x%04X, %s_%s},\n", $beg, $end, uc($cat), $p;
-    $siz++;
-    print "    {0, 0, PROP_UNKNOWN}\n";
-    print "};\n\n";
-    print "size_t linebreak_${cat}mapsiz = $siz;\n\n";
+    print "mapent_t linebreak_${cat}map[] = {\n";
+}
+if ($lang eq 'perl') {
+    print join ",\n", map {
+	my ($beg, $end, $p) = @{$_};
+	sprintf "    [0x%04X, 0x%04X, %s_%s]", $beg, $end, uc($cat), $p;
+    } @MAP;
+} else {
+    print join ",\n", map {
+	my ($beg, $end, $p) = @{$_};
+	sprintf "    {0x%04X, 0x%04X, %s_%s}", $beg, $end, uc($cat), $p;
+    } @MAP;
+}
+if ($lang eq 'perl') {
+    print "\n];\n\n";
+} else {
+    print "\n};\n\n";
+    print "size_t linebreak_${cat}mapsiz = ".scalar(@MAP).";\n\n";
 }
 
+printf STDERR "Property %s: %d characters, %d entries\n",
+    $cat, scalar(grep $_, @PROPS), scalar(@MAP);
+
+##########################################################################
+exit 0 unless $cat eq 'lb' or $cat eq 'ea';
+
+#Construct hash table.
+my @HASH = ();
+my @INDEX = ();
+my $MODULUS = 1 << 12;
+for (my $idx = 0; $idx <= $#MAP; $idx++) {
+    my ($beg, $end, $p) = @{$MAP[$idx]};
+    for (my $c = $beg; $c <= $end; $c++) {
+	my $key = $c % $MODULUS;
+	$HASH[$key] ||= [];
+	unless (scalar @{$HASH[$key]} and
+		$HASH[$key]->[$#{$HASH[$key]}] == $idx) {
+	    push @{$HASH[$key]}, $idx;
+	}
+    }
+}
+my $HASHLEN = 0;
+my $MAXBUCKETLEN = 0;
+for (my $idx = 0; $idx < $MODULUS; $idx++) {
+    my $len = scalar @{$HASH[$idx] || []};
+    if ($len) {
+	$HASHLEN += $len;
+	$INDEX[$idx] = $HASHLEN - 1; # index points end of bucket.
+    }
+    $MAXBUCKETLEN = $len if $MAXBUCKETLEN < $len;
+}
+
+# Print hash table index.
+my $output = '';
+my $line = '';
+for (my $idx = 0; $idx < $MODULUS; $idx++) {
+    my $hidx = $INDEX[$idx];
+    $hidx = 0 unless defined $hidx; # null index points first entry.
+    if (76 < 4 + length($line) + length(", $hidx")) {
+	$output .= ",\n" if length $output;
+	$output .= "    $line";
+	$line = '';
+    }
+    $line .= ", " if length $line;
+    $line .= $hidx;
+}
+$output .= ",\n" if length $output;
+$output .= "    $line";
+
+if ($lang eq 'perl') {
+} else {
+    print "const unsigned short linebreak_${cat}hashidx[".$MODULUS."] = {\n$output\n};\n\n";
+}
+
+# Print hash table.
+my $output = '';
+my $line = '';
+for (my $idx = 0; $idx < $MODULUS; $idx++) {
+    my @hidx = @{$HASH[$idx] || []};
+    if (scalar @hidx) {
+	foreach my $hidx (@hidx) {
+	    if (76 < 4 + length($line) + length(", $hidx")) {
+		$output .= ",\n" if length $output;
+		$output .= "    $line";
+		$line = '';
+	    }
+	    $line .= ", " if length $line;
+	    $line .= $hidx;
+	}
+    }
+}
+$output .= ",\n" if length $output;
+$output .= "    $line";
+
+if ($lang eq 'perl') {
+} else {
+    print "const unsigned short linebreak_${cat}hash[".$HASHLEN."] = {\n$output\n};\n\n";
+}
+
+print STDERR "Hash size: $HASHLEN; max bucket size: $MAXBUCKETLEN\n";

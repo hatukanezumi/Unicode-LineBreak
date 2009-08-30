@@ -95,14 +95,15 @@ typedef struct {
 
 #define SCRIPT_Common ((propval_t)0)
 #define SCRIPT_Inherited ((propval_t)1)
-#define SCRIPT_Thai ((propval_t)2)
-#define SCRIPT_Lao ((propval_t)3)
-#define SCRIPT_Myanmar ((propval_t)4)
-#define SCRIPT_Khmer ((propval_t)5)
-#define SCRIPT_Tai_Le ((propval_t)6)
-#define SCRIPT_New_Tai_Lue ((propval_t)7)
-#define SCRIPT_Tai_Tham ((propval_t)8)
-#define SCRIPT_Tai_Viet ((propval_t)9)
+#define SCRIPT_Unknown ((propval_t)2)
+#define SCRIPT_Thai ((propval_t)3)
+#define SCRIPT_Lao ((propval_t)4)
+#define SCRIPT_Myanmar ((propval_t)5)
+#define SCRIPT_Khmer ((propval_t)6)
+#define SCRIPT_Tai_Le ((propval_t)7)
+#define SCRIPT_New_Tai_Lue ((propval_t)8)
+#define SCRIPT_Tai_Tham ((propval_t)9)
+#define SCRIPT_Tai_Viet ((propval_t)10)
 
 
 /* >>> */

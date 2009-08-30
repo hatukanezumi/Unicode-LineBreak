@@ -63,7 +63,7 @@ $(DATA_C): $(RULES) $(EASTASIANWIDTH) $(LINEBREAK) $(SASCRIPTS) $(EASTASIANWIDTH
 	  echo ''; \
 	  echo '#include "linebreak.h"'; \
           echo '#define UNICODE_VERSION "'$(UNICODE_VERSION)'"'; \
-	  echo 'const unsigned char *linebreak_unicode_version = UNICODE_VERSION;'; \
+	  echo 'char *linebreak_unicode_version = UNICODE_VERSION;'; \
 	  echo ''; \
 	) > $@
 	perl rules2pl.pl C $(RULES) $(UNICODE_VERSION) >> $@

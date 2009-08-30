@@ -6,6 +6,34 @@ use warnings;
 
 sub _config { }
 
+sub isCJKIdeograph {
+    my $c = shift;
+    return
+	0x3400 <= $c && $c <= 0x4DBF ||
+	0x4E00 <= $c && $c <= 0x9FFF ||
+	0xF900 <= $c && $c <= 0xFAFF ||
+	0x20000 <= $c && $c <= 0x2FFFD ||
+	0x30000 <= $c && $c <= 0x3FFFD;
+}
+sub isHangulSyllable {
+    my $c = shift;
+    return 0xAC00 <= $c && $c <= 0xD7A3;
+}
+sub isPrivateUse {
+    my $c = shift;
+    return
+	0xE000 <= $c && $c <= 0xF8FF ||
+	0xF0000 <= $c && $c <= 0xFFFFD ||
+	0x100000 <= $c && $c <= 0x10FFFD;
+}
+sub isDefaultIgnorable {
+    my $c = shift;
+    return
+	0x2060 <= $c && $c <= 0x206F ||
+	0xFFF0 <= $c && $c <= 0xFFFB ||
+	0xE0000 <= $c && $c <= 0xE0FFF;
+}
+
 # _bsearch IDX, VAL
 # Examine binary search on property map table with following structure:
 # [
@@ -43,11 +71,24 @@ sub eawidth ($$) {
     my $str = shift;
     return undef unless defined $str and length $str;
     my $ret;
-    $ret = &_bsearch($self->{_eamap}, ord($str));
-    $ret = &_bsearch($Unicode::LineBreak::ea_MAP, ord($str))
-	unless defined $ret;
-    $ret = EA_N
-	unless defined $ret;
+    my $c = ord($str);
+
+    if (isCJKIdeograph($c) or isHangulSyllable($c)) {
+	return EA_W;
+    }
+    if (isDefaultIgnorable($c)) {
+	return EA_Z;
+    }
+
+    if (isPrivateUse($c)) {
+	$ret = EA_A;
+    } else {
+	$ret = &_bsearch($self->{_eamap}, $c);
+	$ret = &_bsearch($Unicode::LineBreak::ea_MAP, $c)
+	    unless defined $ret;
+	$ret = EA_N
+	    unless defined $ret;
+    }
     if ($ret == EA_A) {
         if ($self->{Context} eq 'EASTASIAN') {
 	    return EA_F;
@@ -62,11 +103,28 @@ sub _gbclass ($$) {
     my $str = shift;
     return undef unless defined $str and length $str;
     my $ret;
-    $ret = &_bsearch($self->{_lbmap}, ord($str));
-    $ret = &_bsearch($Unicode::LineBreak::lb_MAP, ord($str))
-	unless defined $ret;
-    $ret = LB_XX
-	unless defined $ret;
+    my $c = ord($str);
+
+    if (isCJKIdeograph($c)) {
+	return LB_ID;
+    }
+    if (isHangulSyllable($c)) {
+	if ($c % 28 == 16) {
+	    return LB_H2;
+	} else {
+	    return LB_H3;
+	}
+    }
+
+    if (isPrivateUse($c)) {
+	$ret = LB_XX;
+    } else {
+	$ret = &_bsearch($self->{_lbmap}, $c);
+	$ret = &_bsearch($Unicode::LineBreak::lb_MAP, $c)
+	    unless defined $ret;
+	$ret = LB_XX
+	    unless defined $ret;
+    }
     if ($ret == LB_AI) {
 	return ($self->{Context} eq 'EASTASIAN')? LB_ID: LB_AL;
     } elsif ($ret == LB_SG or $ret == LB_XX) {

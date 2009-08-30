@@ -1,7 +1,11 @@
 1.003_01  Fri Aug 28 2009
 
 	* XS'ized character data.  Removed _load*() functions.
-	* Remove trivial entries (e.g. XX on lbmap) from character data.
+	* Removed trivial entries (e.g. XX on lbmap), renages reserved for CJK
+	  ideographs, hangul syllables and default ignorable characters (Cf)
+	  from character data.
+	* Hash index for searching.  Approx. 10% faster in speed, 30KB more
+	  in memory usage.
 	* Some typos on documentations.
 
 1.002.510  Sun Jun 21 2009

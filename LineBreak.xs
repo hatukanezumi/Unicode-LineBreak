@@ -4,15 +4,37 @@
 #include "ppport.h"
 #include "linebreak.h"
 
-extern const unsigned char *linebreak_unicode_version;
+extern char *linebreak_unicode_version;
 extern mapent_t linebreak_lbmap[];
 extern size_t linebreak_lbmapsiz;
+extern const unsigned short linebreak_lbhash[];
+extern const unsigned short linebreak_lbhashidx[];
 extern mapent_t linebreak_eamap[];
 extern size_t linebreak_eamapsiz;
+extern const unsigned short linebreak_eahash[];
+extern const unsigned short linebreak_eahashidx[];
 extern mapent_t linebreak_scriptmap[];
 extern size_t linebreak_scriptmapsiz;
 extern propval_t linebreak_rulemap[32][32];
 extern size_t linebreak_rulemapsiz;
+
+#define HASH_MODULUS (1U << 12)
+#define isCJKIdeograph(c) \
+	( (0x3400 <= (c) && (c) <= 0x4DBF) ||	\
+	  (0x4E00 <= (c) && (c) <= 0x9FFF) ||	\
+	  (0xF900 <= (c) && (c) <= 0xFAFF) ||	\
+	  (0x20000 <= (c) && (c) <= 0x2FFFD) ||	\
+	  (0x30000 <= (c) && (c) <= 0x3FFFD) )
+#define isHangulSyllable(c) \
+	(0xAC00 <= (c) && (c) <= 0xD7A3)
+#define isPrivateUse(c) \
+	( (0xE000 <= (c) && (c) <= 0xF8FF) ||	\
+	  (0xF0000 <= (c) && (c) <= 0xFFFFD) ||	\
+	  (0x100000 <= (c) && (c) <= 0x10FFFD) )
+#define isDefaultIgnorable(c) \
+	( (0x2060 <= (c) && (c) <= 0x206F) ||	\
+	  (0xFFF0 <= (c) && (c) <= 0xFFFB) ||	\
+	  (0xE0000 <= (c) && (c) <= 0xE0FFF) )
 
 /*
  * Utilities
@@ -64,26 +86,46 @@ unistr_t *_unistr_concat(unistr_t *buf, unistr_t *a, unistr_t *b)
 static
 propval_t _bsearch(mapent_t* map, size_t mapsiz, unichar_t c)
 {
-    mapent_t *top, *bot, *cur;
-    propval_t result;
+    register mapent_t *top, *bot, *cur;
 
     if (!map || !mapsiz)
 	return PROP_UNKNOWN;
     top = map;
     bot = map + mapsiz - 1;
-    result = PROP_UNKNOWN;
     while (top <= bot) {
 	cur = top + (bot - top) / 2;
 	if (c < cur->beg)
 	    bot = cur - 1;
 	else if (cur->end < c)
 	    top = cur + 1;
-	else {
-	    result = cur->prop;
-	    break;
-	}
+	else
+	    return cur->prop;
     }
-    return result;
+    return PROP_UNKNOWN;
+}
+
+/*
+ * _hsearch (map, hash, hashidx, c)
+ * Examine hash table search.
+ */
+static
+propval_t _hsearch(mapent_t *map,
+		   const unsigned short* hash, const unsigned short* hashidx,
+		   unichar_t c)
+{
+    register size_t idx;
+    unichar_t beg = UINT_MAX;
+    mapent_t *cur;
+    for (idx = hashidx[c % HASH_MODULUS]; ; idx--) {
+	cur = map + (size_t)(hash[idx]);
+	if (beg < cur->end)
+	    return PROP_UNKNOWN;    
+	if (cur->beg <= c && c <= cur->end)
+	    return cur->prop;
+	if (idx == 0)
+	    return PROP_UNKNOWN;    
+	beg = cur->beg;
+    }
 }
 
 /*
@@ -93,13 +135,22 @@ propval_t _bsearch(mapent_t* map, size_t mapsiz, unichar_t c)
 propval_t linebreak_eawidth(linebreakObj *obj, unichar_t c)
 {
     propval_t ret;
-    assert(linebreak_eamap && linebreak_eamapsiz);
 
-    ret = _bsearch(obj->eamap, obj->eamapsiz, c);
-    if (ret == PROP_UNKNOWN)
-	ret = _bsearch(linebreak_eamap, linebreak_eamapsiz, c);
-    if (ret == PROP_UNKNOWN)
-	ret = EA_N;
+    if (isCJKIdeograph(c) || isHangulSyllable(c))
+	return EA_W;
+    if (isDefaultIgnorable(c))
+	return EA_Z;
+
+    if (isPrivateUse(c))
+	ret = EA_A;
+    else {
+	assert(linebreak_eamap && linebreak_eamapsiz);
+	ret = _bsearch(obj->eamap, obj->eamapsiz, c);
+	if (ret == PROP_UNKNOWN)
+	    ret = _hsearch(linebreak_eamap, linebreak_eahash, linebreak_eahashidx, c);
+	if (ret == PROP_UNKNOWN)
+	    ret = EA_N;
+    }
     if (ret == EA_A) {
 	if (obj->options & LINEBREAK_OPTION_EASTASIAN_CONTEXT)
 	    return EA_F;
@@ -111,13 +162,26 @@ propval_t linebreak_eawidth(linebreakObj *obj, unichar_t c)
 propval_t _gbclass(linebreakObj *obj, unichar_t c)
 {
     propval_t ret;
-    assert(linebreak_lbmap && linebreak_lbmapsiz);
 
-    ret = _bsearch(obj->lbmap, obj->lbmapsiz, c);
-    if (ret == PROP_UNKNOWN)
-	ret = _bsearch(linebreak_lbmap, linebreak_lbmapsiz, c);
-    if (ret == PROP_UNKNOWN)
+    if (isCJKIdeograph(c))
+	return LB_ID;
+    if (isHangulSyllable(c)) {
+	if (c % 28 == 16)
+	    return LB_H2;
+	else
+	    return LB_H3;
+    }
+
+    if (isPrivateUse(c))
 	ret = LB_XX;
+    else {
+	assert(linebreak_lbmap && linebreak_lbmapsiz);
+	ret = _bsearch(obj->lbmap, obj->lbmapsiz, c);
+	if (ret == PROP_UNKNOWN)
+	    ret = _hsearch(linebreak_lbmap, linebreak_lbhash, linebreak_lbhashidx, c);
+	if (ret == PROP_UNKNOWN)
+	    ret = LB_XX;
+    }
     if (ret == LB_AI) {
 	if (obj->options & LINEBREAK_OPTION_EASTASIAN_CONTEXT)
 	    return LB_ID;

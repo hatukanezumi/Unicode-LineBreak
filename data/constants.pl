@@ -25,11 +25,11 @@ foreach my $attr (@attr) {
 	$datafile = 'EastAsianWidth';
     } elsif ($attr eq 'script') {
 	$OMIT = undef;
-	@classes = qw(Common Inherited);
+	@classes = qw(Common Inherited Unknown);
 	$datafile = 'Scripts';
     } elsif ($attr eq 'sa') {
 	$OMIT = undef;
-	@classes = qw(Common Inherited);
+	@classes = qw(Common Inherited Unknown);
 	$datafile = 'SAScripts';
 	$attr = 'script';
     } else {
