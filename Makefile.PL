@@ -20,18 +20,16 @@ my @opts = ();
 if ($ARGV[0] eq 'noxs') {
     @opts = ('XS' => {}, 'C' => []);
 } else {
-    if ($ARGV[0] and $ARGV[0] eq 'nolibthai') {
-	push @opts, ('INC' => '-I./c');
+    my $libthai = `pkg-config --modversion libthai`;
+    chomp $libthai;
+    if ($libthai and ($ARGV[0] || '') ne 'nolibthai') {
+	print "Use libthai $libthai\n";
+	push @opts, ('DEFINE' => "-DUSE_LIBTHAI=\\\"libthai/$libthai\\\"",
+		     'INC' => '-I./c ' . `pkg-config --cflags libthai`,
+		     'LIBS' => `pkg-config --libs libthai`,
+		     );
     } else {
-	my $libthai = `pkg-config --modversion libthai`;
-	chomp $libthai;
-	if ($libthai) {
-	    print "Use libthai $libthai\n";
-	    push @opts, ('DEFINE' => "-DUSE_LIBTHAI=\\\"libthai/$libthai\\\"",
-			 'INC' => '-I./c ' . `pkg-config --cflags libthai`,
-			 'LIBS' => `pkg-config --libs libthai`,
-			);
-	}
+	push @opts, ('INC' => '-I./c');
     }
     my $object = '$(BASEEXT)$(OBJ_EXT)';
     $object .= ' ';

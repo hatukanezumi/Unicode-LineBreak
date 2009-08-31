@@ -151,8 +151,8 @@ if ($lang eq 'perl') {
     print "size_t linebreak_${cat}mapsiz = ".scalar(@MAP).";\n\n";
 }
 
-printf STDERR "Property %s: %d characters, %d entries\n",
-    $cat, scalar(grep $_, @PROPS), scalar(@MAP);
+printf STDERR "======== Property %s ========\n%d characters, %d entries\n",
+    uc $cat, scalar(grep $_, @PROPS), scalar(@MAP);
 
 ##########################################################################
 exit 0 unless $cat eq 'lb' or $cat eq 'ea';
@@ -237,7 +237,9 @@ if ($lang eq 'perl') {
     print "size_t linebreak_${cat}hashsiz = $HASHLEN;\n\n";
 }
 
-print STDERR "Hash size: $HASHLEN; ".
-	     "Index load ratio: ".scalar(grep {defined $_} @INDEX)." / $MODULUS; ".
-	     "Max bucket size: $MAXBUCKETLEN\n";
+my $idxld = scalar(grep {defined $_} @INDEX);
+printf STDERR 'Index load: %d / %d = %0.1f%%'."\n",
+    $idxld, $MODULUS, 100.0 * $idxld / $MODULUS;
+printf STDERR 'Bucket size: total %d, max. %d, avg. %0.2f'."\n",
+    $HASHLEN, $MAXBUCKETLEN, $HASHLEN / $idxld;
 
