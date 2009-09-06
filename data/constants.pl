@@ -23,15 +23,14 @@ foreach my $attr (@attr) {
 	$OMIT = undef;
 	@classes = qw{Z Na N A W H F};
 	$datafile = 'EastAsianWidth';
-    } elsif ($attr eq 'script') {
+    } elsif ($attr eq 'sc') {
 	$OMIT = undef;
-	@classes = qw(Common Inherited Unknown);
+	@classes = qw(Common Inherited Unknown Han Hangul);
 	$datafile = 'Scripts';
-    } elsif ($attr eq 'sa') {
+    } elsif ($attr eq 'gb') {
 	$OMIT = undef;
-	@classes = qw(Common Inherited Unknown);
-	$datafile = 'SAScripts';
-	$attr = 'script';
+	@classes = qw(CR LF Control Extend Prepend SpacingMark L V T LV LVT Other);
+	$datafile = 'GraphemeBreakProperty';
     } else {
 	die "Unknown attr $attr\n";
     }
@@ -41,6 +40,21 @@ foreach my $attr (@attr) {
     my %classes = map { ($_ => '') } @classes;
 
     foreach my $version (@versions) {
+
+	my %SA = ();
+	foreach my $ext ('custom', 'txt') {
+	    open LB, '<', "LineBreak-$version.$ext" or next;
+	    while (<LB>) {
+		chomp $_;
+		s/\s*#.*$//;
+		next unless /\S/;
+		my ($code, $prop) = split /;/;
+		$code = hex("0x$code");
+		$SA{$code} = 1 if $prop eq 'SA';
+	    }
+	    close LB;
+	}
+
 	# read new classes from rules.
 	if ($attr eq 'lb') {
 	    unless (open RULES, '<', "Rules-$version.txt") {
@@ -71,18 +85,24 @@ foreach my $attr (@attr) {
 		s/\s*#.*//;
 		next unless /\S/;
 		my ($ucs, $c) = split /;\s*/, $_;
+
 		next unless $ucs;
+		my ($beg, $end) = split /\.\./, $ucs;
+		my ($beg, $end) = split /\.\./, $ucs;
+		$end ||= $beg;
+		$beg = hex("0x$beg");
+		$end = hex("0x$end");
+
 		if ($c =~ /^\w+$/) {
-		    unless (defined $classes{$c}) {
-			push @classes, $c;
-			$classes{$c} = $version;
+		    foreach my $chr (($beg..$end)) {
+			next if $attr eq 'sc' and !$SA{$chr}; # limit to SA
+			unless (defined $classes{$c}) {
+			    push @classes, $c;
+			    $classes{$c} = $version;
+			}
 		    }
 		} elsif ($c =~ /^\@([\w:]+)$/) {
 		    my @c = split /:/, $1;
-		    my ($beg, $end) = split /\.\./, $ucs;
-		    $end ||= $beg;
-		    $beg = hex("0x$beg");
-		    $end = hex("0x$end");
 		    foreach my $cc (@c) {
 			$character_classes{$cc} ||= {};
 			foreach my $chr (($beg..$end)) {

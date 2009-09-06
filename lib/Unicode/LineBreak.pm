@@ -162,7 +162,7 @@ my %URGENT_BREAKING_FUNCS = (
 );
 
 # Built-in custom breaking behaviors specified by C<UserBreaking>.
-my $URIre = qr{(?:https?|s?ftps?)://[\x21-\x7E]+}io;
+my $URIre = qr{\b(?:[a-z][-0-9a-z+.]+://|news:|mailto:)[\x21-\x7E]+}io;
 my %USER_BREAKING_FUNCS = (
     'NONBREAKURI' => [ $URIre, sub { ($_[1]) } ],
     # Breaking URIs according to CMOS:
@@ -260,7 +260,7 @@ sub break_partial ($$) {
 
       CHARACTER_PAIR:
 	while (1) {
-	    my ($gcls, $glen, $elen);
+	    my ($gcls, $glen, $gcol);
 
 	    # End of input.
 	    last CHARACTER_PAIR if !scalar(@custom) and $str_len <= $pos;
@@ -276,7 +276,7 @@ sub break_partial ($$) {
 		#
 
 		while (1) {
-		    ($gcls, $glen, $elen) = $s->gcinfo($str, $pos);
+		    ($gcls, $glen, $gcol) = $s->gcinfo($str, $pos);
 
 		    # - Explicit breaks and non-breaks
 
@@ -289,7 +289,7 @@ sub break_partial ($$) {
 
 			# End of input.
 			last CHARACTER_PAIR if $str_len <= $pos;
-			($gcls, $glen, $elen) = $s->gcinfo($str, $pos);
+			($gcls, $glen, $gcol) = $s->gcinfo($str, $pos);
 		    }
 
 		    # - Mandatory breaks
@@ -317,7 +317,7 @@ sub break_partial ($$) {
 
 			# End of input
 			last CHARACTER_PAIR if $str_len <= $pos;
-			($gcls, $glen, $elen) = $s->gcinfo($str, $pos);
+			($gcls, $glen, $gcol) = $s->gcinfo($str, $pos);
 			next;
 		    }
 		    last;
@@ -346,8 +346,8 @@ sub break_partial ($$) {
 		# Try complex breaking - Break SA sequence.
 		if ($gcls == LB_SA) {
 		    my $frg = '';
-		    $frg .= substr($str, $pos, $glen + $elen);
-		    $pos += $glen + $elen;
+		    $frg .= substr($str, $pos, $glen);
+		    $pos += $glen;
 
 		    # End of input - might be partial sequence.
 		    if (!$eot and $str_len <= $pos) {
@@ -373,9 +373,9 @@ sub break_partial ($$) {
 		# - Rules for other line breaking classes
 
 		# LB1: Assign a line breaking class to each characters.
-		%after = ('frg' => substr($str, $pos, $glen + $elen),
+		%after = ('frg' => substr($str, $pos, $glen),
 			  'spc' => '');
-		$pos += $glen + $elen;
+		$pos += $glen;
 		# LB27: Treat hangul syllable as if it were ID (or AL).
 		if ($gcls == LB_H2 or $gcls == LB_H3 or
 		    $gcls == LB_JL or $gcls == LB_JV or $gcls == LB_JT) {
@@ -691,48 +691,55 @@ sub config ($@) {
     }
 
     ## Classes
+    my %map = ();
     foreach $o (qw{TailorLB TailorEA}) {
 	$self->{$o} = [@{$Config->{$o}}]
 	    unless defined $self->{$o} and ref $self->{$o};
 	my @v = @{$self->{$o}};
-	my %map = ();
 	while (scalar @v) {
 	    my $k = shift @v;
 	    my $v = shift @v;
 	    next unless defined $k and defined $v;
 	    if (ref $k) {
 		foreach my $c (@{$k}) {
-		    $map{$c} = $v;
+		    $map{$c} ||= [-1, -1];
+		    if ($o eq 'TailorLB') {
+			$map{$c}->[0] = $v;
+		    } else {
+			$map{$c}->[1] = $v;
+		    }
 		}
 	    } else {
-		$map{$k} = $v;
-	    }
-	}
-	my @map = ();
-	my ($beg, $end) = (undef, undef);
-	my $p;
-	foreach my $c (sort {$a <=> $b} keys %map) {
-	    unless ($map{$c}) {
-		next;
-	    } elsif (defined $end and $end + 1 == $c and $p eq $map{$c}) {
-		$end = $c;
-	    } else {
-		if (defined $beg and defined $end) {
-		    push @map, [$beg, $end, $p];
+		$map{$k} ||= [-1, -1];
+		if ($o eq 'TailorLB') {
+		    $map{$k}->[0] = $v;
+		} else {
+		    $map{$k}->[1] = $v;
 		}
-		$beg = $end = $c;
-		$p = $map{$c};
 	    }
-	}
-	if (defined $beg and defined $end) {
-	    push @map, [$beg, $end, $p];
-	}
-	if ($o eq 'TailorLB') {
-	    $self->{_lbmap} = \@map;
-	} elsif ($o eq 'TailorEA') {
-	    $self->{_eamap} = \@map;
 	}
     }
+    my @map = ();
+    my ($beg, $end) = (undef, undef);
+    my $p;
+    foreach my $c (sort {$a <=> $b} keys %map) {
+	unless ($map{$c}) {
+	    next;
+	} elsif (defined $end and $end + 1 == $c and
+		 $p->[0] == $map{$c}->[0] and $p->[1] == $map{$c}->[1]) {
+	    $end = $c;
+	} else {
+	    if (defined $beg and defined $end) {
+		push @map, [$beg, $end, @{$p}];
+	    }
+	    $beg = $end = $c;
+	    $p = $map{$c};
+	}
+    }
+    if (defined $beg and defined $end) {
+	push @map, [$beg, $end, @{$p}];
+    }
+    $self->{_map} = \@map;
 
     # Other options
     foreach $o (qw{CharactersMax ColumnsMin ColumnsMax Newline}) {

@@ -4,6 +4,8 @@ if ($ARGV[0] eq 'lb') {
     goto LB_CUSTOM;
 } elsif ($ARGV[0] eq 'ea') {
     goto EA_CUSTOM;
+} else {
+    exit 0;
 }
 
 LB_CUSTOM:
@@ -20,9 +22,7 @@ while (<LB>) {
     $name = $1;
     next unless /\S/;
     ($code, $prop) = split /;/;
-    if ($prop eq 'SA') {
-	$SA{$code} = 'SAbase';
-    } elsif ($prop eq 'NS') {
+    if ($prop eq 'NS') {
 	$NS{$code} = '@KANA_NONSTARTERS:KANA_SMALL_LETTERS'
 	    if $name =~ /LETTER SMALL/;
 	$NS{$code} = '@KANA_NONSTARTERS:KANA_PROLONGED_SOUND_MARKS'
@@ -34,51 +34,13 @@ while (<LB>) {
     }
 }
 
-open GB, '<', "GraphemeBreakProperty-$ARGV[1].txt";
-while (<GB>) {
-    chomp $_;
-    s/\s*#.+//;
-    ($code, $prop) = split /\s*;\s*/;
-    ($beg, $end) = split /\.\./, $code;
-    $end = $beg unless defined $end;
-    foreach my $c ((hex("0x$beg")..hex("0x$end"))) {
-	$c = sprintf "%04X", $c;
-	if ($SA{$c}) {
-	    if ($prop eq 'Extend' or $prop eq 'SpacingMark') {
-		$SA{$c} = 'SAextend';
-	    } elsif ($prop eq 'Prepend') { 
-		$SA{$c} = 'SAprepend';
-	    }
-	}
-    }
-}
-
-open SCR, '<', "Scripts-$ARGV[1].txt";
-while (<SCR>) {
-    chomp $_;
-    s/\s*#.+//;
-    ($code, $prop) = split /\s*;\s*/;
-    ($beg, $end) = split /\.\./, $code;
-    $end = $beg unless defined $end;
-    foreach my $c ((hex("0x$beg")..hex("0x$end"))) {
-	$c = sprintf "%04X", $c;
-	$SCR{$c} = $prop;
-    }
-}
-
 open UD, '<', "UnicodeData-$ARGV[1].txt";
-open SASCR, '>', "SAScripts-$ARGV[1].txt";
 while (<UD>) {
     ($code, $name, $cat) = split /;/;
-    if ($SA{$code}) {
-	$prop = $SA{$code};
-	print "$code;$prop # $name\n";
-	print SASCR "$code;$SCR{$code} # $name\n";
-    } elsif ($NS{$code}) {
+    if ($NS{$code}) {
 	print "$code;$NS{$code} # $name\n";
     }
 }
-close SASCR;
 close UD;
 
 exit 0;

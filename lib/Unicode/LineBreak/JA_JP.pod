@@ -228,21 +228,21 @@ L</TailorEA> オプションも参照。
 
 =item TailorEA => C<[> ORD C<=E<gt>> CLASS, ... C<]>
 
-個々の文字の East_Asian_Width 特性を調整する。
+個々の文字の East_Asian_Width 特性を手直しする。
 ORD は文字の UCS インデクス値か、それらの配列への参照。
 CLASS は East_Asian_Width 特性のいずれか (L</定数> を参照)。
 
-初期値では、East_Asian_width 特性の調整はしない。
-L</文字の特性の調整> も参照。
+初期値では、East_Asian_width 特性の手直しはしない。
+L</文字の特性の手直し> も参照。
 
 =item TailorLB => C<[> ORD C<=E<gt>> CLASS, ... C<]>
 
-個々の文字の行分割特性 (分類) を調整する。
+個々の文字の行分割特性 (分類) を手直しする。
 ORD は文字の UCS インデクス値か、それらの配列への参照。
 CLASS は行分割特性のいずれか (L</定数> を参照)。
 
-初期値では、行分割特性の調整はしない。
-L</文字の特性の調整> も参照。
+初期値では、行分割特性の手直しはしない。
+L</文字の特性の手直し> も参照。
 
 =item UrgentBreaking => METHOD
 
@@ -407,9 +407,9 @@ SELF はオブジェクトのインスタンス、LEN は先行する文字列�
 
 初期値では、文字列長の算出には strsize() を使っている。
 
-=head2 文字の特性の調整
+=head2 文字の特性の手直し
 
-L</TailorLB> オプションおよび L</TailorEA> オプションで個々の文字の行分割特性 (分類) や East_Asian_Width 特性を調整できる。その際に便利な定数をいくつか定義してある。
+L</TailorLB> オプションおよび L</TailorEA> オプションで個々の文字の行分割特性 (分類) や East_Asian_Width 特性を手直しできる。その際に便利な定数をいくつか定義してある。
 
 =head3 行分割特性
 
@@ -545,18 +545,16 @@ SG や XX に分類される文字は AL に解決する。
 
     範囲               | lbclass()  | eawidth()  | 説明
     -------------------------------------------------------------
-    U+2060..U+206F     |      -     | nonspacing | 書式制御文字
     U+3400..U+4DBF     | ID         | W          | CJK漢字
     U+4E00..U+9FFF     | ID         | W          | CJK漢字
-    U+F900..U+FAFF     | ID         | W          | CJK漢字
+    U+D800..U+DFFF     | AL (SG)    | N          | サロゲート
     U+E000..U+F8FF     | AL (XX)    | A          | 私用領域
-    U+FFF0..U+FFFB     |      -     | nonspacing | 制御文字
+    U+F900..U+FAFF     | ID         | W          | CJK漢字
     U+20000..U+2FFFD   | ID         | W          | CJK漢字
     U+30000..U+3FFFD   | ID         | W          | CJK漢字
-    U+E0000..U+E0FFF   | CM         | nonspacing | タグ
     U+F0000..U+FFFFD   | AL (XX)    | A          | 私用領域
     U+100000..U+10FFFD | AL (XX)    | A          | 私用領域
-    その他未割り当て   | AL (XX)    | N          |
+    その他未割り当て   | AL (XX)    | N          | 未割り当て
     -------------------------------------------------------------
 
 =item *

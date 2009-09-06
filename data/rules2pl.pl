@@ -5,10 +5,10 @@ use constant DIRECT_ALLOWED => 2;
 use constant DIRECT_PROHIBITED => -1;
 use constant INDIRECT_PROHIBITED => -2;
 
-my $lang = shift @ARGV;
+my $version = $ARGV[1];
 
 require "LBCLASSES";
-my @LBCLASSES = @{$indexedclasses{'lb'}->{$ARGV[1]}};
+my @LBCLASSES = @{$indexedclasses{'lb'}->{$version}};
 
 my %ACTIONS = ('!' => MANDATORY,
 	       'SP*×' => INDIRECT_PROHIBITED,
@@ -16,7 +16,7 @@ my %ACTIONS = ('!' => MANDATORY,
                '÷' => DIRECT_ALLOWED,
     );
 
-open RULES, "<", $ARGV[0] || die;
+open RULES, "<", "Rules-$version.txt" || die;
 
 my @rules = ();
 while (<RULES>) {
@@ -134,29 +134,30 @@ foreach my $b (@LBCLASSES) {
     push @rows, [$b, [@actions]];
 }
 
-if ($lang eq 'perl') {
-    print "# Note: Entries related to BK, CR, CM, LF, NL, SP aren't used by break().\n";
-    print "our \$RULES_MAP = [\n";
-    print "  #";
-    foreach my $c (@LBCLASSES) { $c =~ /(.)(.)/; print $1.lc($2) }
-    print "\n";
-    print join "\n", map {
-	my $b = $_->[0];
-	my @actions = @{$_->[1]};
-	"  [" . join(',',@actions) . "], #$b";
-    } @rows;
-    print "\n];\n\n";
-} else {
-    print "/* Note: Entries related to BK, CR, CM, LF, NL, SP aren't used by break(). */\n";
-    print "propval_t linebreak_rulemap[".(scalar @LBCLASSES)."][".(scalar @LBCLASSES)."] = {\n";
-    print "     /*";
-    foreach my $c (@LBCLASSES) { $c =~ /(.)(.)/; print $1.lc($2) }
-    print "*/\n";
-    print join ",\n", map {
-	my $b = $_->[0];
-	my @actions = @{$_->[1]};
-	"/*$b*/{" . join(',',@actions) . "}";
-    } @rows;
-    print "\n};\n\n";
-    print "size_t linebreak_rulemapsiz = ".scalar(@LBCLASSES).";\n\n";
-}
+open DATA_PM, '>>', "../lib/Unicode/LineBreak/$version.pm" || $!;
+open DATA_C, '>>', "../c/$version.c" || $!;
+
+print DATA_PM "# Note: Entries related to BK, CR, CM, LF, NL, SP aren't used by break().\n";
+print DATA_PM "our \$RULES = [\n";
+print DATA_PM "  #";
+foreach my $c (@LBCLASSES) { $c =~ /(.)(.)/; print DATA_PM $1.lc($2) }
+print DATA_PM "\n";
+print DATA_PM join "\n", map {
+    my $b = $_->[0];
+    my @actions = @{$_->[1]};
+    "  [" . join(',',@actions) . "], #$b";
+} @rows;
+print DATA_PM "\n];\n\n";
+
+print DATA_C "/* Note: Entries related to BK, CR, CM, LF, NL, SP aren't used by break(). */\n";
+print DATA_C "propval_t linebreak_rules[".(scalar @LBCLASSES)."][".(scalar @LBCLASSES)."] = {\n";
+print DATA_C "     /*";
+foreach my $c (@LBCLASSES) { $c =~ /(.)(.)/; print DATA_C $1.lc($2) }
+print DATA_C "*/\n";
+print DATA_C join ",\n", map {
+    my $b = $_->[0];
+    my @actions = @{$_->[1]};
+    "/*$b*/{" . join(',',@actions) . "}";
+} @rows;
+print DATA_C "\n};\n\n";
+print DATA_C "size_t linebreak_rulessiz = ".scalar(@LBCLASSES).";\n\n";

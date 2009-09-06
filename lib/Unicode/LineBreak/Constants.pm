@@ -48,9 +48,6 @@ use constant {
     LB_AI => 34,
     LB_SA => 35,
     LB_XX => 36,
-    LB_SAbase => 37,
-    LB_SAextend => 38,
-    LB_SAprepend => 39,
 };
 
 use constant {
@@ -64,17 +61,34 @@ use constant {
 };
 
 use constant {
-    SCRIPT_Common => 0,
-    SCRIPT_Inherited => 1,
-    SCRIPT_Unknown => 2,
-    SCRIPT_Thai => 3,
-    SCRIPT_Lao => 4,
-    SCRIPT_Myanmar => 5,
-    SCRIPT_Khmer => 6,
-    SCRIPT_Tai_Le => 7,
-    SCRIPT_New_Tai_Lue => 8,
-    SCRIPT_Tai_Tham => 9,
-    SCRIPT_Tai_Viet => 10,
+    GB_CR => 0,
+    GB_LF => 1,
+    GB_Control => 2,
+    GB_Extend => 3,
+    GB_Prepend => 4,
+    GB_SpacingMark => 5,
+    GB_L => 6,
+    GB_V => 7,
+    GB_T => 8,
+    GB_LV => 9,
+    GB_LVT => 10,
+    GB_Other => 11,
+};
+
+use constant {
+    SC_Common => 0,
+    SC_Inherited => 1,
+    SC_Unknown => 2,
+    SC_Han => 3,
+    SC_Hangul => 4,
+    SC_Thai => 5,
+    SC_Lao => 6,
+    SC_Myanmar => 7,
+    SC_Khmer => 8,
+    SC_Tai_Le => 9,
+    SC_New_Tai_Lue => 10,
+    SC_Tai_Tham => 11,
+    SC_Tai_Viet => 12,
 };
 
 use constant {

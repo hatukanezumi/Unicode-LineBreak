@@ -616,18 +616,16 @@ if they have not been assigned any characers.
 
     Ranges             | lbclass()  | eawidth()  | Description
     -------------------------------------------------------------
-    U+2060..U+206F     |      -     | nonspacing | Format chars
     U+3400..U+4DBF     | ID         | W          | CJK ideographs
     U+4E00..U+9FFF     | ID         | W          | CJK ideographs
-    U+F900..U+FAFF     | ID         | W          | CJK ideographs
+    U+D800..U+DFFF     | AL (SG)    | N          | Surrogates
     U+E000..U+F8FF     | AL (XX)    | A          | Private use
-    U+FFF0..U+FFFB     |      -     | nonspacing | Control chars
+    U+F900..U+FAFF     | ID         | W          | CJK ideographs
     U+20000..U+2FFFD   | ID         | W          | CJK ideographs
     U+30000..U+3FFFD   | ID         | W          | CJK ideographs
-    U+E0000..U+E0FFF   | CM         | nonspacing | Tags
     U+F0000..U+FFFFD   | AL (XX)    | A          | Private use
     U+100000..U+10FFFD | AL (XX)    | A          | Private use
-    Other unassigned   | AL (XX)    | N          |
+    Other unassigned   | AL (XX)    | N          | Unassigned
     -------------------------------------------------------------
 
 =item *
