@@ -93,10 +93,10 @@ I<インスタンスメソッド>。
 Unicode 文字列 STR の位置 POS から始まるB<書記素クラスタ>〔grapheme cluster〕の情報を得る。
 書記素クラスタについて詳しくは [UAX #29] を参照。
 
-3 つの要素を持つ配列 (CLASS, GLEN, ELEN) を返す。
-CLASS は書記素クラスタの最初の文字の行分割特性 (分類)、ただし SA の場合は AL か CM に解決する。GLEN は書記素基底〔grapheme base〕(プリペンド文字を含む) の文字数。ELEN は書記素エキステンダ〔grapheme extender〕の文字数。
-
-B<注>: [UAX #29] では仮名の濁点と半濁点 (ともに合成可能でないもの) が書記素エキステンダ (の一部) になりうるとしているが、当モジュールでは書記素基底と扱う。
+3 つの要素を持つ配列 (LEN, COLS, CLASS) を返す。
+LEN は書記素クラスタに含まれるUnicode文字の数。
+COLS は書記素クラスタの桁数 (組み込みの文字データベースで決定される値)。
+CLASS は書記素基底〔grapheme base〕の最初のUnicode文字の行分割特性 (分類)、ただし SA の場合は AL か CM に解決する。
 
 =end comment
 
@@ -304,9 +304,12 @@ URI を、印刷物に適した規則で分割する。
 
 [UAX #11] で定義される 6 つの East_Asian_Width 特性を表す値と、前進を伴わないことを表す EA_Z。
 
-=item C<LB_BK>, C<LB_CR>, C<LB_LF>, C<LB_NL>, C<LB_SP>, C<LB_OP>, C<LB_CL>, C<LB_QU>, C<LB_GL>, C<LB_NS>, C<LB_EX>, C<LB_SY>, C<LB_IS>, C<LB_PR>, C<LB_PO>, C<LB_NU>, C<LB_AL>, C<LB_ID>, C<LB_IN>, C<LB_HY>, C<LB_BA>, C<LB_BB>, C<LB_B2>, C<LB_CB>, C<LB_ZW>, C<LB_CM>, C<LB_WJ>, C<LB_H2>, C<LB_H3>, C<LB_JL>, C<LB_JV>, C<LB_JT>, C<LB_SG>, C<LB_AI>, C<LB_SA>, C<LB_XX>
+=item C<LB_BK>, C<LB_CR>, C<LB_LF>, C<LB_NL>, C<LB_SP>, C<LB_OP>, C<LB_CL>, C<LB_CP>, C<LB_QU>, C<LB_GL>, C<LB_NS>, C<LB_EX>, C<LB_SY>, C<LB_IS>, C<LB_PR>, C<LB_PO>, C<LB_NU>, C<LB_AL>, C<LB_ID>, C<LB_IN>, C<LB_HY>, C<LB_BA>, C<LB_BB>, C<LB_B2>, C<LB_CB>, C<LB_ZW>, C<LB_CM>, C<LB_WJ>, C<LB_H2>, C<LB_H3>, C<LB_JL>, C<LB_JV>, C<LB_JT>, C<LB_SG>, C<LB_AI>, C<LB_SA>, C<LB_XX>
 
-[UAX #14] で定義される 36 の行分割特性 (分類) を表す値。
+[UAX #14] で定義される 37 の行分割特性 (分類) を表す値。
+
+B<注>:
+特性値 CP はUnicode 5.2.0版で導入された。
 
 =item C<MANDATORY>, C<DIRECT>, C<INDIRECT>, C<PROHIBITED>
 
@@ -538,6 +541,17 @@ SA に分類される文字は AL に解決する。
 =item *
 
 SG や XX に分類される文字は AL に解決する。
+
+=item *
+
+以下の文字は、行分割特性 CB の文字の後に続くとき、Grapheme_Cluster_Break 特性により、CM のようにふるまう。
+
+    UCS    |Name                                     |LBC|GBC
+    -----------------------------------------------------------------
+    U+0F7F |TIBETAN SIGN RNAM BCAD                   |BA |SpacingMark
+    U+FF9E |HALFWIDTH KATAKANA VOICED SOUND MARK     |NS |Extend
+    U+FF9F |HALFWIDTH KATAKANA SEMI-VOICED SOUND MARK|NS |Extend
+    -----------------------------------------------------------------
 
 =item *
 

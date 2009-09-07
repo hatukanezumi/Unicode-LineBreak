@@ -10,7 +10,6 @@ distribution_type:   module
 requires:     
     Encode:                        1.98
     MIME::Charset:                 1.006.2
-    File::Spec:                    0.83
 build_requires:
     Test::More:                    0.45
 resources:

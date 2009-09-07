@@ -102,12 +102,10 @@ I<Instance method>.
 Get information of B<grapheme cluster> of Unicode string STR beginning at position POS.
 For more details about grapheme clusters see [UAX #29].
 
-Returns an array of three elements (CLASS, GLEN, ELEN).
-CLASS is line breaking property (class) of the first character of grapheme cluster, except that SA being resolved to AL or CM.
-GLEN is number of characters of grapheme base, including prepending character(s).
-ELEN is number of characters of grapheme extender.
-
-B<N.B.>: Though [UAX #29] defines that hiragana-katakana voiced/semi-voiced sound marks which are not combining marks may be (a part of) grapheme extender, this module treat them as grapheme base.
+Returns an array of three elements (LEN, COLS, CLASS).
+LEN is number of Unicode characters grapheme cluster contains, including prepending character(s).
+COLS is number of columns of grapheme cluster determined by built-in character database.
+CLASS is line breaking property (class) of the first Unicode character of grapheme base, except that SA being resolved to AL or CM.
 
 =end comment
 
@@ -330,10 +328,12 @@ For more details see L</User-Defined Breaking Behaviors>.
 Index values to specify 6 East_Asian_Width properties
 defined by [UAX #11], and EA_Z to specify nonspacing.
 
-=item C<LB_BK>, C<LB_CR>, C<LB_LF>, C<LB_NL>, C<LB_SP>, C<LB_OP>, C<LB_CL>, C<LB_QU>, C<LB_GL>, C<LB_NS>, C<LB_EX>, C<LB_SY>, C<LB_IS>, C<LB_PR>, C<LB_PO>, C<LB_NU>, C<LB_AL>, C<LB_ID>, C<LB_IN>, C<LB_HY>, C<LB_BA>, C<LB_BB>, C<LB_B2>, C<LB_CB>, C<LB_ZW>, C<LB_CM>, C<LB_WJ>, C<LB_H2>, C<LB_H3>, C<LB_JL>, C<LB_JV>, C<LB_JT>, C<LB_SG>, C<LB_AI>, C<LB_SA>, C<LB_XX>
+=item C<LB_BK>, C<LB_CR>, C<LB_LF>, C<LB_NL>, C<LB_SP>, C<LB_OP>, C<LB_CL>, C<LB_CP>, C<LB_QU>, C<LB_GL>, C<LB_NS>, C<LB_EX>, C<LB_SY>, C<LB_IS>, C<LB_PR>, C<LB_PO>, C<LB_NU>, C<LB_AL>, C<LB_ID>, C<LB_IN>, C<LB_HY>, C<LB_BA>, C<LB_BB>, C<LB_B2>, C<LB_CB>, C<LB_ZW>, C<LB_CM>, C<LB_WJ>, C<LB_H2>, C<LB_H3>, C<LB_JL>, C<LB_JV>, C<LB_JT>, C<LB_SG>, C<LB_AI>, C<LB_SA>, C<LB_XX>
 
-Index values to specify 36 line breaking properties (classes)
+Index values to specify 37 line breaking properties (classes)
 defined by [UAX #14].
+
+B<Note>: Property value CP was introduced by Unicode 5.2.0.
 
 =item C<MANDATORY>, C<DIRECT>, C<INDIRECT>, C<PROHIBITED>
 
@@ -608,6 +608,18 @@ Extend or SpacingMark be resolved to CM.
 =item *
 
 Characters assigned to SG or XX are resolved to AL.
+
+=item *
+
+Following characters succeeding character with line breaking property CB
+behave as if they were CM, because of their Grapheme_Cluster_Break properties.
+
+    UCS    |Name                                     |LBC|GBC
+    -----------------------------------------------------------------
+    U+0F7F |TIBETAN SIGN RNAM BCAD                   |BA |SpacingMark
+    U+FF9E |HALFWIDTH KATAKANA VOICED SOUND MARK     |NS |Extend
+    U+FF9F |HALFWIDTH KATAKANA SEMI-VOICED SOUND MARK|NS |Extend
+    -----------------------------------------------------------------
 
 =item *
 

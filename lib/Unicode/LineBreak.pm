@@ -20,7 +20,6 @@ our @ISA = qw(Exporter);
 use Carp qw(croak carp);
 use Encode qw(is_utf8);
 use MIME::Charset;
-use File::Spec;
 
 ### Globals
 
@@ -53,23 +52,9 @@ my @consts = grep { s/^${package}::(\w\w+)$/$1/ } keys %constant::declared;
 push @EXPORT_OK, @consts;
 push @{$EXPORT_TAGS{'all'}}, @consts;
 
-### Load XS or Non-XS module
-eval {
-    require XSLoader;
-    XSLoader::load('Unicode::LineBreak', $VERSION);
-};
-if ($@) {
-    require Unicode::LineBreak::NoXS;
-    my $version = Unicode::LineBreak::DEFAULT_UNICODE_VERSION();
-    foreach my $dir (@INC) {
-	eval {
-	    require File::Spec->catfile($dir, 'Unicode', 'LineBreak',
-					$version.'.pm');
-	};
-	last unless $@;
-    }
-    croak "Unknown Unicode version $version" if $@;
-}
+### Load XS module
+require XSLoader;
+XSLoader::load('Unicode::LineBreak', $VERSION);
 
 ### Privates
 my $EASTASIAN_CHARSETS = qr{
@@ -276,7 +261,7 @@ sub break_partial ($$) {
 		#
 
 		while (1) {
-		    ($gcls, $glen, $gcol) = $s->gcinfo($str, $pos);
+		    ($glen, $gcol, $gcls) = $s->gcinfo($str, $pos);
 
 		    # - Explicit breaks and non-breaks
 
@@ -289,7 +274,7 @@ sub break_partial ($$) {
 
 			# End of input.
 			last CHARACTER_PAIR if $str_len <= $pos;
-			($gcls, $glen, $gcol) = $s->gcinfo($str, $pos);
+			($glen, $gcol, $gcls) = $s->gcinfo($str, $pos);
 		    }
 
 		    # - Mandatory breaks
@@ -317,7 +302,7 @@ sub break_partial ($$) {
 
 			# End of input
 			last CHARACTER_PAIR if $str_len <= $pos;
-			($gcls, $glen, $gcol) = $s->gcinfo($str, $pos);
+			($glen, $gcol, $gcls) = $s->gcinfo($str, $pos);
 			next;
 		    }
 		    last;
@@ -346,15 +331,19 @@ sub break_partial ($$) {
 		# Try complex breaking - Break SA sequence.
 		if ($gcls == LB_SA) {
 		    my $frg = '';
-		    $frg .= substr($str, $pos, $glen);
-		    $pos += $glen;
+		    while (1) {
+			$frg .= substr($str, $pos, $glen);
+			$pos += $glen;
 
-		    # End of input - might be partial sequence.
-		    if (!$eot and $str_len <= $pos) {
-			$s->{_line} = \%line;
-			$s->{_unread} = $before{frg}.$before{spc}.$frg;
-			$s->{_sox} = $sox;
-			return $result;
+			# End of input - might be partial sequence.
+			if ($str_len <= $pos && !$eot) {
+			    $s->{_line} = \%line;
+			    $s->{_unread} = $before{frg}.$before{spc}.$frg;
+			    $s->{_sox} = $sox;
+			    return $result;
+			}
+			($glen, $gcol, $gcls) = $s->gcinfo($str, $pos);
+			last unless $gcls == LB_SA;
 		    }
 		    @c = map { {'cls' => LB_AL, 'frg' => $_, 'spc' => '',
 				'urg' => 1}; }

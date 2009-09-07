@@ -23,15 +23,7 @@ $ make
 $ make test
 # make install
 
-If you don't wish to use XS module, do:
-
-$ perl Makefile.PL noxs
-$ make
-$ make test
-# make install
-
-Note that non-XS version does not support libthai features.
-If you wish to disable this feature on XS version, do:
+If you wish to disable libthai feature, do:
 
 $ perl Makefile.PL nolibthai
 $ make
@@ -41,15 +33,17 @@ $ make test
 Documentations
 ==============
 
-Two main modules and some supporting program files are contained. For
+Three main modules and some supporting program files are contained. For
 more details read following POD documentations:
 
-    Unicode::LineBreak - UAX #14 Unicode Line Breaking Algorithm
     Text::LineFold - Line Folding for Plain Text
+    Unicode::GCString - String as Sequence of UAX #29 Grapheme Clusters
+    Unicode::LineBreak - UAX #14 Unicode Line Breaking Algorithm
 
 For japonophones, PODs in Japanese language are also included:
 
-    Unicode::LineBreak::JA_JP - UAX #14 Unicode 行分割アルゴリズム
     Text::LineFold::JA_JP - プレインテキストの行折り
+    Unicode::GCString::JA_JP - UAX #29 書記素クラスタの列としての文字列
+    Unicode::LineBreak::JA_JP - UAX #14 Unicode 行分割アルゴリズム
 
 $$

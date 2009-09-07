@@ -17,7 +17,6 @@ LINEBREAK_CUSTOM = LineBreak-$(UNICODE_VERSION).custom
 SCRIPTS = Scripts-$(UNICODE_VERSION).txt
 #SCRIPTS_CUSTOM = Scripts-$(UNICODE_VERSION).custom
 SCRIPTS_CUSTOM =
-DATA_PM = ../lib/Unicode/LineBreak/$(UNICODE_VERSION).pm
 DATA_C = ../c/$(UNICODE_VERSION).c
 CONSTANTS_PM = ../lib/Unicode/LineBreak/Constants.pm
 LINEBREAK_H = ../c/linebreak.h
@@ -31,9 +30,9 @@ all:
 		$(MAKE) data UNICODE_VERSION=$$v || exit 1; \
 	done
 
-data: $(DATA_PM) $(DATA_C)
+data: $(DATA_C)
 
-$(DATA_PM) $(DATA_C): $(RULES) $(EASTASIANWIDTH) $(LINEBREAK) $(SCRIPTS) $(EASTASIANWIDTH_CUSTOM) $(LINEBREAK_CUSTOM) data.pl LBCLASSES
+$(DATA_C): $(RULES) $(EASTASIANWIDTH) $(LINEBREAK) $(SCRIPTS) $(EASTASIANWIDTH_CUSTOM) $(LINEBREAK_CUSTOM) data.pl LBCLASSES
 	perl data.pl lb,ea,gb,sc $(UNICODE_VERSION)
 
 $(CONSTANTS_PM) $(LINEBREAK_H) LBCLASSES: makefile constants.pl Constants.pm.in linebreak.h.in
@@ -81,7 +80,7 @@ unicodedata:
 	$(WGET) -O $(SCRIPTS) $(UCD_BASE)Scripts.txt
 
 clean-data:
-	rm -f $(DATA_PM) $(DATA_C)
+	rm -f $(DATA_C)
 
 clean:
 	rm -f $(CONSTANTS_PM) $(LINEBREAK_H) $(VERSION_PM)

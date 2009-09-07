@@ -18,10 +18,10 @@ typedef struct {
 typedef struct {
     unichar_t beg;
     unichar_t end;
-    propval_t lb;
-    propval_t ea;
-    propval_t gb;
-    propval_t sc;
+    propval_t lbc;
+    propval_t eaw;
+    propval_t gbc;
+    propval_t scr;
 } mapent_t;
 
 typedef struct {

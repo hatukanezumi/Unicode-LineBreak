@@ -10,32 +10,28 @@ require 'lib/Unicode/LineBreak/Version.pm';
 sub postamble {
     my $ret = '';
     foreach my $version (@{Unicode::LineBreak::UNICODE_VERSIONS()}) {
-	$ret .= $version.'$(OBJ_EXT)'.": c/$version.c\n";
+	$ret .= $version.'$(OBJ_EXT)'.": c/$version.c c/linebreak.h\n";
 	$ret .= "\t".'$(CCCMD) $(CCCDLFLAGS) "-I$(PERL_INC)" $(PASTHRU_DEFINE) $(DEFINE) -o $@ '."c/$version.c\n";
     }
     $ret;
 }
 
 my @opts = ();
-if ($ARGV[0] eq 'noxs') {
-    @opts = ('XS' => {}, 'C' => []);
+my $libthai = `pkg-config --modversion libthai`;
+chomp $libthai;
+if ($libthai and ($ARGV[0] || '') ne 'nolibthai') {
+    print "Use libthai $libthai\n";
+    push @opts, ('DEFINE' => "-DUSE_LIBTHAI=\\\"libthai/$libthai\\\"",
+		 'INC' => '-I./c ' . `pkg-config --cflags libthai`,
+		 'LIBS' => `pkg-config --libs libthai`,
+		 );
 } else {
-    my $libthai = `pkg-config --modversion libthai`;
-    chomp $libthai;
-    if ($libthai and ($ARGV[0] || '') ne 'nolibthai') {
-	print "Use libthai $libthai\n";
-	push @opts, ('DEFINE' => "-DUSE_LIBTHAI=\\\"libthai/$libthai\\\"",
-		     'INC' => '-I./c ' . `pkg-config --cflags libthai`,
-		     'LIBS' => `pkg-config --libs libthai`,
-		     );
-    } else {
-	push @opts, ('INC' => '-I./c');
-    }
-    my $object = '$(BASEEXT)$(OBJ_EXT)';
-    $object .= ' ';
-    $object .= Unicode::LineBreak::DEFAULT_UNICODE_VERSION().'$(OBJ_EXT)';
-    push @opts, ('OBJECT' => $object);
+    push @opts, ('INC' => '-I./c');
 }
+my $object = '$(BASEEXT)$(OBJ_EXT)';
+$object .= ' ';
+$object .= Unicode::LineBreak::DEFAULT_UNICODE_VERSION().'$(OBJ_EXT)';
+push @opts, ('OBJECT' => $object);
 
 WriteMakefile(
 	'NAME'		=> 'Unicode::LineBreak',
@@ -46,7 +42,6 @@ WriteMakefile(
 	'PREREQ_PM'	=> {
 	    'Encode'		=> 1.98,
 	    'MIME::Charset'	=> '1.006.2',
-	    'File::Spec'	=> '0.83',
 	    'Test::More'	=> '0.45',
 	},
 	# Un-comment this if you add C files to link with later:

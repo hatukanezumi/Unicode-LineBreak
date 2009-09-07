@@ -6,42 +6,70 @@
 #define UNICODE_VERSION "5.2.0beta"
 char *linebreak_unicode_version = UNICODE_VERSION;
 
+                                  /* CrLfCoExPrSpL V T LvLvOt */
+static propval_t gbrule_CR[] =      {D,D,D,D,D,D,D,D,D,D,D,D};
+static propval_t gbrule_LF[] =      {D,P,D,D,D,D,D,D,D,D,D,D};
+static propval_t gbrule_Control[] = {D,D,D,D,D,D,D,D,D,D,D,D};
+static propval_t gbrule_Extend[] =  {D,D,D,P,D,P,D,D,D,D,D,D};
+static propval_t gbrule_Prepend[] = {D,D,D,P,P,P,P,P,P,P,P,P};
+static propval_t gbrule_Spacing[] = {D,D,D,P,D,P,D,D,D,D,D,D};
+static propval_t gbrule_L[] =       {D,D,D,P,D,P,P,P,D,P,P,D};
+static propval_t gbrule_V[] =       {D,D,D,P,D,P,D,P,P,D,D,D};
+static propval_t gbrule_T[] =       {D,D,D,P,D,P,D,D,P,D,D,D};
+static propval_t gbrule_LV[] =      {D,D,D,P,D,P,D,P,P,D,D,D};
+static propval_t gbrule_LVT[] =     {D,D,D,P,D,P,D,D,P,D,D,D};
+static propval_t gbrule_Other[] =   {D,D,D,P,D,P,D,D,D,D,D,D};
+propval_t *gcstring_rules[] = {
+    gbrule_CR, gbrule_LF, gbrule_Control, gbrule_Extend,
+    gbrule_Prepend, gbrule_Spacing, gbrule_L, gbrule_V, gbrule_T,
+    gbrule_LV, gbrule_LVT, gbrule_Other
+};
+
+size_t gcstring_rulessiz = 12;
+
+#define r(cc) static propval_t rule_##cc[]
 /* Note: Entries related to BK, CR, CM, LF, NL, SP aren't used by break(). */
-propval_t linebreak_rules[33][33] = {
-     /*BkCrLfNlSpOpClQuGlNsExSyIsPrPoNuAlIdInHyBaBbB2CbZwCmWjH2H3JlJvJtCp*/
-/*BK*/{M,M,M,M,M,M,M,M,M,M,M,M,M,M,M,M,M,M,M,M,M,M,M,M,M,M,M,M,M,M,M,M,M},
-/*CR*/{M,M,P,M,M,M,M,M,M,M,M,M,M,M,M,M,M,M,M,M,M,M,M,M,M,M,M,M,M,M,M,M,M},
-/*LF*/{M,M,M,M,M,M,M,M,M,M,M,M,M,M,M,M,M,M,M,M,M,M,M,M,M,M,M,M,M,M,M,M,M},
-/*NL*/{M,M,M,M,M,M,M,M,M,M,M,M,M,M,M,M,M,M,M,M,M,M,M,M,M,M,M,M,M,M,M,M,M},
-/*SP*/{P,P,P,P,P,D,P,D,P,D,P,P,P,D,D,D,D,D,D,D,D,D,D,D,P,D,P,D,D,D,D,D,P},
-/*OP*/{P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P},
-/*CL*/{P,P,P,P,P,D,P,I,P,P,P,P,P,I,I,D,D,D,D,I,I,D,D,D,P,D,P,D,D,D,D,D,P},
-/*QU*/{P,P,P,P,P,P,P,I,P,I,P,P,P,I,I,I,I,I,I,I,I,I,I,I,P,I,P,I,I,I,I,I,P},
-/*GL*/{P,P,P,P,P,I,P,I,P,I,P,P,P,I,I,I,I,I,I,I,I,I,I,I,P,I,P,I,I,I,I,I,P},
-/*NS*/{P,P,P,P,P,D,P,I,P,I,P,P,P,D,D,D,D,D,D,I,I,D,D,D,P,D,P,D,D,D,D,D,P},
-/*EX*/{P,P,P,P,P,D,P,I,P,I,P,P,P,D,D,D,D,D,D,I,I,D,D,D,P,D,P,D,D,D,D,D,P},
-/*SY*/{P,P,P,P,P,D,P,I,P,I,P,P,P,D,D,I,D,D,D,I,I,D,D,D,P,D,P,D,D,D,D,D,P},
-/*IS*/{P,P,P,P,P,D,P,I,P,I,P,P,P,D,D,I,I,D,D,I,I,D,D,D,P,D,P,D,D,D,D,D,P},
-/*PR*/{P,P,P,P,P,I,P,I,P,I,P,P,P,D,D,I,I,I,D,I,I,D,D,D,P,D,P,I,I,I,I,I,P},
-/*PO*/{P,P,P,P,P,I,P,I,P,I,P,P,P,D,D,I,I,D,D,I,I,D,D,D,P,D,P,D,D,D,D,D,P},
-/*NU*/{P,P,P,P,P,I,P,I,P,I,P,P,P,I,I,I,I,D,I,I,I,D,D,D,P,D,P,D,D,D,D,D,P},
-/*AL*/{P,P,P,P,P,I,P,I,P,I,P,P,P,D,D,I,I,D,I,I,I,D,D,D,P,D,P,D,D,D,D,D,P},
-/*ID*/{P,P,P,P,P,D,P,I,P,I,P,P,P,D,I,D,D,D,I,I,I,D,D,D,P,D,P,D,D,D,D,D,P},
-/*IN*/{P,P,P,P,P,D,P,I,P,I,P,P,P,D,D,D,D,D,I,I,I,D,D,D,P,D,P,D,D,D,D,D,P},
-/*HY*/{P,P,P,P,P,D,P,I,P,I,P,P,P,D,D,I,D,D,D,I,I,D,D,D,P,D,P,D,D,D,D,D,P},
-/*BA*/{P,P,P,P,P,D,P,I,P,I,P,P,P,D,D,D,D,D,D,I,I,D,D,D,P,D,P,D,D,D,D,D,P},
-/*BB*/{P,P,P,P,P,I,P,I,P,I,P,P,P,I,I,I,I,I,I,I,I,I,I,D,P,I,P,I,I,I,I,I,P},
-/*B2*/{P,P,P,P,P,D,P,I,P,I,P,P,P,D,D,D,D,D,D,I,I,D,P,D,P,D,P,D,D,D,D,D,P},
-/*CB*/{P,P,P,P,P,D,P,I,P,D,P,P,P,D,D,D,D,D,D,D,D,D,D,D,P,D,P,D,D,D,D,D,P},
-/*ZW*/{P,P,P,P,P,D,D,D,D,D,D,D,D,D,D,D,D,D,D,D,D,D,D,D,P,D,D,D,D,D,D,D,D},
-/*CM*/{P,P,P,P,P,D,P,I,P,I,P,P,P,D,D,D,D,D,D,I,I,D,D,D,P,D,P,D,D,D,D,D,P},
-/*WJ*/{P,P,P,P,P,I,P,I,P,I,P,P,P,I,I,I,I,I,I,I,I,I,I,I,P,I,P,I,I,I,I,I,P},
-/*H2*/{P,P,P,P,P,D,P,I,P,I,P,P,P,D,I,D,D,D,I,I,I,D,D,D,P,D,P,D,D,D,I,I,P},
-/*H3*/{P,P,P,P,P,D,P,I,P,I,P,P,P,D,I,D,D,D,I,I,I,D,D,D,P,D,P,D,D,D,D,I,P},
-/*JL*/{P,P,P,P,P,D,P,I,P,I,P,P,P,D,I,D,D,D,I,I,I,D,D,D,P,D,P,I,I,I,I,D,P},
-/*JV*/{P,P,P,P,P,D,P,I,P,I,P,P,P,D,I,D,D,D,I,I,I,D,D,D,P,D,P,D,D,D,I,I,P},
-/*JT*/{P,P,P,P,P,D,P,I,P,I,P,P,P,D,I,D,D,D,I,I,I,D,D,D,P,D,P,D,D,D,D,I,P},
-/*CP*/{P,P,P,P,P,D,P,I,P,P,P,P,P,I,I,I,I,D,D,I,I,D,D,D,P,D,P,D,D,D,D,D,P}
+    /* BkCrLfNlSpOpClQuGlNsExSyIsPrPoNuAlIdInHyBaBbB2CbZwCmWjH2H3JlJvJtCp */
+r(BK)={M,M,M,M,M,M,M,M,M,M,M,M,M,M,M,M,M,M,M,M,M,M,M,M,M,M,M,M,M,M,M,M,M};
+r(CR)={M,M,P,M,M,M,M,M,M,M,M,M,M,M,M,M,M,M,M,M,M,M,M,M,M,M,M,M,M,M,M,M,M};
+r(LF)={M,M,M,M,M,M,M,M,M,M,M,M,M,M,M,M,M,M,M,M,M,M,M,M,M,M,M,M,M,M,M,M,M};
+r(NL)={M,M,M,M,M,M,M,M,M,M,M,M,M,M,M,M,M,M,M,M,M,M,M,M,M,M,M,M,M,M,M,M,M};
+r(SP)={P,P,P,P,P,D,P,D,P,D,P,P,P,D,D,D,D,D,D,D,D,D,D,D,P,D,P,D,D,D,D,D,P};
+r(OP)={P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P};
+r(CL)={P,P,P,P,P,D,P,I,P,P,P,P,P,I,I,D,D,D,D,I,I,D,D,D,P,D,P,D,D,D,D,D,P};
+r(QU)={P,P,P,P,P,P,P,I,P,I,P,P,P,I,I,I,I,I,I,I,I,I,I,I,P,I,P,I,I,I,I,I,P};
+r(GL)={P,P,P,P,P,I,P,I,P,I,P,P,P,I,I,I,I,I,I,I,I,I,I,I,P,I,P,I,I,I,I,I,P};
+r(NS)={P,P,P,P,P,D,P,I,P,I,P,P,P,D,D,D,D,D,D,I,I,D,D,D,P,D,P,D,D,D,D,D,P};
+r(EX)={P,P,P,P,P,D,P,I,P,I,P,P,P,D,D,D,D,D,D,I,I,D,D,D,P,D,P,D,D,D,D,D,P};
+r(SY)={P,P,P,P,P,D,P,I,P,I,P,P,P,D,D,I,D,D,D,I,I,D,D,D,P,D,P,D,D,D,D,D,P};
+r(IS)={P,P,P,P,P,D,P,I,P,I,P,P,P,D,D,I,I,D,D,I,I,D,D,D,P,D,P,D,D,D,D,D,P};
+r(PR)={P,P,P,P,P,I,P,I,P,I,P,P,P,D,D,I,I,I,D,I,I,D,D,D,P,D,P,I,I,I,I,I,P};
+r(PO)={P,P,P,P,P,I,P,I,P,I,P,P,P,D,D,I,I,D,D,I,I,D,D,D,P,D,P,D,D,D,D,D,P};
+r(NU)={P,P,P,P,P,I,P,I,P,I,P,P,P,I,I,I,I,D,I,I,I,D,D,D,P,D,P,D,D,D,D,D,P};
+r(AL)={P,P,P,P,P,I,P,I,P,I,P,P,P,D,D,I,I,D,I,I,I,D,D,D,P,D,P,D,D,D,D,D,P};
+r(ID)={P,P,P,P,P,D,P,I,P,I,P,P,P,D,I,D,D,D,I,I,I,D,D,D,P,D,P,D,D,D,D,D,P};
+r(IN)={P,P,P,P,P,D,P,I,P,I,P,P,P,D,D,D,D,D,I,I,I,D,D,D,P,D,P,D,D,D,D,D,P};
+r(HY)={P,P,P,P,P,D,P,I,P,I,P,P,P,D,D,I,D,D,D,I,I,D,D,D,P,D,P,D,D,D,D,D,P};
+r(BA)={P,P,P,P,P,D,P,I,P,I,P,P,P,D,D,D,D,D,D,I,I,D,D,D,P,D,P,D,D,D,D,D,P};
+r(BB)={P,P,P,P,P,I,P,I,P,I,P,P,P,I,I,I,I,I,I,I,I,I,I,D,P,I,P,I,I,I,I,I,P};
+r(B2)={P,P,P,P,P,D,P,I,P,I,P,P,P,D,D,D,D,D,D,I,I,D,P,D,P,D,P,D,D,D,D,D,P};
+r(CB)={P,P,P,P,P,D,P,I,P,D,P,P,P,D,D,D,D,D,D,D,D,D,D,D,P,D,P,D,D,D,D,D,P};
+r(ZW)={P,P,P,P,P,D,D,D,D,D,D,D,D,D,D,D,D,D,D,D,D,D,D,D,P,D,D,D,D,D,D,D,D};
+r(CM)={P,P,P,P,P,D,P,I,P,I,P,P,P,D,D,D,D,D,D,I,I,D,D,D,P,D,P,D,D,D,D,D,P};
+r(WJ)={P,P,P,P,P,I,P,I,P,I,P,P,P,I,I,I,I,I,I,I,I,I,I,I,P,I,P,I,I,I,I,I,P};
+r(H2)={P,P,P,P,P,D,P,I,P,I,P,P,P,D,I,D,D,D,I,I,I,D,D,D,P,D,P,D,D,D,I,I,P};
+r(H3)={P,P,P,P,P,D,P,I,P,I,P,P,P,D,I,D,D,D,I,I,I,D,D,D,P,D,P,D,D,D,D,I,P};
+r(JL)={P,P,P,P,P,D,P,I,P,I,P,P,P,D,I,D,D,D,I,I,I,D,D,D,P,D,P,I,I,I,I,D,P};
+r(JV)={P,P,P,P,P,D,P,I,P,I,P,P,P,D,I,D,D,D,I,I,I,D,D,D,P,D,P,D,D,D,I,I,P};
+r(JT)={P,P,P,P,P,D,P,I,P,I,P,P,P,D,I,D,D,D,I,I,I,D,D,D,P,D,P,D,D,D,D,I,P};
+r(CP)={P,P,P,P,P,D,P,I,P,P,P,P,P,I,I,I,I,D,D,I,I,D,D,D,P,D,P,D,D,D,D,D,P};
+#undef r
+propval_t *linebreak_rules[] = {
+    rule_BK, rule_CR, rule_LF, rule_NL, rule_SP, rule_OP, rule_CL, rule_QU, 
+    rule_GL, rule_NS, rule_EX, rule_SY, rule_IS, rule_PR, rule_PO, rule_NU, 
+    rule_AL, rule_ID, rule_IN, rule_HY, rule_BA, rule_BB, rule_B2, rule_CB, 
+    rule_ZW, rule_CM, rule_WJ, rule_H2, rule_H3, rule_JL, rule_JV, rule_JT, 
+    rule_CP
 };
 
 size_t linebreak_rulessiz = 33;
@@ -62,7 +90,7 @@ mapent_t linebreak_map[] = {
     {0x0026, 0x0026, LB_AL, EA_Na, GB_Other, PROP_UNKNOWN},
     {0x0027, 0x0027, LB_QU, EA_Na, GB_Other, PROP_UNKNOWN},
     {0x0028, 0x0028, LB_OP, EA_Na, GB_Other, PROP_UNKNOWN},
-    {0x0029, 0x0029, LB_CL, EA_Na, GB_Other, PROP_UNKNOWN},
+    {0x0029, 0x0029, LB_CP, EA_Na, GB_Other, PROP_UNKNOWN},
     {0x002A, 0x002A, LB_AL, EA_Na, GB_Other, PROP_UNKNOWN},
     {0x002B, 0x002B, LB_PR, EA_Na, GB_Other, PROP_UNKNOWN},
     {0x002C, 0x002C, LB_IS, EA_Na, GB_Other, PROP_UNKNOWN},
@@ -76,7 +104,7 @@ mapent_t linebreak_map[] = {
     {0x0040, 0x005A, LB_AL, EA_Na, GB_Other, PROP_UNKNOWN},
     {0x005B, 0x005B, LB_OP, EA_Na, GB_Other, PROP_UNKNOWN},
     {0x005C, 0x005C, LB_PR, EA_Na, GB_Other, PROP_UNKNOWN},
-    {0x005D, 0x005D, LB_CL, EA_Na, GB_Other, PROP_UNKNOWN},
+    {0x005D, 0x005D, LB_CP, EA_Na, GB_Other, PROP_UNKNOWN},
     {0x005E, 0x007A, LB_AL, EA_Na, GB_Other, PROP_UNKNOWN},
     {0x007B, 0x007B, LB_OP, EA_Na, GB_Other, PROP_UNKNOWN},
     {0x007C, 0x007C, LB_BA, EA_Na, GB_Other, PROP_UNKNOWN},
