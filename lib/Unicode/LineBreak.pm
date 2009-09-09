@@ -651,7 +651,7 @@ sub config ($@) {
 	    next unless defined $ub;
 	}
 	my ($re, $func) = @{$ub};
-	push @cf, [qr{\G($re)}o, $func];
+	push @cf, [qr{$re}o, $func];
     }
     $self->{_custom_funcs} = \@cf;
 
@@ -816,7 +816,7 @@ sub _test_custom ($$$) {
     pos($str) = $pos;
     foreach my $c (@{$self->{_custom_funcs}}) {
 	my ($re, $func) = @{$c};
-	if ($str =~ /$re/cg) {
+	if ($str =~ /\G($re)/cg) {
 	    my $frg = $1;
 	    foreach my $b (&{$func}($self, $frg)) {
 		my $s = '';
