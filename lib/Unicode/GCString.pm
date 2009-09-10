@@ -52,10 +52,10 @@ our $VERSION = '0.001';
 =cut
 
 use overload 
-    '""' => \&as_string,
-    '.=' => \&append,
-    '.' => \&concat,
-    '<>' => \&next_string;
+    #XXX'""' => \&as_string,
+    #XXX'.=' => \&append,
+    #XXX'.' => \&concat,
+    '<>' => \&next;
 
 =head3 Constructor
 
@@ -76,24 +76,69 @@ sub new {
     my $class = shift;
     my $str = shift;
     my $lbobj = shift || Unicode::LineBreak->new();
-    my ($length, $pos);
-    my @str = ();
 
+    if (ref $str) {
+	$str = $str->as_string;
+    }
     unless (defined $str and length $str) {
 	$str = '';
     } elsif ($str =~ /[^\x00-\x7F]/s and !Encode::is_utf8($str)) {
         croak "Unicode string must be given.";
     }
 
-    $length = length $str;
-    $pos = 0;
-    while ($pos < $length) {
-	my ($glen, $gcol, $lbc) = $lbobj->gcinfo($str, $pos);
-	push @str, [substr($str, $pos, $glen), $gcol, $lbc];
-	$pos += $glen;
+    my @str = ();
+    while (length $str) {
+	my $func;
+	my ($s, $match, $post) = ($str, '', '');
+	foreach my $ub (@{$lbobj->{_user_breaking_funcs}}) {
+	    my ($re, $fn) = @{$ub};
+	    if ($str =~ /$re/) {
+		if (length $& and length $` < length $s) { #`
+		    ($s, $match, $post) = ($`, $&, $'); #'`
+		    $func = $fn;
+		}
+	    }
+	}
+	if (length $match) {
+	    $str = $post;
+	} else {
+	    $s = $str;
+	    $str = '';
+	}
+	my $length = length $s;
+	my $pos = 0;
+	while ($pos < $length) {
+	    my ($glen, $gcol, $lbc) = $lbobj->gcinfo($s, $pos);
+	    push @str, [substr($s, $pos, $glen), $gcol, $lbc];
+	    $pos += $glen;
+	}
+	if (length $match) {
+	    my ($glen, $gcol, $lbc);
+	    my @s = ();
+	    foreach my $s (&{$func}($lbobj, $match)) {
+		my $length = length $s;
+		my $pos = 0;
+		my @g = ();
+		while ($pos < $length) {
+		    ($glen, $gcol, $lbc) = $lbobj->gcinfo($s, $pos);
+		    push @g, [substr($s, $pos, $glen), $gcol, $lbc,
+			      (scalar @s && !scalar @g), scalar @g];
+		    $pos += $glen;
+		}
+		if ($lbc == Unicode::LineBreak::LB_SP()) {
+		    my $sp = pop @g;
+		    push @s, @g;
+		    push @s, [$sp, $gcol, $lbc];
+		} else {
+		    push @s, @g;
+		}
+	    }
+	    push @str, @s;
+	}
     }
+
     bless {
-	lb => $lbobj,
+	lbobj => $lbobj,
 	pos => 0,
 	str => \@str,
     }, $class;
@@ -119,7 +164,13 @@ STRING may be either Unicode string or grapheme cluster string.
 sub append {
     my $self = shift;
     my $str = shift;
-    $str = __PACKAGE__->new($self->{lb}, $str) unless ref $str;
+    $str = __PACKAGE__->new($str, $self->{lbobj}) unless ref $str;
+
+    my $c = '';
+    $c = ${pop @{$self->{str}}}[0] if scalar @{$self->{str}};
+    $c .= ${shift @{$str->{str}}}[0] if scalar @{$str->{str}};
+    push @{$self->{str}}, @{__PACKAGE__->new($c, $self->{lbobj})->{str}}
+	if length $c;
     push @{$self->{str}}, @{$str->{str}};
     $self;
 }
@@ -183,19 +234,25 @@ sub concat {
     my $self = shift;
     my $str = shift;
     my $obj;
-    $str = __PACKAGE__->new($self->{lb}, $str) unless ref $str;
+    $str = __PACKAGE__->new($str, $self->{lbobj}) unless ref $str;
     if (shift) {
 	if (ref $str) {
 	    $obj = $str->copy();
-	    $obj->{lb} = $self->{lb};
+	    $obj->{lbobj} = $self->{lbobj};
 	} else {
-	    $obj = __PACKAGE__->new($self->{lb}, $str);
+	    $obj = __PACKAGE__->new($str, $self->{lbobj});
 	}
 	$str = $self;
     } else {
 	$obj = $self->copy();
-	$str = __PACKAGE__->new($self->{lb}, $str) unless ref $str;
+	$str = __PACKAGE__->new($str, $self->{lbobj}) unless ref $str;
     } 
+
+    my $c = '';
+    $c = ${pop @{$obj->{str}}}[0] if scalar @{$obj->{str}};
+    $c .= ${shift @{$str->{str}}}[0] if scalar @{$str->{str}};
+    push @{$obj->{str}}, @{__PACKAGE__->new($c, $self->{lbobj})->{str}}
+	if length $c;
     push @{$obj->{str}}, @{$str->{str}};
     $obj->{pos} = 0;
     $obj;
@@ -215,9 +272,9 @@ Create a copy of grapheme cluster string.
 sub copy {
     my $self = shift;
 
-    my $obj = __PACKAGE__->new($self->{lb});
-    $obj->{pos} = $self->{pos};
+    my $obj = __PACKAGE__->new('', $self->{lbobj});
     push @{$obj->{str}}, @{$self->{str}};
+    $obj->{pos} = $self->{pos};
     $obj;
 }
 
@@ -263,11 +320,27 @@ sub substr {
 
 =over 4
 
+=item eot
+
+I<Instance method>.
+Test if current position is at end of grapheme cluster string.
+
+=back
+
+=cut
+
+sub eot {
+    my $self = shift;
+    return scalar @{$self->{str}} <= $self->{pos};
+}
+
+=over 4
+
 =item next
 
 I<Instance method>, iterative.
 Returns information of next grapheme cluster
-as an array reference [STR, COLS, CLASS].
+as array reference.
 
 =back
 
@@ -275,27 +348,24 @@ as an array reference [STR, COLS, CLASS].
 
 sub next {
     my $self = shift;
-    return undef if scalar $self->{str} <= $self->{pos};
+    return undef if scalar @{$self->{str}} <= $self->{pos};
     $self->{str}->[$self->{pos}++];
 }
 
 =over 4
 
-=item next_string
+=item prev
 
-=item C<E<lt>>OBJECTC<E<gt>>
-
-I<Instance method>, iterative.
-Returns next grapheme cluster as an Unicode string.
+Decrement position of grapheme cluster string.
 
 =back
 
 =cut
 
-sub next_string {
+sub prev {
     my $self = shift;
-    return undef if scalar $self->{str} <= $self->{pos};
-    $self->{str}->[$self->{pos}++]->[0];
+
+    $self->{pos}-- if 0 < $self->{pos};
 }
 
 =over 4
@@ -320,8 +390,7 @@ sub reset {
 =item rest
 
 I<Instance method>.
-Returns rest of grapheme cluster string as array of array references
-[STR, COLS, CLASS].
+Returns rest of grapheme cluster string.
 
 =back
 
@@ -329,23 +398,10 @@ Returns rest of grapheme cluster string as array of array references
 
 sub rest {
     my $self = shift;
-    @{$self->{str}}[$self->{pos}..$#{$self->{str}}];
-}
 
-=over 4
-
-=item rest_string
-
-I<Instance method>.
-Returns rest of grapheme cluster string as Unicode string.
-
-=back
-
-=cut
-
-sub rest_string {
-    my $self = shift;
-    join '', grep {$_->[0]} @{$self->{str}}[$self->{pos}..$#{$self->{str}}];
+    my $obj = __PACKAGE__->new('', $self->{lbobj});
+    push @{$obj->{str}}, @{$self->{str}}[$self->{pos}..$#{$self->{str}}];
+    $obj;
 }
 
 =head1 VERSION

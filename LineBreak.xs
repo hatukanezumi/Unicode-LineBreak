@@ -161,7 +161,7 @@ void _charprop(linebreakObj *obj, unichar_t c,
  * Exports
  */
 
-propval_t gcstring_gbrule(linebreakObj *obj, propval_t b_idx, propval_t a_idx)
+propval_t gcstring_gbrule(propval_t b_idx, propval_t a_idx)
 {
     propval_t result = PROP_UNKNOWN;
 
@@ -175,7 +175,7 @@ propval_t gcstring_gbrule(linebreakObj *obj, propval_t b_idx, propval_t a_idx)
     return result;
 }
 
-propval_t linebreak_lbrule(linebreakObj *obj, propval_t b_idx, propval_t a_idx)
+propval_t linebreak_lbrule(propval_t b_idx, propval_t a_idx)
 {
     propval_t result = PROP_UNKNOWN;
 
@@ -194,12 +194,9 @@ propval_t linebreak_lbrule(linebreakObj *obj, propval_t b_idx, propval_t a_idx)
 void linebreak_gcinfo(linebreakObj *obj, unistr_t *str, size_t pos,
 		      size_t *glenptr, size_t *gcolptr, propval_t *glbcptr)
 {
-    propval_t glbc = PROP_UNKNOWN;
+    propval_t glbc = PROP_UNKNOWN, ggbc, gscr;
     size_t glen, gcol;
-    propval_t lbc, nlbc;
-    propval_t gbc, ngbc;
-    propval_t eaw;
-    propval_t scr;
+    propval_t lbc, eaw, gbc, ngbc, scr;
 
     if (!str || !str->str || !str->len) {
 	if (glbcptr) *glbcptr = PROP_UNKNOWN;
@@ -212,13 +209,10 @@ void linebreak_gcinfo(linebreakObj *obj, unistr_t *str, size_t pos,
     pos++;
     glen = 1;
     gcol = eaw2col(eaw);
-    if (lbc == LB_SA) {
-#ifdef USE_LIBTHAI
-	if (scr != SC_Thai)
-#endif
-	    lbc = (gbc == GB_Extend || gbc == GB_SpacingMark)? LB_CM: LB_AL;
-    }
+
     glbc = lbc;
+    ggbc = gbc;
+    gscr = scr;
 
     if (lbc == LB_BK || lbc == LB_NL || gbc == GB_LF) {
 	;
@@ -234,7 +228,7 @@ void linebreak_gcinfo(linebreakObj *obj, unistr_t *str, size_t pos,
 	while (1) {
 	    if (str->len <= pos)
 		break;
-	    _charprop(obj, str->str[pos], &lbc, &eaw, &gbc, NULL);
+	    _charprop(obj, str->str[pos], &lbc, &eaw, NULL, NULL);
  	    if (lbc != glbc)
 		break;
 	    pos++;
@@ -242,69 +236,56 @@ void linebreak_gcinfo(linebreakObj *obj, unistr_t *str, size_t pos,
 	    gcol += eaw2col(eaw);
         }
     }
-    /* Hangul syllable block */
-    else if (gbc == GB_L || gbc == GB_V || gbc == GB_T ||
-	     gbc == GB_LV || gbc == GB_LVT) {
-	size_t ecol = 0;
+    else {
+	size_t pcol = 0, ecol = 0;
 	while (1) {
 	    if (str->len <= pos)
 		break;
-	    _charprop(obj, str->str[pos], NULL, &eaw, &ngbc, NULL);
-	    if ((ngbc == GB_L || ngbc == GB_V || ngbc == GB_T ||
-		 ngbc == GB_LV || ngbc == GB_LVT) &&
-		gcstring_gbrule(obj, gbc, ngbc) != DIRECT) {
-		/* Assume hangul syllable block is always wide, while most of
-		   isolated junseong (V) and jongseong (T) are narrow. */
+	    _charprop(obj, str->str[pos], &lbc, &eaw, &ngbc, &scr);
+	    if (gcstring_gbrule(gbc, ngbc) != DIRECT) {
 		pos++;
 		glen++;
-		gcol = 2;
+
+		if (gbc == GB_Prepend) {
+		    glbc = lbc;
+		    ggbc = ngbc;
+		    gscr = scr;
+
+		    pcol += gcol;
+		    gcol = eaw2col(eaw);
+		}
+		/*
+		 * Assume hangul syllable block is always wide, while most of
+		 * isolated junseong (V) and jongseong (T) are narrow.
+		 */
+		else if ((ngbc == GB_L || ngbc == GB_V || ngbc == GB_T ||
+			   ngbc == GB_LV || ngbc == GB_LVT) &&
+			   (gbc == GB_L || gbc == GB_V || gbc == GB_T ||
+			    gbc == GB_LV || gbc == GB_LVT))
+		    gcol = 2;
+		/*
+		 * Some morbid sequences such as <L Extend V T> are allowed.
+		 */
+		else if (ngbc == GB_Extend || ngbc == GB_SpacingMark) {
+		    ecol += eaw2col(eaw);
+		    continue;
+		}
+		else
+		    gcol += eaw2col(eaw);
+
 		gbc = ngbc;
-	    } else if (ngbc == GB_Extend || ngbc == GB_SpacingMark) {
-		/* NOTE: allow some morbid sequences such as <L Extend V T>. */
-		pos++;
-		glen++;
-		ecol += eaw2col(eaw);
 	    } else
 		break;
 	}
-	gcol += ecol;
-    }
-    /* Other (possibly extended) grapheme clusters */
-    else {
-	while (1) {
-	    if (str->len <= pos)
-		break;
-	    _charprop(obj, str->str[pos], &nlbc, &eaw, &ngbc, NULL);
-	    if ((gbc == GB_Extend || gbc == GB_Prepend ||
-		 gbc == GB_SpacingMark || gbc == GB_Other ||
-		 gbc == PROP_UNKNOWN) &&
-		(ngbc == GB_Extend || ngbc == GB_SpacingMark)) {
-		pos++;
-		glen++;
-		gcol += eaw2col(eaw);
-		lbc = nlbc;
-		gbc = ngbc;
-	    } else if (gbc == GB_Prepend &&
-		       (ngbc == GB_Extend || ngbc == GB_Prepend ||
-			ngbc == GB_SpacingMark || ngbc == GB_Other ||
-			ngbc == PROP_UNKNOWN)) {
-		/* Treat <Prepend (Extend|SpacingMark)> as AL. */
-		if ((glbc = nlbc) == LB_SA) {
-#ifdef USE_LIBTHAI
-		    if (scr != SC_Thai)
-#endif
-			glbc = LB_AL;
-		}
-		pos++;
-		glen++;
-		gcol += eaw2col(eaw);
-		lbc = nlbc;
-		gbc = ngbc;
-	    } else
-		break;
-	} 
+	gcol += pcol + ecol;
     }
 
+    if (glbc == LB_SA) {
+#ifdef USE_LIBTHAI
+	if (gscr != SC_Thai)
+#endif
+	    glbc = (ggbc == GB_Extend || ggbc == GB_SpacingMark)? LB_CM: LB_AL;
+    }
     if (glenptr) *glenptr = glen;
     if (gcolptr) *gcolptr = gcol;
     if (glbcptr) *glbcptr = glbc;
@@ -624,7 +605,7 @@ lbrule(self, b_idx, a_idx)
 	if (!SvOK(ST(1)) || !SvOK(ST(2)))
 	    XSRETURN_UNDEF;
 	obj = _selftoobj(self);
-	prop = linebreak_lbrule(obj, b_idx, a_idx);
+	prop = linebreak_lbrule(b_idx, a_idx);
 
 	if (prop == PROP_UNKNOWN)
 	    XSRETURN_UNDEF;

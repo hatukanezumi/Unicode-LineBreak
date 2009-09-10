@@ -1,14 +1,18 @@
+1.003_04  Thu Sep 10 2009
+
+	* Chg: Include URI pattern prepending ``URI:''.
+	* Imp: Efficient user-breaking.  Approx. 10% faster.
+
 1.003_03  Sat Sep 06 2009
 
-	* Deprecated non-XS version.
-	* Update Unicode data for 5.2.0beta to those of Aug 24.
-	* XS'ized character data.  Removed _load*() functions.
+	* Chg: Deprecated non-XS version.
+	* Imp: XS'ized character data. Implemented hash index for searching.
+	  Approx. 10% faster in speed, approx. 40KB more in memory usage.
 	* Removed trivial entries (e.g. XX on lbmap), ranges reserved for CJK
 	  ideographs, hangul syllables, Yi syllables (except U+A015) and
 	  default ignorable characters (Cf; see Unicode Book section 5.3)
 	  from character data maps.
-	* Hash index for searching (XS version only).  Approx. 10% faster in
-	  speed, approx. 40KB more in memory usage.
+	* Update Unicode data for 5.2.0beta to those of Aug 24.
 	* Doc: Fixed attributes for some UCS ranges.  Correct several typos.
 
 1.002.510  Sun Jun 21 2009
