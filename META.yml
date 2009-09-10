@@ -1,6 +1,6 @@
 --- #YAML:1.0
 name:                Unicode-LineBreak
-version:             1.003_04
+version:             1.003_05
 abstract:            UAX #14 Unicode Line Breaking Algorithm
 license:             perl
 author:              

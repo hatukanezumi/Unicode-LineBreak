@@ -2,7 +2,7 @@
 
 =head1 NAME
 
-Unicode::GCString - UAX #29 書記素クラスタの列としての文字列
+Unicode::GCString::JA_JP - UAX #29 書記素クラスタの列としての文字列
 
 =head1 SYNOPSIS
 
