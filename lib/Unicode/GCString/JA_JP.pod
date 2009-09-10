@@ -7,13 +7,15 @@ Unicode::GCString - UAX #29 書記素クラスタの列としての文字列
 =head1 SYNOPSIS
 
     use Unicode::GCString;
-    $gcstr = Unicode::GCString($str);
+    $gcstring = Unicode::GCString->new($string);
     
 =head1 DESCRIPTION
 
+B<注意: このモジュールはアルファバージョン以前なので、多くのバグや不確定な仕様を含んでいる。>
+
 Unicode::GCString はUnicode文字列を、Unicode標準附属書29 [UAX #29] で定義される拡張書記素クラスタの列として扱う。
 
-B<書記素クラスタ>〔grapheme cluster〕はUnicode文字の列で、ひとつのB<書記素基底>〔grapheme base〕と、付加的なB<書記素エキステンダ>〔grapheme extender〕および/またはB<前置文字>〔prepend character〕から成る。これは人がI<文字>とみなすものに近い。
+B<書記素クラスタ>〔grapheme cluster〕はUnicode文字の列で、ひとつのB<書記素基底>〔grapheme base〕と、付加的なB<書記素エキステンダ>〔grapheme extender〕および/またはB<前置文字>〔prepend character〕から成る。これは人が「文字」とみなすものに近い。
 
 =head2 公開インタフェース
 

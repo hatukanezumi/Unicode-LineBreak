@@ -12,9 +12,11 @@ Unicode::GCString - String as Sequence of UAX #29 Grapheme Clusters
 =head1 SYNOPSIS
 
     use Unicode::GCString;
-    $gcstr = Unicode::GCString($str);
+    $gcstring = Unicode::GCString->new($string);
     
 =head1 DESCRIPTION
+
+B<WARNING: This module is pre-alpha version therefore includes many bugs and unstable features.>
 
 Unicode::GCString treats Unicode string as a sequence of
 extended grapheme clusters defined by Unicode Standard Annex #29 [UAX #29].
@@ -45,7 +47,7 @@ use Unicode::LineBreak;
 ### Globals
 
 # The package version
-our $VERSION = '0.001';
+our $VERSION = '0.002_01';
 
 =head2 Public Interface
 
