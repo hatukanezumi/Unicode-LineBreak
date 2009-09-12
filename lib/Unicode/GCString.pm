@@ -5,26 +5,6 @@ require 5.008;
 
 =encoding utf-8
 
-=head1 NAME
-
-Unicode::GCString - String as Sequence of UAX #29 Grapheme Clusters
-
-=head1 SYNOPSIS
-
-    use Unicode::GCString;
-    $gcstring = Unicode::GCString->new($string);
-    
-=head1 DESCRIPTION
-
-B<WARNING: This module is pre-alpha version therefore includes many bugs and unstable features.>
-
-Unicode::GCString treats Unicode string as a sequence of
-extended grapheme clusters defined by Unicode Standard Annex #29 [UAX #29].
-
-B<Grapheme cluster> is a sequence of Unicode character(s) that consists of one
-B<grapheme base> and optional B<grapheme extender> and/or
-B<prepend character>.  It is close in that people consider as I<character>.
-
 =cut
 
 ### Pragmas:
@@ -47,31 +27,15 @@ use Unicode::LineBreak;
 ### Globals
 
 # The package version
-our $VERSION = '0.002_01';
-
-=head2 Public Interface
-
-=cut
+our $VERSION = '0.003_01';
 
 use overload 
-    #XXX'""' => \&as_string,
-    #XXX'.=' => \&append,
-    #XXX'.' => \&concat,
-    '<>' => \&next;
-
-=head3 Constructor
-
-=over 4
-
-=item new (STRING, [LINEBREAK])
-
-I<Constructor>.
-Create new Unicode::GCString object from Unicode string STRING.
-Optional Unicode::LineBreak object LINEBREAK controls breaking features.
-
-=back
-
-=cut
+    '@{}' => \&as_arrayref,
+    '""' => \&as_string,
+    '.' => \&concat,
+    '.=' => \&concat,
+    #XXX'<>' => \&next,
+    ;
 
 # ->new (STRING, [LINEBREAK])
 sub new {
@@ -82,100 +46,127 @@ sub new {
     if (ref $str) {
 	$str = $str->as_string;
     }
-    unless (defined $str and length $str) {
+    unless (defined $str and CORE::length $str) {
 	$str = '';
     } elsif ($str =~ /[^\x00-\x7F]/s and !Encode::is_utf8($str)) {
         croak "Unicode string must be given.";
     }
 
-    my @str = ();
-    while (length $str) {
+    my $ret = __PACKAGE__->_new('');
+    while (CORE::length $str) {
 	my $func;
 	my ($s, $match, $post) = ($str, '', '');
 	foreach my $ub (@{$lbobj->{_user_breaking_funcs}}) {
 	    my ($re, $fn) = @{$ub};
 	    if ($str =~ /$re/) {
-		if (length $& and length $` < length $s) { #`
+		if (CORE::length $& and CORE::length $` < CORE::length $s) { #`
 		    ($s, $match, $post) = ($`, $&, $'); #'`
 		    $func = $fn;
 		}
 	    }
 	}
-	if (length $match) {
+	if (CORE::length $match) {
 	    $str = $post;
 	} else {
 	    $s = $str;
 	    $str = '';
 	}
-	my $length = length $s;
-	my $pos = 0;
-	while ($pos < $length) {
-	    my ($glen, $gcol, $lbc) = $lbobj->gcinfo($s, $pos);
-	    push @str, [substr($s, $pos, $glen), $gcol, $lbc];
-	    $pos += $glen;
-	}
-	if (length $match) {
-	    my ($glen, $gcol, $lbc);
-	    my @s = ();
-	    foreach my $s (&{$func}($lbobj, $match)) {
-		my $length = length $s;
-		my $pos = 0;
-		my @g = ();
-		while ($pos < $length) {
-		    ($glen, $gcol, $lbc) = $lbobj->gcinfo($s, $pos);
-		    push @g, [substr($s, $pos, $glen), $gcol, $lbc,
-			      (scalar @s && !scalar @g), scalar @g];
-		    $pos += $glen;
+
+	# Break unmatched fragment.
+	my %sa_break;
+	if (CORE::length $s) {
+	    %sa_break = map { ($_ => 1); }
+	    Unicode::LineBreak::SouthEastAsian::break_indexes($s);
+	    $s = __PACKAGE__->_new($s, $lbobj);
+	    my $pos = 0;
+	    my $length = $s->length;
+	    my @s = @{$s};
+	    for (my $i = 0; $i < $length; $i++) {
+		my $item = $s[$i];
+		if ($item->[2] == Unicode::LineBreak::LB_SA()) {
+		    $s->flag($i,
+			     $sa_break{$pos}?
+			     Unicode::LineBreak::BREAK_BEFORE():
+			     Unicode::LineBreak::PROHIBIT_BEFORE());
 		}
-		if ($lbc == Unicode::LineBreak::LB_SP()) {
-		    my $sp = pop @g;
-		    push @s, @g;
-		    push @s, [$sp, $gcol, $lbc];
-		} else {
-		    push @s, @g;
-		}
+		$pos += CORE::length $item->[0];
 	    }
-	    push @str, @s;
+	    $ret .= $s;
+	}
+
+	# Break matched fragment.
+	if (CORE::length $match) {
+	    my $first = 1;
+	    foreach my $s (&{$func}($lbobj, $match)) {
+		$s = __PACKAGE__->_new($s, $lbobj);
+		my $length = $s->length;
+		if ($length) {
+		    if (!$first) {
+			$s->flag(0, Unicode::LineBreak::BREAK_BEFORE());
+		    }
+		    for (my $i = 1; $i < $length; $i++) {
+			$s->flag($i, Unicode::LineBreak::PROHIBIT_BEFORE());
+		    }
+		    $ret .= $s;
+		}
+		$first = 0;
+	    }
 	}
     }
 
-    bless {
-	lbobj => $lbobj,
-	pos => 0,
-	str => \@str,
-    }, $class;
+    $ret;
 }
 
-=head3 Operations as String
+sub as_arrayref {
+    my @a = shift->as_array;
+    return \@a;
+}
+
+1;
+
+__END__
+
+=head1 NAME
+
+Unicode::GCString - String as Sequence of UAX #29 Grapheme Clusters
+
+=head1 SYNOPSIS
+
+    use Unicode::GCString;
+    $gcstring = Unicode::GCString->new($string);
+    
+=head1 DESCRIPTION
+
+B<WARNING: This module is alpha version therefore includes some bugs and unstable features.>
+
+Unicode::GCString treats Unicode string as a sequence of
+I<extended grapheme clusters> defined by Unicode Standard Annex #29 [UAX #29].
+
+B<Grapheme cluster> is a sequence of Unicode character(s) that consists of one
+B<grapheme base> and optional B<grapheme extender> and/or
+B<prepend character>.  It is close in that people consider as I<character>.
+
+=head2 Public Interface
+
+=head3 Constructors
 
 =over 4
 
-=item append (STRING)
+=item new (STRING, [LINEBREAK])
 
-=item OBJECT C<.=> STRING
+I<Constructor>.
+Create new grapheme cluster string (Unicode::GCString object) from
+Unicode string STRING.
+Optional L<Unicode::LineBreak> object LINEBREAK controls breaking features.
 
-I<Instance method>.
-Append STRING.  Grapheme cluster string is modified.
-STRING may be either Unicode string or grapheme cluster string.
+=item copy
+
+I<Copy constructor>.
+Create a copy of grapheme cluster string.
 
 =back
 
-=cut
-
-# ->append (STRING)
-sub append {
-    my $self = shift;
-    my $str = shift;
-    $str = __PACKAGE__->new($str, $self->{lbobj}) unless ref $str;
-
-    my $c = '';
-    $c = ${pop @{$self->{str}}}[0] if scalar @{$self->{str}};
-    $c .= ${shift @{$str->{str}}}[0] if scalar @{$str->{str}};
-    push @{$self->{str}}, @{__PACKAGE__->new($c, $self->{lbobj})->{str}}
-	if length $c;
-    push @{$self->{str}}, @{$str->{str}};
-    $self;
-}
+=head3 Operations as String
 
 =over 4
 
@@ -186,225 +177,101 @@ sub append {
 I<Instance method>.
 Convert grapheme cluster string to Unicode string.
 
-=back
-
-=cut
-
-# ->as_string
-sub as_string {
-    my $self = shift;
-    join '', map {$_->[0]} @{$self->{str}};
-}
-
-=over 4
-
 =item columns
 
 I<Instance method>.
 Returns total number of columns of grapheme clusters string
 defined by built-in character database.
-
-=back
-
-=cut
-
-sub columns {
-    my $self = shift;
-    my $cols = 0;
-    foreach my $c (@{$self->{str}}) {
-	$cols += $c->[1];
-    }
-    $cols;
-}
-
-=over 4
+For more details see L<Unicode::LineBreak/DESCRIPTION>.
 
 =item concat (STRING)
 
 =item STRING C<.> STRING
 
+=item STRING C<.=> STRING
+
 I<Instance method>.
-Concatenate STRINGs then create new grapheme cluster string.
-One of each STRING may be Unicode string.
-
-=back
-
-=cut
-
-# ->concat (STRING)
-sub concat {
-    my $self = shift;
-    my $str = shift;
-    my $obj;
-    $str = __PACKAGE__->new($str, $self->{lbobj}) unless ref $str;
-    if (shift) {
-	if (ref $str) {
-	    $obj = $str->copy();
-	    $obj->{lbobj} = $self->{lbobj};
-	} else {
-	    $obj = __PACKAGE__->new($str, $self->{lbobj});
-	}
-	$str = $self;
-    } else {
-	$obj = $self->copy();
-	$str = __PACKAGE__->new($str, $self->{lbobj}) unless ref $str;
-    } 
-
-    my $c = '';
-    $c = ${pop @{$obj->{str}}}[0] if scalar @{$obj->{str}};
-    $c .= ${shift @{$str->{str}}}[0] if scalar @{$str->{str}};
-    push @{$obj->{str}}, @{__PACKAGE__->new($c, $self->{lbobj})->{str}}
-	if length $c;
-    push @{$obj->{str}}, @{$str->{str}};
-    $obj->{pos} = 0;
-    $obj;
-}
-
-=over 4
-
-=item copy
-
-I<Copy constructor>.
-Create a copy of grapheme cluster string.
-
-=back
-
-=cut
-
-sub copy {
-    my $self = shift;
-
-    my $obj = __PACKAGE__->new('', $self->{lbobj});
-    push @{$obj->{str}}, @{$self->{str}};
-    $obj->{pos} = $self->{pos};
-    $obj;
-}
-
-=over 4
+Concatenate STRINGs.  One of each STRING may be Unicode string.
 
 =item length
 
 I<Instance method>.
 Returns number of grapheme clusters contained in grapheme cluster string.
 
-=back
-
-=cut
-
-sub length {
-    scalar @{shift->{str}};
-}
-
-=over 4
-
 =item substr (INDEX, [LEN])
 
 I<Instance method>.
+B<Not yet implemented>.
 Returns substring of grapheme cluster string.
 
 =back
-
-=cut
-
-sub substr {
-    my $self = shift;
-    my $index = shift || 0;
-    my $len = shift;
-    $len = $#{$self->{str}} - $index + 1 unless defined $len;
-
-    my $obj = $self->copy;
-    $obj->{str} = [@{$obj->{str}}[$index..$index+$len-1]];
-    $obj->{pos} = 0;
-    $obj;
-}
 
 =head3 Operations as Sequence of Grapheme Clusters
 
 =over 4
 
+=item as_array
+
+=item C<@{>OBJECTC<}>
+
+=item as_arrayref
+
+I<Instance method>.
+Convert grapheme cluster string to an array of informations of grapheme
+clusters.
+
+=begin comment
+
 =item eot
 
 I<Instance method>.
+B<Not implemented yet>.
 Test if current position is at end of grapheme cluster string.
 
-=back
+=end comment
 
-=cut
+=begin comment
 
-sub eot {
-    my $self = shift;
-    return scalar @{$self->{str}} <= $self->{pos};
-}
+=item flag (INDEX, [VALUE])
 
-=over 4
+I<Undocumented>.
+
+=end comment
+
+=item item (INDEX)
+
+I<Instance method>.
+Returns information of INDEX-th grapheme cluster as array reference.
+
+=begin comment
 
 =item next
 
 I<Instance method>, iterative.
+B<Not implemented yet>.
 Returns information of next grapheme cluster
 as array reference.
 
-=back
-
-=cut
-
-sub next {
-    my $self = shift;
-    return undef if scalar @{$self->{str}} <= $self->{pos};
-    $self->{str}->[$self->{pos}++];
-}
-
-=over 4
-
 =item prev
 
+B<Not implemented yet>.
 Decrement position of grapheme cluster string.
-
-=back
-
-=cut
-
-sub prev {
-    my $self = shift;
-
-    $self->{pos}-- if 0 < $self->{pos};
-}
-
-=over 4
 
 =item reset
 
 I<Instance method>.
+B<Not implemented yet>.
 Reset next position of grapheme cluster string.
-
-=back
-
-=cut
-
-sub reset {
-    my $self = shift;
-    $self->{pos} = 0;
-    $self;
-}
-
-=over 4
 
 =item rest
 
 I<Instance method>.
+B<Not implemented yet>.
 Returns rest of grapheme cluster string.
 
+=end comment
+
 =back
-
-=cut
-
-sub rest {
-    my $self = shift;
-
-    my $obj = __PACKAGE__->new('', $self->{lbobj});
-    push @{$obj->{str}}, @{$self->{str}}[$self->{pos}..$#{$self->{str}}];
-    $obj;
-}
 
 =head1 VERSION
 
@@ -432,5 +299,3 @@ This program is free software; you can redistribute it and/or modify it
 under the same terms as Perl itself.
 
 =cut
-
-1;

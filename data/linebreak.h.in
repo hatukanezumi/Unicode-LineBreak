@@ -7,14 +7,28 @@
 #    include "thai/thwbrk.h"
 #endif /* USE_LIBTHAI */
 
+/* Primitive types */
 typedef unsigned int unichar_t;
 typedef size_t propval_t;
 
+/* Unicode string */
 typedef struct {
     unichar_t *str;
     size_t len;
 } unistr_t;
 
+/* Grapheme cluster */
+typedef struct {
+    size_t idx; size_t len;
+    size_t col;
+    propval_t lbc;
+    unsigned char flag;
+} gcchar_t;
+#define LINEBREAK_BREAK_BEFORE (2)
+#define LINEBREAK_PROHIBIT_BEFORE (1)
+#define LINEBREAK_FLAGS (2 | 1)
+
+/* Property map entry */
 typedef struct {
     unichar_t beg;
     unichar_t end;
@@ -24,11 +38,22 @@ typedef struct {
     propval_t scr;
 } mapent_t;
 
+/* LineBreak object */
 typedef struct {
     mapent_t *map;
     size_t mapsiz;
     unsigned int options;
-} linebreakObj;
+} linebreak_t;
+
+/* GCString object */
+typedef struct {
+    unichar_t *str;
+    size_t len;
+    gcchar_t *gcstr;
+    size_t gclen;
+    linebreak_t *lbobj;
+} gcstring_t;
+
 
 #define LINEBREAK_OPTION_EASTASIAN_CONTEXT (1)
 #define PROP_UNKNOWN ((propval_t)~0)

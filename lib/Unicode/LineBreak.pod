@@ -94,21 +94,6 @@ See L</Constants> for returned value.
 EA_Z means nonspacing (zero width) character.
 Property value A (ambiguous) will be resolved to other appropriate values. 
 
-=begin comment
-
-=item $self->gcinfo (STR, POS)
-
-I<Instance method>.
-Get information of B<grapheme cluster> of Unicode string STR beginning at position POS.
-For more details about grapheme clusters see [UAX #29].
-
-Returns an array of three elements (LEN, COLS, CLASS).
-LEN is number of Unicode characters grapheme cluster contains, including prepending character(s).
-COLS is number of columns of grapheme cluster determined by built-in character database.
-CLASS is line breaking property (class) of the first Unicode character of grapheme base, except that SA being resolved to AL or CM.
-
-=end comment
-
 =item $self->lbclass (STRING)
 
 I<Instance method>.
@@ -565,6 +550,29 @@ For more details read F<Unicode/LineBreak/Defaults.pm.sample>.
 
 Please report bugs or buggy behaviors to developer.  See L</AUTHOR>.
 
+=over 4
+
+=item *
+
+Following characters behave as if they were CM.
+
+    UCS    |Name                                |LB |GCB
+    ------------------------------------------------------------
+    U+034F |COMB. GRAPHEME JOINER               |GL |Extend
+    U+035C |COMB. DOUBLE BREVE BELOW            |GL |Extend
+    U+035D |COMB. DOUBLE BREVE                  |GL |Extend
+    U+035E |COMB. DOUBLE MACRON                 |GL |Extend
+    U+035F |COMB. DOUBLE MACRON BELOW           |GL |Extend
+    U+0360 |COMB. DOUBLE TILDE                  |GL |Extend
+    U+0361 |COMB. DOUBLE INVERTED BREVE         |GL |Extend
+    U+0362 |COMB. DOUBLE RIGHTWARDS ARROW BELOW |GL |Extend
+    U+0F7F |TIBETAN SIGN RNAM BCAD              |BA |SpacingMark
+    U+FF9E |HW. KATAKANA VOICED SOUND MARK      |NS |Extend
+    U+FF9F |HW. KATAKANA SEMI-VOICED SOUND MARK |NS |Extend
+    ------------------------------------------------------------
+
+=back
+
 =head1 VERSION
 
 See L<Unicode::LineBreak::Version>.
@@ -608,18 +616,6 @@ Extend or SpacingMark be resolved to CM.
 =item *
 
 Characters assigned to SG or XX are resolved to AL.
-
-=item *
-
-Following characters succeeding character with line breaking property CB
-behave as if they were CM, because of their Grapheme_Cluster_Break properties.
-
-    UCS    |Name                                     |LBC|GBC
-    -----------------------------------------------------------------
-    U+0F7F |TIBETAN SIGN RNAM BCAD                   |BA |SpacingMark
-    U+FF9E |HALFWIDTH KATAKANA VOICED SOUND MARK     |NS |Extend
-    U+FF9F |HALFWIDTH KATAKANA SEMI-VOICED SOUND MARK|NS |Extend
-    -----------------------------------------------------------------
 
 =item *
 
@@ -674,16 +670,6 @@ L<http://unicode.org/reports/tr11/>.
 A. Freytag and A. Heninger (2008).
 I<Unicode Standard Annex #14: Unicode Line Breaking Algorithm>, Revision 22.
 L<http://unicode.org/reports/tr14/>.
-
-=begin comment
-
-=item [UAX #29]
-
-Mark Davis (2008).
-I<Unicode Standard Annex #29: Unicode Text Segmentation>, Revision 13.
-L<http://www.unicode.org/reports/tr29/>.
-
-=end comment
 
 =back
 

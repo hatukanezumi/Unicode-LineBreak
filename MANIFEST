@@ -25,7 +25,6 @@ lib/Unicode/LineBreak.pod
 lib/Unicode/LineBreak/Constants.pm
 lib/Unicode/LineBreak/Defaults.pm.sample
 lib/Unicode/LineBreak/JA_JP.pod
-lib/Unicode/LineBreak/NoXS.pm
 lib/Unicode/LineBreak/Version.pm
 LineBreak.xs
 Makefile.PL

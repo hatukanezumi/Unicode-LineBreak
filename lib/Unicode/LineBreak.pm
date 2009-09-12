@@ -229,13 +229,12 @@ sub break_partial ($$) {
     # spc: Trailing spaces.
     # urg: This buffer had been broken by urgent/custom/complex breaking.
     # eop: There is a mandatory breaking point at end of this buffer.
-    # bb:  Allows break before.
-    # pb:  Prevents break before.
+    # flag: Allows/prevents break before.
     my %before = ('frg' => '', 'spc' => '');
     my %after = ('frg' => '', 'spc' => '');
     ## Unread input.
     $str = Unicode::GCString->new($s->{_unread}.$str, $s);
-    my @str = @{$str->{str}};
+    my @str = @{$str};
     ## Start of text/paragraph status.
     # 0: Start of text not done.
     # 1: Start of text done while start of paragraph not done.
@@ -255,7 +254,7 @@ sub break_partial ($$) {
 
       CHARACTER_PAIR:
 	while (1) {
-	    my ($gcol, $gcls, $bb, $pb);
+	    my ($gcol, $gcls, $gflag);
 
 	    # End of input.
 	    last CHARACTER_PAIR if !scalar(@custom) and !scalar @str;
@@ -266,7 +265,7 @@ sub break_partial ($$) {
 	    if (!scalar(@custom)) {
 		## Then, go ahead reading input.
 
-		($gcls, $bb, $pb) = @{$str[0]}[2,3,4];
+		($gcls, $gflag) = @{$str[0]}[2,3];
 
 		#
 		# Append SP/ZW/eop to ``before'' buffer.
@@ -282,7 +281,7 @@ sub break_partial ($$) {
 
 			# End of input.
 			last CHARACTER_PAIR if !scalar @str;
-			($gcls, $bb, $pb) = @{$str[0]}[2,3,4];
+			($gcls, $gflag) = @{$str[0]}[2,3];
 		    }
 
 		    # - Mandatory breaks
@@ -308,37 +307,11 @@ sub break_partial ($$) {
 
 			# End of input
 			last CHARACTER_PAIR if !scalar @str;
-			($gcls, $bb, $pb) = @{$str[0]}[2,3,4];
+			($gcls, $gflag) = @{$str[0]}[2,3];
 			next;
 		    }
 		    last;
 		} # while (1)
-
-		# Try complex breaking - Break SA sequence.
-		if ($gcls == LB_SA) {
-		    my $frg = '';
-		    while (1) {
-			$frg .= (shift @str)->[0];
-
-			# End of input - might be partial sequence.
-			if (!scalar @str && !$eot) {
-			    $s->{_line} = \%line;
-			    $s->{_unread} = $before{frg}.$before{spc}.$frg;
-			    $s->{_sox} = $sox;
-			    return $result;
-			}
-			($gcls, $bb, $pb) = @{$str[0]}[2,3,4];
-			last unless $gcls and $gcls == LB_SA;
-		    }
-		    my @c = map { {'cls' => LB_AL, 'frg' => $_, 'spc' => '',
-				   'urg' => 1}; }
-			     Unicode::LineBreak::SouthEastAsian::break($frg);
-		    if (scalar @c) {
-			$c[$#c]->{urg} = 0;
-			unshift @custom, @c;
-		    }
-		    next;
-		}
 
 		#
 		# Then fill ``after'' buffer.
@@ -348,14 +321,20 @@ sub break_partial ($$) {
 
 		# LB1: Assign a line breaking class to each characters.
 		%after = ('frg' => (shift @str)->[0], 'spc' => '',
-			  'bb' => $bb, 'pb' => $pb);
-		# LB27: Treat hangul syllable as if it were ID (or AL).
-		if ($gcls == LB_H2 or $gcls == LB_H3 or
-		    $gcls == LB_JL or $gcls == LB_JV or $gcls == LB_JT) {
-		    $after{cls} = ($s->{HangulAsAL} eq 'YES')? LB_AL: LB_ID;
+			  'flag' => $gflag);
+
+		# - Combining marks  
+		# LB9: Treat X CM+ as if it were X  
+		# where X is anything except BK, CR, LF, NL, SP or ZW  
+		# (NB: Some CM characters may be single grapheme cluster
+		# since they have Grapheme_Cluster_Break property Control.)
+		while (scalar @str) {  
+		    last unless $str[0]->[2] eq LB_CM;
+		    $after{frg} .= (shift @str)->[0];
+		}
 		# Legacy-CM: Treat SP CM+ as if it were ID.  cf. [UAX #14] 9.1.
 		# LB10: Treat any remaining CM+ as if it were AL.
-		} elsif ($gcls == LB_CM) {
+		if ($gcls == LB_CM) {
 		    if ($s->{LegacyCM} eq 'YES' and
 			defined $before{cls} and length $before{spc} and
 			$s->lbclass(substr($before{spc}, -1)) == LB_SP) {
@@ -370,6 +349,10 @@ sub break_partial ($$) {
 		    } else {
 			$after{cls} = LB_AL;
 		    }
+		# LB27: Treat hangul syllable as if it were ID (or AL).
+		} elsif ($gcls == LB_H2 or $gcls == LB_H3 or
+			 $gcls == LB_JL or $gcls == LB_JV or $gcls == LB_JT) {
+		    $after{cls} = ($s->{HangulAsAL} eq 'YES')? LB_AL: LB_ID;
 		} else {
 		    $after{cls} = $gcls;
 		}
@@ -400,9 +383,9 @@ sub break_partial ($$) {
 	    $action = URGENT;
 	# LB11 - LB29 and LB31: Tailorable rules (except LB11, LB12).
 	} elsif (defined $after{cls}) {
-	    if ($after{bb}) {
+	    if (($after{flag} || 0)& BREAK_BEFORE) {
 		$action = DIRECT;
-	    } elsif ($after{pb}) {
+	    } elsif (($after{flag} || 0) & PROHIBIT_BEFORE) {
 		$action = PROHIBITED;
 	    } else {
 		$action = $s->lbrule($before{cls}, $after{cls});

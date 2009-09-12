@@ -1,7 +1,7 @@
 ## 
 
 MODULE_VERSION = 1.003
-BETA_VERSION = 05
+BETA_VERSION = 06
 UNICODE_VERSIONS = 5.1.0 5.2.0beta
 CURRENT_UNICODE_VERSION = 5.1.0
 
@@ -37,6 +37,7 @@ $(DATA_C): $(RULES) $(EASTASIANWIDTH) $(LINEBREAK) $(SCRIPTS) $(EASTASIANWIDTH_C
 
 $(CONSTANTS_PM) $(LINEBREAK_H) LBCLASSES: makefile constants.pl Constants.pm.in linebreak.h.in
 	perl constants.pl lb,ea,gb,sc $(UNICODE_VERSIONS)
+	perl -wc $(CONSTANTS_PM)
 
 $(VERSION_PM): makefile
 	VER=$(MODULE_VERSION); \

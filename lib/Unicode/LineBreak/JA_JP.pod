@@ -85,21 +85,6 @@ Unicode 文字列 STRING の最初の文字の East_Asian_Width 特性を得る�
 EA_Z は前進を伴わない (幅のない) ことを意味する。
 特性値 A (曖昧) は適切な値に解決する。
 
-=begin comment
-
-=item $self->gcinfo (STR, POS)
-
-I<インスタンスメソッド>。
-Unicode 文字列 STR の位置 POS から始まるB<書記素クラスタ>〔grapheme cluster〕の情報を得る。
-書記素クラスタについて詳しくは [UAX #29] を参照。
-
-3 つの要素を持つ配列 (LEN, COLS, CLASS) を返す。
-LEN は書記素クラスタに含まれるUnicode文字の数。
-COLS は書記素クラスタの桁数 (組み込みの文字データベースで決定される値)。
-CLASS は書記素基底〔grapheme base〕の最初のUnicode文字の行分割特性 (分類)、ただし SA の場合は AL か CM に解決する。
-
-=end comment
-
 =item $self->lbclass (STRING)
 
 I<インスタンスメソッド>。
@@ -500,6 +485,29 @@ F<Unicode/LineBreak/Defaults.pm>。
 
 バグやバグのような動作は、開発者に教えてください。L</AUTHOR> を参照。
 
+=over 4
+
+=item *
+
+以下の文字が、行分割特性が CM であるかのようにふるまう。
+
+    UCS    |名前                                |LB |GCB
+    ------------------------------------------------------------
+    U+034F |COMB. GRAPHEME JOINER               |GL |Extend
+    U+035C |COMB. DOUBLE BREVE BELOW            |GL |Extend
+    U+035D |COMB. DOUBLE BREVE                  |GL |Extend
+    U+035E |COMB. DOUBLE MACRON                 |GL |Extend
+    U+035F |COMB. DOUBLE MACRON BELOW           |GL |Extend
+    U+0360 |COMB. DOUBLE TILDE                  |GL |Extend
+    U+0361 |COMB. DOUBLE INVERTED BREVE         |GL |Extend
+    U+0362 |COMB. DOUBLE RIGHTWARDS ARROW BELOW |GL |Extend
+    U+0F7F |チベット文字ナムチャド〔ヴィサルガ〕|BA |SpacingMark
+    U+FF9E |濁点 (代替名称)                     |NS |Extend
+    U+FF9F |半濁点 (代替名称)                   |NS |Extend
+    ------------------------------------------------------------
+
+=back
+
 =head1 VERSION
 
 L<Unicode::LineBreak::Version> を参照してほしい。
@@ -541,17 +549,6 @@ SA に分類される文字は AL に解決する。
 =item *
 
 SG や XX に分類される文字は AL に解決する。
-
-=item *
-
-以下の文字は、行分割特性 CB の文字の後に続くとき、Grapheme_Cluster_Break 特性により、CM のようにふるまう。
-
-    UCS    |Name                                     |LBC|GBC
-    -----------------------------------------------------------------
-    U+0F7F |TIBETAN SIGN RNAM BCAD                   |BA |SpacingMark
-    U+FF9E |HALFWIDTH KATAKANA VOICED SOUND MARK     |NS |Extend
-    U+FF9F |HALFWIDTH KATAKANA SEMI-VOICED SOUND MARK|NS |Extend
-    -----------------------------------------------------------------
 
 =item *
 
@@ -603,16 +600,6 @@ L<http://unicode.org/reports/tr11/>.
 A. Freytag and A. Heninger (2008).
 I<Unicode Standard Annex #14: Unicode Line Breaking Algorithm>, Revision 22.
 L<http://unicode.org/reports/tr14/>.
-
-=begin comment
-
-=item [UAX #29]
-
-Mark Davis (2008).
-I<Unicode Standard Annex #29: Unicode Text Segmentation>, Revision 13.
-L<http://www.unicode.org/reports/tr29/>.
-
-=end comment
 
 =back
 

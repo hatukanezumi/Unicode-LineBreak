@@ -1,6 +1,12 @@
-1.003_04  Thu Sep 10 2009
+1.003_06	Sat Sep 12 2009
 
-	* Chg: Include URI pattern prepending ``URI:''.
+	* Fix: Get back LB9: Some CM characters may be single grapheme cluster
+	  as their Grapheme_Cluster_Break property is Control.
+	* Imp: Almost XS'ized grapheme cluster processing.  Approx. 25% faster.
+	
+1.003_05  Thu Sep 10 2009
+
+	* Chg: Include suffixing ``URL:'' to URI pattern.
 	* Imp: Efficient user-breaking.  Approx. 10% faster.
 
 1.003_03  Sat Sep 06 2009
@@ -8,10 +14,8 @@
 	* Chg: Deprecated non-XS version.
 	* Imp: XS'ized character data. Implemented hash index for searching.
 	  Approx. 10% faster in speed, approx. 40KB more in memory usage.
-	* Removed trivial entries (e.g. XX on lbmap), ranges reserved for CJK
-	  ideographs, hangul syllables, Yi syllables (except U+A015) and
-	  default ignorable characters (Cf; see Unicode Book section 5.3)
-	  from character data maps.
+	* Removed ranges of trivial entries (e.g. XX on lbmap), reserved for CJK
+	  ideographs etc. from character data maps.
 	* Update Unicode data for 5.2.0beta to those of Aug 24.
 	* Doc: Fixed attributes for some UCS ranges.  Correct several typos.
 

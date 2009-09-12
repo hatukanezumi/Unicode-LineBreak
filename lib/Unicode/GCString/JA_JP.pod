@@ -11,11 +11,11 @@ Unicode::GCString::JA_JP - UAX #29 書記素クラスタの列としての文字
     
 =head1 DESCRIPTION
 
-B<注意: このモジュールはアルファバージョン以前なので、多くのバグや不確定な仕様を含んでいる。>
+B<注意: このモジュールはアルファバージョンなので、バグや不確定な仕様をいくつも含んでいる。>
 
-Unicode::GCString はUnicode文字列を、Unicode標準附属書29 [UAX #29] で定義される拡張書記素クラスタの列として扱う。
+Unicode::GCString はUnicode文字列を、Unicode標準附属書29 [UAX #29] で定義される「拡張書記素クラスタ」〔extended grapheme cluster〕の列として扱う。
 
-B<書記素クラスタ>〔grapheme cluster〕はUnicode文字の列で、ひとつのB<書記素基底>〔grapheme base〕と、付加的なB<書記素エキステンダ>〔grapheme extender〕および/またはB<前置文字>〔prepend character〕から成る。これは人が「文字」とみなすものに近い。
+B<書記素クラスタ>〔grapheme cluster〕は、Unicode文字の列で、ひとつのB<書記素基底>〔grapheme base〕と、付加的なB<書記素エキステンダ>〔grapheme extender〕および/またはB<前置文字>〔prepend character〕から成る。これは人が「文字」とみなすものに近い。
 
 =head2 公開インタフェース
 
@@ -26,22 +26,20 @@ B<書記素クラスタ>〔grapheme cluster〕はUnicode文字の列で、ひと
 =item new (STRING, [LINEBREAK])
 
 I<コンストラクタ>。
-Unicode文字列 STRING から新たに Unicode::GCString を作る。
-オプションの Unicode::LineBreak オブジェクト LINEBREAK は分割の仕様を制御する。
+Unicode文字列 STRING から新たに書記素クラスタ文字列
+(Unicode::GCString オブジェクト) を作る。
+オプションの L<Unicode::LineBreak> オブジェクト LINEBREAK は分割の仕様を制御する。
+
+=item copy
+
+I<コピーコンストラクタ>。
+書記素クラスタ文字列の複製を作る。
 
 =back
 
 =head3 文字列としての操作
 
 =over 4
-
-=item append (STRING)
-
-=item OBJECT C<.=> STRING
-
-I<インスタンスメソッド>。
-STRING をつけ加える。書記素クラスタ文字列は変更される。
-STRING はUnicode文字列でも書記素クラスタ文字列でもよい。
 
 =item as_string
 
@@ -54,19 +52,17 @@ I<インスタンスメソッド>。
 
 I<インスタンスメソッド>。
 組み込みの文字データベースで決定される書記素クラスタ文字列の桁数を返す。
+詳しくは L<Unicode::LineBreak::JA_JP/DESCRIPTION> を参照。
 
 =item concat (STRING)
 
 =item STRING C<.> STRING
 
+=item STRING C<.=> STRING
+
 I<インスタンスメソッド>。
-文字列を結合して新たな書記素クラスタ文字列を作る。
+書記素クラスタ文字列を結合する。
 STRING のどちらかがUnicode文字列でもよい。
-
-=item copy
-
-I<コピーコンストラクタ>。
-書記素クラスタ文字列の複製を作る。
 
 =item length
 
@@ -76,6 +72,7 @@ I<インスタンスメソッド>。
 =item substr (INDEX, [LEN])
 
 I<インスタンスメソッド>。
+B<未実装>.
 書記素クラスタ文字列の部分文字列を返す。
 
 =back
@@ -84,30 +81,65 @@ I<インスタンスメソッド>。
 
 =over 4
 
+=item as_array
+
+=item C<@{>OBJECTC<}>
+
+=item as_arrayref
+
+I<インスタンスメソッド>。
+書記素クラスタ文字列を、書記素クラスタの情報の配列に変換する。
+
+=begin comment
+
 =item eot
 
 I<インスタンスメソッド>。
+B<未実装>。
 現在の位置が書記素クラスタ文字列の最後かどうか調べる。
+
+=end comment
+
+=begin comment
+
+=item flag (INDEX, [VALUE])
+
+I<Undocumented>.
+
+=end comment
+
+=item item (INDEX)
+
+I<インスタンスメソッド>。
+INDEX番めの書記素クラスタの情報を配列参照として返す。
+
+=begin comment
 
 =item next
 
 I<インスタンスメソッド>、反復的。
+B<未実装>。
 次の書記素クラスタの情報を配列参照として返す。
 
 =item prev
 
 I<インスタンスメソッド>。
+B<未実装>。
 書記素クラスタ文字列中の位置をひとつ戻す。
 
 =item reset
 
 I<インスタンスメソッド>。
+B<未実装>。
 書記素クラスタ文字列の次の位置を初期化する。
 
 =item rest
 
 I<インスタンスメソッド>。
+B<未実装>。
 書記素クラスタの残りを返す。
+
+=end comment
 
 =back
 
