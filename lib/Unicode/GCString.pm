@@ -52,7 +52,7 @@ sub new {
         croak "Unicode string must be given.";
     }
 
-    my $ret = __PACKAGE__->_new('');
+    my $ret = __PACKAGE__->_new('', $lbobj);
     while (CORE::length $str) {
 	my $func;
 	my ($s, $match, $post) = ($str, '', '');
@@ -192,6 +192,9 @@ For more details see L<Unicode::LineBreak/DESCRIPTION>.
 
 I<Instance method>.
 Concatenate STRINGs.  One of each STRING may be Unicode string.
+Note that number of columns (see columns()) or grapheme clusters
+(see lenbgth()) of resulting string is not always equal to sum of both
+strings.
 
 =item length
 

@@ -406,7 +406,7 @@ For example, following code inserts hyphen to the name of several chemical subst
         return map {$_ =~ s/yl$/yl-/; $_} split /(\w+?yl(?=\w))/, $_[4];
     }
     my $lb = Unicode::LineBreak->new(UrgentBreaking => \&hyphenize);
-    print $lb->break("Methionylthreonylthreonylglutaminyl...");
+    print $lb->break("Methionylthreonylthreonylglutaminylarginyl...");
 
 If you specify [REGEX, SUBREF] array reference as an item of
 L</UserBreaking> option,
@@ -418,6 +418,19 @@ SELF is an instance of LineBreak object and
 STR is a Unicode string matched with REGEX.
 
 Subroutine should return an array of broken string STR.
+
+For example, following code break HTTP URLs using [CMOS] rule.
+
+    my $url = qr{http://[\x21-\x7E]+}i;
+    sub breakurl {
+        my $self = shift;
+        my $str = shift;
+        return split m{(?<=[/]) (?=[^/]) |
+                       (?<=[^-.]) (?=[-~.,_?\#%=&]) |
+                       (?<=[=&]) (?=.)}x, $str;
+    }
+    my $lb = Unicode::LineBreak->new(UserBreaking => [$url, \&breakurl]);
+    print $lb->break($string);
 
 =head2 Calculating String Size
 
@@ -548,7 +561,10 @@ For more details read F<Unicode/LineBreak/Defaults.pm.sample>.
 
 =head1 BUGS
 
-Please report bugs or buggy behaviors to developer.  See L</AUTHOR>.
+Please report bugs or buggy behaviors to developer.
+
+CPAN Request Tracker:
+L<http://rt.cpan.org/Public/Dist/Display.html?Name=Unicode-LineBreak>.
 
 =over 4
 

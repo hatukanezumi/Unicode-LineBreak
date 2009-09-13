@@ -1,3 +1,9 @@
+1.003_07  Xxx Sep XX 2009
+
+	* Imp: strsize() allows grapheme cluster string.
+	* Cleanup codes: separate C codes.
+	* Doc: Added an example and link to CPAN RT page.
+
 1.003_06	Sat Sep 12 2009
 
 	* Fix: Get back LB9: Some CM characters may be single grapheme cluster

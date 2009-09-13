@@ -227,7 +227,7 @@ sub break_partial ($$) {
     # cls: Line breaking class.
     # frg: Unbreakable text fragment.
     # spc: Trailing spaces.
-    # urg: This buffer had been broken by urgent/custom/complex breaking.
+    # urg: This buffer had been broken by urgent breaking.
     # eop: There is a mandatory breaking point at end of this buffer.
     # flag: Allows/prevents break before.
     my %before = ('frg' => '', 'spc' => '');
@@ -243,8 +243,8 @@ sub break_partial ($$) {
 
     ## Result.
     my $result = '';
-    ## Queue of buffers broken by urgent/custom/complex breaking.
-    my @custom = ();
+    ## Queue of buffers broken by urgent breaking.
+    my @urgent = ();
     #XXX## Current position and length of STR.
     #XXXmy $pos = 0;
     #XXXmy $str_len = length $str;
@@ -257,12 +257,12 @@ sub break_partial ($$) {
 	    my ($gcol, $gcls, $gflag);
 
 	    # End of input.
-	    last CHARACTER_PAIR if !scalar(@custom) and !scalar @str;
+	    last CHARACTER_PAIR if !scalar(@urgent) and !scalar @str;
 	    # Mandatory break
 	    last CHARACTER_PAIR if defined $before{cls} and $before{eop};
 
-	    ## Use custom buffer at first.
-	    if (!scalar(@custom)) {
+	    ## Use urgent buffer at first.
+	    if (!scalar(@urgent)) {
 		## Then, go ahead reading input.
 
 		($gcls, $gflag) = @{$str[0]}[2,3];
@@ -357,8 +357,8 @@ sub break_partial ($$) {
 		    $after{cls} = $gcls;
 		}
 	    } else {
-		%after = (%{shift @custom});
-	    } # if (!scalar(@custom))
+		%after = (%{shift @urgent});
+	    } # if (!scalar(@urgent))
 
 	    # - Start of text
 
@@ -378,10 +378,11 @@ sub break_partial ($$) {
 	# Mandatory break.
 	if ($before{eop}) {
 	    $action = MANDATORY;
-	# Broken by urgent breaking or custom breaking.
+	# Broken by urgent breaking.
 	} elsif ($before{urg}) {
 	    $action = URGENT;
 	# LB11 - LB29 and LB31: Tailorable rules (except LB11, LB12).
+        # Or custom/complex breaking.
 	} elsif (defined $after{cls}) {
 	    if (($after{flag} || 0)& BREAK_BEFORE) {
 		$action = DIRECT;
@@ -449,7 +450,7 @@ sub break_partial ($$) {
 		    }
 
 		    # Shift back urgently broken fragments then retry.
-		    unshift @custom, @cc;
+		    unshift @urgent, @cc;
 		    %before = ('frg' => '', 'spc' => '');
 		    %after = ('frg' => '', 'spc' => '');
 		    next;
@@ -463,7 +464,7 @@ sub break_partial ($$) {
 	} # if ($before{eop})
 
         # Check end of input.
-        if (!$eot and !defined $after{cls} and !scalar @custom and
+        if (!$eot and !defined $after{cls} and !scalar @urgent and
 	    !scalar @str) {
 	    # Save status then output partial result.
 	    $s->{_line} = \%line;
@@ -508,7 +509,7 @@ sub break_partial ($$) {
 		if (scalar @c) {
 		    $c[$#c]->{eop} = $before{eop};
 		    push @c, {%after} if defined $after{cls};
-		    unshift @custom, @c;
+		    unshift @urgent, @c;
 		    %before = ('frg' => '', 'spc' => '');
 		    %after = ('frg' => '', 'spc' => '');
 		    next;
@@ -533,7 +534,7 @@ sub break_partial ($$) {
 	} # if ($s->{ColumnsMax} and ...)
 
 	# Mandatory break or end-of-text.
-	if ($eot and !defined $after{cls} and !scalar @custom and
+	if ($eot and !defined $after{cls} and !scalar @urgent and
 	    !scalar @str) {
 	    last;
 	}

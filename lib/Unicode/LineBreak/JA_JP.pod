@@ -368,7 +368,7 @@ SELF はオブジェクトのインスタンス、LEN は先立つ行の長さ�
 	return map {$_ =~ s/yl$/yl-/; $_} split /(\w+?yl(?=\w))/, $_[4];
     }
     my $lb = Unicode::LineBreak->new(UrgentBreaking => \&hyphenize);
-    print $lb->break("Methionylthreonylthreonylglutaminyl...");
+    print $lb->break("Methionylthreonylthreonylglutaminylarginyl...");
 
 L</UserBreaking> オプションの要素に [REGEX, SUBREF] の配列参照を指定する場合、サブルーチンは 2 つの引数を取らなければならない。
 
@@ -377,6 +377,19 @@ L</UserBreaking> オプションの要素に [REGEX, SUBREF] の配列参照を�
 SELF はオブジェクトのインスタンス、STR は REGEX にマッチする分割すべき Unicode 文字列。
 
 サブルーチンは、文字列 STR を分割した結果の配列を返さなければならない。
+
+たとえば次のコードは、HTTP URL を [CMOS] の規則を用いて分割する。
+
+    my $url = qr{http://[\x21-\x7E]+}i;
+    sub breakurl {
+        my $self = shift;
+        my $str = shift;
+        return split m{(?<=[/]) (?=[^/]) |
+                       (?<=[^-.]) (?=[-~.,_?\#%=&]) |
+        	       (?<=[=&]) (?=.)}x, $str;
+    }
+    my $lb = Unicode::LineBreak->new(UserBreaking => [$url, \&breakurl]);
+    print $lb->break($string);
 
 =head2 文字列長の算出
 
@@ -483,7 +496,10 @@ F<Unicode/LineBreak/Defaults.pm>。
 
 =head1 BUGS
 
-バグやバグのような動作は、開発者に教えてください。L</AUTHOR> を参照。
+バグやバグのような動作は、開発者に教えてください。
+
+CPAN Request Tracker:
+L<http://rt.cpan.org/Public/Dist/Display.html?Name=Unicode-LineBreak>.
 
 =over 4
 

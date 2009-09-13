@@ -9,7 +9,8 @@ require 'lib/Unicode/LineBreak/Version.pm';
 
 sub postamble {
     my $ret = '';
-    foreach my $version (@{Unicode::LineBreak::UNICODE_VERSIONS()}) {
+    foreach my $version (@{Unicode::LineBreak::UNICODE_VERSIONS()},
+			 qw(charprop gcstring linebreak)) {
 	$ret .= $version.'$(OBJ_EXT)'.": c/$version.c c/linebreak.h\n";
 	$ret .= "\t".'$(CCCMD) $(CCCDLFLAGS) "-I$(PERL_INC)" $(PASTHRU_DEFINE) $(DEFINE) -o $@ '."c/$version.c\n";
     }
@@ -29,6 +30,7 @@ if ($libthai and ($ARGV[0] || '') ne 'nolibthai') {
     push @opts, ('INC' => '-I./c');
 }
 my $object = '$(BASEEXT)$(OBJ_EXT)';
+$object .= ' charprop$(OBJ_EXT) gcstring$(OBJ_EXT) linebreak$(OBJ_EXT)';
 $object .= ' ';
 $object .= Unicode::LineBreak::DEFAULT_UNICODE_VERSION().'$(OBJ_EXT)';
 push @opts, ('OBJECT' => $object);
