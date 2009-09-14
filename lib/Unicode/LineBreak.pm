@@ -232,9 +232,8 @@ sub break_partial ($$) {
     # flag: Allows/prevents break before.
     my %before = ('frg' => '', 'spc' => '');
     my %after = ('frg' => '', 'spc' => '');
-    ## Unread input.
-    $str = Unicode::GCString->new($s->{_unread}.$str, $s);
-    my @str = @{$str};
+    ## Unread and additional input.
+    $str = $s->_gcstring_new($s->{_unread}.$str);
     ## Start of text/paragraph status.
     # 0: Start of text not done.
     # 1: Start of text done while start of paragraph not done.
@@ -247,7 +246,7 @@ sub break_partial ($$) {
     my @urgent = ();
     #XXX## Current position and length of STR.
     #XXXmy $pos = 0;
-    #XXXmy $str_len = length $str;
+    #XXXmy $str_len = $str->length;
 
     while (1) {
 	### Chop off a pair of unbreakable character clusters from text.
@@ -257,7 +256,7 @@ sub break_partial ($$) {
 	    my ($gcol, $gcls, $gflag);
 
 	    # End of input.
-	    last CHARACTER_PAIR if !scalar(@urgent) and !scalar @str;
+	    last CHARACTER_PAIR if !scalar(@urgent) and $str->eot;
 	    # Mandatory break
 	    last CHARACTER_PAIR if defined $before{cls} and $before{eop};
 
@@ -265,7 +264,8 @@ sub break_partial ($$) {
 	    if (!scalar(@urgent)) {
 		## Then, go ahead reading input.
 
-		($gcls, $gflag) = @{$str[0]}[2,3];
+		$gcls = $s->lbclass($str);
+		$gflag = $str->flag;
 
 		#
 		# Append SP/ZW/eop to ``before'' buffer.
@@ -275,13 +275,14 @@ sub break_partial ($$) {
 
 		    # LB7(1): × SP+
 		    if ($gcls == LB_SP) {
-			$before{spc} .= (shift @str)->[0];
+			$before{spc} .= $str->next->[0];
 			# Treat (sot | eop) SP+  as if it were WJ.
 			$before{cls} = LB_WJ unless defined $before{cls};
 
 			# End of input.
-			last CHARACTER_PAIR if !scalar @str;
-			($gcls, $gflag) = @{$str[0]}[2,3];
+			last CHARACTER_PAIR if $str->eot;
+			$gcls = $s->lbclass($str);
+			$gflag = $str->flag;
 		    }
 
 		    # - Mandatory breaks
@@ -289,11 +290,10 @@ sub break_partial ($$) {
 		    # LB4 - LB7: × SP* (BK | CR LF | CR | LF | NL) !
 		    if ($gcls == LB_BK or $gcls == LB_CR or $gcls == LB_LF or
 			$gcls == LB_NL) {
-			$before{spc} .= (shift @str)->[0];
+			$before{spc} .= $str->next->[0];
 			$before{cls} = $gcls;
 			$before{eop} = 1
-			    unless !$eot and $gcls == LB_CR and
-			    !scalar @str;
+			    unless !$eot and $gcls == LB_CR and $str->eot;
 			last CHARACTER_PAIR;
 		    }
 
@@ -301,13 +301,14 @@ sub break_partial ($$) {
 
 		    # LB7(2): × (SP* ZW+)+
 		    if ($gcls == LB_ZW) {
-			$before{frg} .= $before{spc}.((shift @str)->[0]);
+			$before{frg} .= $before{spc}.($str->next->[0]);
 			$before{spc} = '';
 			$before{cls} = $gcls;
 
 			# End of input
-			last CHARACTER_PAIR if !scalar @str;
-			($gcls, $gflag) = @{$str[0]}[2,3];
+			last CHARACTER_PAIR if $str->eot;
+			$gcls = $s->lbclass($str);
+			$gflag = $str->flag;
 			next;
 		    }
 		    last;
@@ -320,7 +321,7 @@ sub break_partial ($$) {
 		# - Rules for other line breaking classes
 
 		# LB1: Assign a line breaking class to each characters.
-		%after = ('frg' => (shift @str)->[0], 'spc' => '',
+		%after = ('frg' => $str->next->[0], 'spc' => '',
 			  'flag' => $gflag);
 
 		# - Combining marks  
@@ -328,9 +329,9 @@ sub break_partial ($$) {
 		# where X is anything except BK, CR, LF, NL, SP or ZW  
 		# (NB: Some CM characters may be single grapheme cluster
 		# since they have Grapheme_Cluster_Break property Control.)
-		while (scalar @str) {  
-		    last unless $str[0]->[2] eq LB_CM;
-		    $after{frg} .= (shift @str)->[0];
+		while (!$str->eot) {  
+		    last unless $str->item->[2] eq LB_CM;
+		    $after{frg} .= $str->next->[0];
 		}
 		# Legacy-CM: Treat SP CM+ as if it were ID.  cf. [UAX #14] 9.1.
 		# LB10: Treat any remaining CM+ as if it were AL.
@@ -464,8 +465,7 @@ sub break_partial ($$) {
 	} # if ($before{eop})
 
         # Check end of input.
-        if (!$eot and !defined $after{cls} and !scalar @urgent and
-	    !scalar @str) {
+        if (!$eot and !defined $after{cls} and !scalar @urgent and $str->eot) {
 	    # Save status then output partial result.
 	    $s->{_line} = \%line;
 	    $s->{_unread} = $before{frg}.$before{spc};
@@ -534,8 +534,7 @@ sub break_partial ($$) {
 	} # if ($s->{ColumnsMax} and ...)
 
 	# Mandatory break or end-of-text.
-	if ($eot and !defined $after{cls} and !scalar @urgent and
-	    !scalar @str) {
+	if ($eot and !defined $after{cls} and !scalar @urgent and $str->eot) {
 	    last;
 	}
 	if ($action == MANDATORY) {
@@ -558,6 +557,78 @@ sub break_partial ($$) {
     ## Reset status then return the rest of result.
     $s->_reset;
     $result;
+}
+
+sub _gcstring_new ($$) {
+    my $self = shift;
+    my $str = shift;
+
+    if (ref $str) {
+	$str = $str->as_string;
+    }
+    unless (defined $str and length $str) {
+	$str = '';
+    }
+
+    my $ret = Unicode::GCString->new('', $self);
+    while (length $str) {
+	my $func;
+	my ($s, $match, $post) = ($str, '', '');
+	foreach my $ub (@{$self->{_user_breaking_funcs}}) {
+	    my ($re, $fn) = @{$ub};
+	    if ($str =~ /$re/) {
+		if (length $& and length $` < length $s) { #`
+		    ($s, $match, $post) = ($`, $&, $'); #'`
+		    $func = $fn;
+		}
+	    }
+	}
+	if (length $match) {
+	    $str = $post;
+	} else {
+	    $s = $str;
+	    $str = '';
+	}
+
+	# Break unmatched fragment.
+	if (length $s) {
+	    my %sa_break = map { ($_ => 1); }
+	    Unicode::LineBreak::SouthEastAsian::break_indexes($s);
+	    $s = Unicode::GCString->new($s, $self);
+	    my $pos = 0;
+	    for (my $i = 0; !$s->eot; $i++) {
+		my $item = $s->next;
+		if ($item->[2] == LB_SA) {
+		    $s->flag($i,
+			     $sa_break{$pos}?
+			   BREAK_BEFORE: PROHIBIT_BEFORE);
+		}
+		$pos += length $item->[0];
+	    }
+	    $ret .= $s;
+	}
+
+	# Break matched fragment.
+	if (length $match) {
+	    my $first = 1;
+	    foreach my $s (&{$func}($self, $match)) {
+		$s = Unicode::GCString->new($s, $self);
+		my $length = $s->length;
+		if ($length) {
+		    if (!$first) {
+			$s->flag(0, BREAK_BEFORE);
+		    }
+		    for (my $i = 1; $i < $length; $i++) {
+			$s->flag($i, PROHIBIT_BEFORE);
+		    }
+		    $ret .= $s;
+		}
+		$first = 0;
+	    }
+	}
+    }
+
+    $ret;
 }
 
 sub config ($@) {

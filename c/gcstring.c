@@ -1,28 +1,11 @@
 #include "linebreak.h"
 
-extern propval_t *gcstring_rules[];
-extern size_t gcstring_rulessiz;
 extern linebreak_t *linebreak_new();
 extern void linebreak_charprop(linebreak_t *, unichar_t,
 			       propval_t *, propval_t *, propval_t *,
 			       propval_t *);
 extern linebreak_t *linebreak_copy(linebreak_t *);
 extern void linebreak_destroy(linebreak_t *);
-
-static
-propval_t _gbrule(propval_t b_idx, propval_t a_idx)
-{
-    propval_t result = PROP_UNKNOWN;
-
-    if (b_idx < 0 || gcstring_rulessiz <= b_idx ||
-	a_idx < 0 || gcstring_rulessiz <= a_idx)
-	;
-    else
-	result = gcstring_rules[b_idx][a_idx];
-    if (result == PROP_UNKNOWN)
-	return DIRECT;
-    return result;
-}
 
 #define eaw2col(e) (((e) == EA_F || (e) == EA_W)? 2: (((e) == EA_Z)? 0: 1))
 
@@ -50,8 +33,11 @@ void _gcinfo(linebreak_t *obj, unistr_t *str, size_t pos,
     ggbc = gbc;
     gscr = scr;
 
+    /* GB4, GB5  */
+    /* NL (U+0085 NEXT LINE) is assigned to Grapheme_Cluster_Break Other. */
     if (lbc == LB_BK || lbc == LB_NL || gbc == GB_LF) {
 	;
+    /* GB3, GB4, GB5 */
     } else if (gbc == GB_CR) {
 	if (pos < str->len) {
 	    linebreak_charprop(obj, str->str[pos], NULL, NULL, &gbc, NULL);
@@ -60,7 +46,9 @@ void _gcinfo(linebreak_t *obj, unistr_t *str, size_t pos,
 		glen++;
 	    }
 	}
-    } else if (lbc == LB_SP || lbc == LB_ZW || lbc == LB_WJ) {
+    }
+    /* Special case */
+    else if (lbc == LB_SP || lbc == LB_ZW || lbc == LB_WJ) {
 	while (1) {
 	    if (str->len <= pos)
 		break;
@@ -72,46 +60,50 @@ void _gcinfo(linebreak_t *obj, unistr_t *str, size_t pos,
 	    gcol += eaw2col(eaw);
         }
     }
-    else {
+    else if (gbc != GB_Control) { /* GB4 */
 	size_t pcol = 0, ecol = 0;
-	while (1) {
-	    if (str->len <= pos)
-		break;
+	while (pos < str->len) { /* GB2 */
 	    linebreak_charprop(obj, str->str[pos], &lbc, &eaw, &ngbc, &scr);
-	    if (_gbrule(gbc, ngbc) != DIRECT) {
+	    /* GB5 */
+	    if (ngbc == GB_Control || ngbc == GB_CR || ngbc == GB_LF)
+		break;
+	    /* GB6 - GB8 */
+	    /*
+	     * Assume hangul syllable block is always wide, while most of
+	     * isolated junseong (V) and jongseong (T) are narrow.
+	     */
+	    else if ((gbc == GB_L &&
+		      (ngbc == GB_L || ngbc == GB_V || ngbc == GB_LV ||
+		       ngbc == GB_LVT)) ||
+		     ((gbc == GB_LV || gbc == GB_V) &&
+		      (ngbc == GB_V || ngbc == GB_T)) ||
+		     ((gbc == GB_LVT || gbc == GB_T) && ngbc == GB_T))
+		gcol = 2;
+	    /* GB9, GB9a */
+	    /*
+	     * Some morbid sequences such as <L Extend V T> are allowed.
+	     */
+	    else if (ngbc == GB_Extend || ngbc == GB_SpacingMark) {
+		ecol += eaw2col(eaw);
 		pos++;
 		glen++;
-
-		if (gbc == GB_Prepend) {
-		    glbc = lbc;
-		    ggbc = ngbc;
-		    gscr = scr;
-
-		    pcol += gcol;
-		    gcol = eaw2col(eaw);
-		}
-		/*
-		 * Assume hangul syllable block is always wide, while most of
-		 * isolated junseong (V) and jongseong (T) are narrow.
-		 */
-		else if ((ngbc == GB_L || ngbc == GB_V || ngbc == GB_T ||
-			   ngbc == GB_LV || ngbc == GB_LVT) &&
-			   (gbc == GB_L || gbc == GB_V || gbc == GB_T ||
-			    gbc == GB_LV || gbc == GB_LVT))
-		    gcol = 2;
-		/*
-		 * Some morbid sequences such as <L Extend V T> are allowed.
-		 */
-		else if (ngbc == GB_Extend || ngbc == GB_SpacingMark) {
-		    ecol += eaw2col(eaw);
-		    continue;
-		}
-		else
-		    gcol += eaw2col(eaw);
-
-		gbc = ngbc;
-	    } else
+		continue;
+	    }
+	    /* GB9b */
+	    else if (gbc == GB_Prepend) {
+		glbc = lbc;
+		ggbc = ngbc;
+		gscr = scr;
+		pcol += gcol;
+		gcol = eaw2col(eaw);
+	    }
+	    /* GB10 */
+	    else
 		break;
+
+	    pos++;
+	    glen++;
+	    gbc = ngbc;
 	}
 	gcol += pcol + ecol;
     }
@@ -202,6 +194,7 @@ gcstring_t *gcstring_copy(gcstring_t *obj)
 	newobj->lbobj = linebreak_copy(obj->lbobj);
     else
 	newobj->lbobj = linebreak_new();
+    obj->pos = 0;
 
     return newobj;
 }
@@ -286,6 +279,8 @@ gcstring_t *gcstring_append(gcstring_t *gcstr, gcstring_t *appe)
 	gcstr->len = appe->len;
 	memcpy(gcstr->gcstr, appe->gcstr, sizeof(gcchar_t) * appe->gclen);
 	gcstr->gclen = appe->gclen;
+
+	gcstr->pos = 0;
     }
 
     return gcstr;
@@ -305,10 +300,78 @@ size_t gcstring_columns(gcstring_t *gcstr)
 gcstring_t *gcstring_concat(gcstring_t *gcstr, gcstring_t *appe)
 {
     gcstring_t *new;
+    size_t pos;
 
     if (gcstr == NULL)
 	return NULL;
+    pos = gcstr->pos;
     if ((new = gcstring_copy(gcstr)) == NULL)
 	return NULL;
+    new->pos = pos;
     return gcstring_append(new, appe);
+}
+
+int gcstring_eot(gcstring_t *gcstr)
+{
+    return gcstr->gclen <= gcstr->pos;
+}
+
+gcchar_t *gcstring_next(gcstring_t *gcstr)
+{
+    if (gcstring_eot(gcstr))
+	return NULL;
+    return gcstr->gcstr + (gcstr->pos++);
+}
+
+void gcstring_prev(gcstring_t *gcstr)
+{
+    if (gcstr->pos && gcstr->gclen) {
+	if (gcstring_eot(gcstr))
+	    gcstr->pos = gcstr->gclen - 1;
+	else
+	    gcstr->pos--;
+    }
+}
+
+void gcstring_reset(gcstring_t *gcstr)
+{
+    gcstr->pos = 0;
+}
+
+gcstring_t *gcstring_substr(gcstring_t *gcstr, int offset, int length)
+{
+    gcstring_t *new;
+    size_t ulength;
+
+    if ((new = gcstring_new(NULL, gcstr->lbobj)) == NULL)
+	return NULL;
+
+    if (offset < 0)
+	offset += gcstr->gclen;
+    if (offset < 0) {
+	length += offset;
+	offset = 0;
+    }
+    if (length < 0)
+	length += gcstr->gclen - offset;
+    if (length <= 0 || gcstr->gclen <= offset)
+	return new;
+
+    if (gcstr->gclen <= offset + length)
+	ulength = gcstr->len - gcstr->gcstr[offset].idx;
+    else
+	ulength = gcstr->gcstr[offset + length].idx -
+	    gcstr->gcstr[offset].idx;
+
+    if ((new->str = malloc(sizeof(unichar_t) * ulength)) == NULL)
+	return NULL;
+    if ((new->gcstr = malloc(sizeof(gcchar_t) * length)) == NULL)
+	return NULL;
+    memcpy(new->str, gcstr->str + gcstr->gcstr[offset].idx,
+	   sizeof(unichar_t) * ulength);
+    new->len = ulength;
+    memcpy(new->gcstr, gcstr->gcstr + offset, sizeof(gcchar_t) * length);
+    new->gclen = length;
+
+    return new;
 }

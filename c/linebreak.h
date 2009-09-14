@@ -11,7 +11,7 @@
 
 /* Primitive types */
 typedef unsigned int unichar_t;
-typedef size_t propval_t;
+typedef unsigned char propval_t;
 
 /* Unicode string */
 typedef struct {
@@ -53,6 +53,7 @@ typedef struct {
     size_t len;
     gcchar_t *gcstr;
     size_t gclen;
+    size_t pos;
     linebreak_t *lbobj;
 } gcstring_t;
 

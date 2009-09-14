@@ -84,7 +84,7 @@ propval_t linebreak_eawidth(linebreak_t *obj, unichar_t c)
     return eaw;
 }
 
-size_t linebreak_strsize(linebreak_t *obj, size_t len, unistr_t *pre,
+size_t linebreak_strsize(linebreak_t *obj, size_t len, gcstring_t *pre,
 			 gcstring_t *spc, gcstring_t *str, size_t max)
 {
     gcstring_t *spcstr;

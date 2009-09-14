@@ -6,27 +6,6 @@
 #define UNICODE_VERSION "5.2.0beta"
 char *linebreak_unicode_version = UNICODE_VERSION;
 
-                                  /* CrLfCoExPrSpL V T LvLvOt */
-static propval_t gbrule_CR[] =      {D,D,D,D,D,D,D,D,D,D,D,D};
-static propval_t gbrule_LF[] =      {D,P,D,D,D,D,D,D,D,D,D,D};
-static propval_t gbrule_Control[] = {D,D,D,D,D,D,D,D,D,D,D,D};
-static propval_t gbrule_Extend[] =  {D,D,D,P,D,P,D,D,D,D,D,D};
-static propval_t gbrule_Prepend[] = {D,D,D,P,P,P,P,P,P,P,P,P};
-static propval_t gbrule_Spacing[] = {D,D,D,P,D,P,D,D,D,D,D,D};
-static propval_t gbrule_L[] =       {D,D,D,P,D,P,P,P,D,P,P,D};
-static propval_t gbrule_V[] =       {D,D,D,P,D,P,D,P,P,D,D,D};
-static propval_t gbrule_T[] =       {D,D,D,P,D,P,D,D,P,D,D,D};
-static propval_t gbrule_LV[] =      {D,D,D,P,D,P,D,P,P,D,D,D};
-static propval_t gbrule_LVT[] =     {D,D,D,P,D,P,D,D,P,D,D,D};
-static propval_t gbrule_Other[] =   {D,D,D,P,D,P,D,D,D,D,D,D};
-propval_t *gcstring_rules[] = {
-    gbrule_CR, gbrule_LF, gbrule_Control, gbrule_Extend,
-    gbrule_Prepend, gbrule_Spacing, gbrule_L, gbrule_V, gbrule_T,
-    gbrule_LV, gbrule_LVT, gbrule_Other
-};
-
-size_t gcstring_rulessiz = 12;
-
 #define r(cc) static propval_t rule_##cc[]
 /* Note: Entries related to BK, CR, CM, LF, NL, SP aren't used by break(). */
     /* BkCrLfNlSpOpClQuGlNsExSyIsPrPoNuAlIdInHyBaBbB2CbZwCmWjH2H3JlJvJtCp */
