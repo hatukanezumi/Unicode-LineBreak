@@ -33,7 +33,8 @@ use overload
     '@{}' => \&as_arrayref,
     '""' => \&as_string,
     '.' => \&concat,
-    '.=' => \&concat,
+    #XXX'.=' => \&concat, #FIXME:segfault
+    'cmp' => \&cmp,
     '<>' => \&next,
     ;
 
@@ -98,6 +99,14 @@ Next position of new string is set at beginning.
 I<Instance method>.
 Convert grapheme cluster string to Unicode string.
 
+=item cmp (STRING)
+
+=item STRING C<cmp> STRING
+
+I<Instance method>.
+Compare strings.  There are no oddities.
+One of each STRING may be Unicode string.
+
 =item columns
 
 I<Instance method>.
@@ -109,12 +118,10 @@ For more details see L<Unicode::LineBreak/DESCRIPTION>.
 
 =item STRING C<.> STRING
 
-=item STRING C<.=> STRING
-
 I<Instance method>.
 Concatenate STRINGs.  One of each STRING may be Unicode string.
 Note that number of columns (see columns()) or grapheme clusters
-(see lenbgth()) of resulting string is not always equal to sum of both
+(see length()) of resulting string is not always equal to sum of both
 strings.
 Next position of new string is that set on left value.
 
@@ -142,8 +149,7 @@ OFFSET and LENGTH are based on grapheme clusters.
 =item as_arrayref
 
 I<Instance method>.
-Convert grapheme cluster string to an array of informations of grapheme
-clusters.
+Convert grapheme cluster string to an array of grapheme clusters.
 
 =item eot
 
@@ -152,7 +158,7 @@ Test if current position is at end of grapheme cluster string.
 
 =begin comment
 
-=item flag (INDEX, [VALUE])
+=item flag ([OFFSET, [VALUE]])
 
 I<Undocumented>.
 
@@ -161,13 +167,21 @@ I<Undocumented>.
 =item item ([OFFSET])
 
 I<Instance method>.
-Returns information of OFFSET-th grapheme cluster as array reference.
-If OFFSET was not specified, returns information of next grapheme cluster.
+Returns OFFSET-th grapheme cluster.
+If OFFSET was not specified, returns next grapheme cluster.
+
+=begin comment
+
+=item lbclass ([OFFSET])
+
+I<Undocumented>.
+
+=end comment
 
 =item next
 
 I<Instance method>, iterative.
-Returns information of next grapheme cluster as array reference.
+Returns next grapheme cluster and increment next position.
 
 =item prev
 

@@ -45,6 +45,7 @@ typedef struct {
     mapent_t *map;
     size_t mapsiz;
     unsigned int options;
+    unsigned long int refcount;
 } linebreak_t;
 
 /* GCString object */

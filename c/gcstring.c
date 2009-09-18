@@ -4,7 +4,7 @@ extern linebreak_t *linebreak_new();
 extern void linebreak_charprop(linebreak_t *, unichar_t,
 			       propval_t *, propval_t *, propval_t *,
 			       propval_t *);
-extern linebreak_t *linebreak_copy(linebreak_t *);
+extern linebreak_t *linebreak_incref(linebreak_t *);
 extern void linebreak_destroy(linebreak_t *);
 
 #define eaw2col(e) (((e) == EA_F || (e) == EA_W)? 2: (((e) == EA_Z)? 0: 1))
@@ -138,14 +138,14 @@ gcstring_t *gcstring_new(unistr_t *unistr, linebreak_t *lbobj)
 	return NULL;
     memset(gcstr, 0, sizeof(gcstring_t));
 
+    if (lbobj == NULL)
+	gcstr->lbobj = linebreak_new();
+    else
+	gcstr->lbobj = linebreak_incref(lbobj);
     if (unistr == NULL || unistr->str == NULL || unistr->len == 0)
 	return gcstr;
     gcstr->str = unistr->str;
     gcstr->len = len = unistr->len;
-    if (lbobj == NULL)
-	gcstr->lbobj = linebreak_new();
-    else
-	gcstr->lbobj = linebreak_copy(lbobj);
 
     for (pos = 0; pos < len; pos += glen) {
 	if ((gcstr->gcstr =
@@ -165,38 +165,38 @@ gcstring_t *gcstring_new(unistr_t *unistr, linebreak_t *lbobj)
 
 gcstring_t *gcstring_copy(gcstring_t *obj)
 {
-    gcstring_t *newobj;
-    unichar_t *newstr;
-    gcchar_t *newgcstr;
+    gcstring_t *new;
+    unichar_t *newstr = NULL;
+    gcchar_t *newgcstr = NULL;
 
-    if ((newobj = malloc(sizeof(gcstring_t))) == NULL)
+    if ((new = malloc(sizeof(gcstring_t))) == NULL)
 	return NULL;
-    memcpy(newobj, obj, sizeof(gcstring_t));
+    memcpy(new, obj, sizeof(gcstring_t));
 
     if (obj->str && obj->len) {
 	if ((newstr = malloc(sizeof(unichar_t) * obj->len)) == NULL) {
-	    free(newobj);
+	    free(new);
 	    return NULL;
 	}
 	memcpy(newstr, obj->str, sizeof(unichar_t) * obj->len);
-	newobj->str = newstr;
     }
+    new->str = newstr;
     if (obj->gcstr && obj->gclen) {
 	if ((newgcstr = malloc(sizeof(gcchar_t) * obj->gclen)) == NULL) {
-	    if (newobj->str) free(newobj->str);
-	    free(newobj);
+	    if (new->str) free(new->str);
+	    free(new);
 	    return NULL;
 	}
 	memcpy(newgcstr, obj->gcstr, sizeof(gcchar_t) * obj->gclen);
-	newobj->gcstr = newgcstr;
     }
+    new->gcstr = newgcstr;
     if (obj->lbobj != NULL)
-	newobj->lbobj = linebreak_copy(obj->lbobj);
+	new->lbobj = linebreak_incref(obj->lbobj);
     else
-	newobj->lbobj = linebreak_new();
-    obj->pos = 0;
+	new->lbobj = linebreak_new();
+    new->pos = 0;
 
-    return newobj;
+    return new;
 }
 
 void gcstring_destroy(gcstring_t *gcstr)
@@ -284,6 +284,18 @@ gcstring_t *gcstring_append(gcstring_t *gcstr, gcstring_t *appe)
     }
 
     return gcstr;
+}
+
+int gcstring_cmp(gcstring_t *a, gcstring_t *b)
+{
+    size_t i;
+
+    if (!a->str || !b->str)
+	return (a->str? 1: 0) - (b->str? 1: 0);
+    for (i = 0; i < a->len && i < b->len; i++)
+	if (a->str[i] != b->str[i])
+	    return a->str[i] - b->str[i];
+    return a->len - b->len;
 }
 
 size_t gcstring_columns(gcstring_t *gcstr)

@@ -15,6 +15,13 @@ linebreak_t *linebreak_new()
     if ((obj = malloc(sizeof(linebreak_t)))== NULL)
 	return NULL;
     memset(obj, 0, sizeof(linebreak_t));
+    obj->refcount = 1UL;
+    return obj;
+}
+
+linebreak_t *linebreak_incref(linebreak_t *obj)
+{
+    obj->refcount += 1UL;
     return obj;
 }
 
@@ -37,12 +44,16 @@ linebreak_t *linebreak_copy(linebreak_t *obj)
     }
     else
 	newobj->map = NULL;
+
+    newobj->refcount = 1UL;
     return newobj;
 }
 
 void linebreak_destroy(linebreak_t *obj)
 {
     if (obj == NULL)
+	return;
+    if ((obj->refcount -= 1UL))
 	return;
     if (obj->map) free(obj->map);
     free(obj);
