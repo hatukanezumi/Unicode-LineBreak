@@ -1,13 +1,11 @@
 #include "linebreak.h"
+#include "gcstring.h"
 
 extern propval_t *linebreak_rules[];
 extern size_t linebreak_rulessiz;
 extern void linebreak_charprop(linebreak_t *, unichar_t,
                                propval_t *, propval_t *, propval_t *,
                                propval_t *);
-extern size_t gcstring_columns(gcstring_t *);
-extern gcstring_t *gcstring_concat(gcstring_t *, gcstring_t *);
-extern void gcstring_destroy(gcstring_t *);
 
 linebreak_t *linebreak_new()
 {

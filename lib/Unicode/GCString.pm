@@ -27,7 +27,7 @@ use Unicode::LineBreak;
 ### Globals
 
 # The package version
-our $VERSION = '0.003_01';
+our $VERSION = '0.004_01';
 
 use overload 
     '@{}' => \&as_arrayref,
@@ -88,6 +88,30 @@ Next position of new string is set at beginning.
 
 =back
 
+=head3 Sizes
+
+=over 4
+
+=item chars
+
+I<Instance method>.
+Returns number of Unicode characters grapheme cluster string includes,
+i.e. length as Unicode string.
+
+=item columns
+
+I<Instance method>.
+Returns total number of columns of grapheme clusters
+defined by built-in character database.
+For more details see L<Unicode::LineBreak/DESCRIPTION>.
+
+=item length
+
+I<Instance method>.
+Returns number of grapheme clusters contained in grapheme cluster string.
+
+=back
+
 =head3 Operations as String
 
 =over 4
@@ -107,13 +131,6 @@ I<Instance method>.
 Compare strings.  There are no oddities.
 One of each STRING may be Unicode string.
 
-=item columns
-
-I<Instance method>.
-Returns total number of columns of grapheme clusters string
-defined by built-in character database.
-For more details see L<Unicode::LineBreak/DESCRIPTION>.
-
 =item concat (STRING)
 
 =item STRING C<.> STRING
@@ -125,16 +142,12 @@ Note that number of columns (see columns()) or grapheme clusters
 strings.
 Next position of new string is that set on left value.
 
-=item length
-
-I<Instance method>.
-Returns number of grapheme clusters contained in grapheme cluster string.
-
-=item substr (OFFSET, [LENGTH])
+=item substr (OFFSET, [LENGTH, [REPLACEMENT]])
 
 I<Instance method>.
 Returns substring of grapheme cluster string.
 OFFSET and LENGTH are based on grapheme clusters.
+If REPLACEMENT is specified, substring is replaced by it.
 
 =back
 
@@ -180,28 +193,16 @@ I<Undocumented>.
 
 =item next
 
+=item C<E<lt>>OBJECTC<E<gt>>
+
 I<Instance method>, iterative.
 Returns next grapheme cluster and increment next position.
 
-=item prev
+=item pos ([OFFSET])
 
 I<Instance method>.
-Decrement position of grapheme cluster string.
-
-=item reset
-
-I<Instance method>.
-Reset next position of grapheme cluster string.
-
-=begin comment
-
-=item rest
-
-I<Instance method>.
-B<Not implemented yet>.
-Returns rest of grapheme cluster string.
-
-=end comment
+If optional OFFSET is specified, set next position by it.
+Returns next position of grapheme cluster string.
 
 =back
 

@@ -1,11 +1,8 @@
 #include "linebreak.h"
 
-extern linebreak_t *linebreak_new();
 extern void linebreak_charprop(linebreak_t *, unichar_t,
 			       propval_t *, propval_t *, propval_t *,
 			       propval_t *);
-extern linebreak_t *linebreak_incref(linebreak_t *);
-extern void linebreak_destroy(linebreak_t *);
 
 #define eaw2col(e) (((e) == EA_F || (e) == EA_W)? 2: (((e) == EA_Z)? 0: 1))
 
@@ -163,35 +160,38 @@ gcstring_t *gcstring_new(unistr_t *unistr, linebreak_t *lbobj)
     return gcstr;
 }
 
-gcstring_t *gcstring_copy(gcstring_t *obj)
+gcstring_t *gcstring_copy(gcstring_t *gcstr)
 {
     gcstring_t *new;
     unichar_t *newstr = NULL;
     gcchar_t *newgcstr = NULL;
 
+    if (gcstr == NULL)
+	return (errno = EINVAL), NULL;
+
     if ((new = malloc(sizeof(gcstring_t))) == NULL)
 	return NULL;
-    memcpy(new, obj, sizeof(gcstring_t));
+    memcpy(new, gcstr, sizeof(gcstring_t));
 
-    if (obj->str && obj->len) {
-	if ((newstr = malloc(sizeof(unichar_t) * obj->len)) == NULL) {
+    if (gcstr->str && gcstr->len) {
+	if ((newstr = malloc(sizeof(unichar_t) * gcstr->len)) == NULL) {
 	    free(new);
 	    return NULL;
 	}
-	memcpy(newstr, obj->str, sizeof(unichar_t) * obj->len);
+	memcpy(newstr, gcstr->str, sizeof(unichar_t) * gcstr->len);
     }
     new->str = newstr;
-    if (obj->gcstr && obj->gclen) {
-	if ((newgcstr = malloc(sizeof(gcchar_t) * obj->gclen)) == NULL) {
+    if (gcstr->gcstr && gcstr->gclen) {
+	if ((newgcstr = malloc(sizeof(gcchar_t) * gcstr->gclen)) == NULL) {
 	    if (new->str) free(new->str);
 	    free(new);
 	    return NULL;
 	}
-	memcpy(newgcstr, obj->gcstr, sizeof(gcchar_t) * obj->gclen);
+	memcpy(newgcstr, gcstr->gcstr, sizeof(gcchar_t) * gcstr->gclen);
     }
     new->gcstr = newgcstr;
-    if (obj->lbobj != NULL)
-	new->lbobj = linebreak_incref(obj->lbobj);
+    if (gcstr->lbobj != NULL)
+	new->lbobj = linebreak_incref(gcstr->lbobj);
     else
 	new->lbobj = linebreak_new();
     new->pos = 0;
@@ -214,7 +214,7 @@ gcstring_t *gcstring_append(gcstring_t *gcstr, gcstring_t *appe)
     unistr_t ustr = {0, 0};
 
     if (gcstr == NULL)
-	return NULL;
+	return (errno = EINVAL), NULL;
     if (appe == NULL || appe->str == NULL || appe->len == 0)
 	return gcstr;
     if (gcstr->gclen && appe->gclen) {
@@ -232,14 +232,21 @@ gcstring_t *gcstring_append(gcstring_t *gcstr, gcstring_t *appe)
 	memcpy(ustr.str, gcstr->str + aidx, sizeof(unichar_t) * alen);
 	memcpy(ustr.str + alen, appe->str, sizeof(unichar_t) * blen);
 	ustr.len = alen + blen;
-	cstr = gcstring_new(&ustr, gcstr->lbobj);
+	if ((cstr = gcstring_new(&ustr, gcstr->lbobj)) == NULL) {
+	    free(ustr.str);
+	    return NULL;
+	}
 
 	newlen = gcstr->len + appe->len;
 	newgclen = gcstr->gclen - 1 + cstr->gclen + appe->gclen - 1;
 	if ((gcstr->str = realloc(gcstr->str,
-				  sizeof(unichar_t) * newlen)) == NULL ||
-	    (gcstr->gcstr = realloc(gcstr->gcstr,
+				  sizeof(unichar_t) * newlen)) == NULL) {
+	    gcstring_destroy(cstr);
+	    return NULL;
+	}
+	if ((gcstr->gcstr = realloc(gcstr->gcstr,
 				    sizeof(gcchar_t) * newgclen)) == NULL) {
+	    free(gcstr->str);
 	    gcstring_destroy(cstr);
 	    return NULL;
 	}
@@ -315,7 +322,7 @@ gcstring_t *gcstring_concat(gcstring_t *gcstr, gcstring_t *appe)
     size_t pos;
 
     if (gcstr == NULL)
-	return NULL;
+	return (errno = EINVAL), NULL;
     pos = gcstr->pos;
     if ((new = gcstring_copy(gcstr)) == NULL)
 	return NULL;
@@ -335,28 +342,48 @@ gcchar_t *gcstring_next(gcstring_t *gcstr)
     return gcstr->gcstr + (gcstr->pos++);
 }
 
-void gcstring_prev(gcstring_t *gcstr)
+size_t gcstring_getpos(gcstring_t *gcstr)
 {
-    if (gcstr->pos && gcstr->gclen) {
-	if (gcstring_eot(gcstr))
-	    gcstr->pos = gcstr->gclen - 1;
-	else
-	    gcstr->pos--;
+    return gcstr->pos;
+}
+
+void gcstring_setpos(gcstring_t *gcstr, int pos)
+{
+    if (pos < 0)
+	pos += gcstr->gclen;
+    if (pos < 0 || gcstr->gclen < pos)
+	return;
+    gcstr->pos = pos;
+}
+
+void gcstring_shrink(gcstring_t *gcstr, int length)
+{
+    if (length < 0)
+	length += gcstr->gclen;
+
+    if (length <= 0) {
+	if (gcstr->str) free(gcstr->str);
+	gcstr->str = NULL;
+	gcstr->len = 0;
+	if (gcstr->gcstr) free(gcstr->gcstr);
+	gcstr->gcstr = NULL;
+	gcstr->gclen = 0;
+    } else if (gcstr->gclen <= length)
+	return;
+    else {
+	gcstr->len = gcstr->gcstr[length].idx;
+	gcstr->gclen = length;
     }
 }
 
-void gcstring_reset(gcstring_t *gcstr)
+gcstring_t *gcstring_substr(gcstring_t *gcstr, int offset, int length,
+			    gcstring_t *replacement)
 {
-    gcstr->pos = 0;
-}
+    gcstring_t *new, *tail;
+    size_t ulength, i;
 
-gcstring_t *gcstring_substr(gcstring_t *gcstr, int offset, int length)
-{
-    gcstring_t *new;
-    size_t ulength;
-
-    if ((new = gcstring_new(NULL, gcstr->lbobj)) == NULL)
-	return NULL;
+    if (gcstr == NULL)
+	return (errno = EINVAL), NULL;
 
     if (offset < 0)
 	offset += gcstr->gclen;
@@ -366,24 +393,61 @@ gcstring_t *gcstring_substr(gcstring_t *gcstr, int offset, int length)
     }
     if (length < 0)
 	length += gcstr->gclen - offset;
-    if (length <= 0 || gcstr->gclen <= offset)
-	return new;
 
-    if (gcstr->gclen <= offset + length)
+    if (length < 0 || gcstr->gclen < offset) {
+	if (replacement)
+	    return (errno = EINVAL), NULL;
+	else
+	    return gcstring_new(NULL, gcstr->lbobj);
+    }
+
+    if (gcstr->gclen == offset) {
+	length = 0;
+	ulength = 0;
+    } else if (gcstr->gclen <= offset + length) {
+	length = gcstr->gclen - offset;
 	ulength = gcstr->len - gcstr->gcstr[offset].idx;
-    else
+    } else
 	ulength = gcstr->gcstr[offset + length].idx -
 	    gcstr->gcstr[offset].idx;
 
-    if ((new->str = malloc(sizeof(unichar_t) * ulength)) == NULL)
+    if ((new = gcstring_new(NULL, gcstr->lbobj)) == NULL)
+	return NULL; 
+
+    if ((new->str = malloc(sizeof(unichar_t) * ulength)) == NULL) {
+	gcstring_destroy(new);
 	return NULL;
-    if ((new->gcstr = malloc(sizeof(gcchar_t) * length)) == NULL)
+    }
+    if ((new->gcstr = malloc(sizeof(gcchar_t) * length)) == NULL) {
+	free(new->str);
+	gcstring_destroy(new);
 	return NULL;
+    }
     memcpy(new->str, gcstr->str + gcstr->gcstr[offset].idx,
 	   sizeof(unichar_t) * ulength);
     new->len = ulength;
-    memcpy(new->gcstr, gcstr->gcstr + offset, sizeof(gcchar_t) * length);
+    for (i = 0; i < length; i++) {
+	memcpy(new->gcstr + i, gcstr->gcstr + offset + i, sizeof(gcchar_t));
+	new->gcstr[i].idx -= gcstr->gcstr[offset].idx;
+    }
     new->gclen = length;
+
+    if (replacement) {
+	if ((tail = gcstring_substr(gcstr, offset + length,
+				    gcstr->gclen - (offset + length), NULL))
+	    == NULL) {
+	    gcstring_destroy(new);
+	    return NULL;
+	}
+	gcstring_shrink(gcstr, offset);
+	if (gcstring_append(gcstr, replacement) == NULL ||
+	    gcstring_append(gcstr, tail) == NULL) {
+	    gcstring_destroy(new);
+	    gcstring_destroy(tail);
+	    return NULL;
+	}
+	gcstring_destroy(tail);
+    }
 
     return new;
 }

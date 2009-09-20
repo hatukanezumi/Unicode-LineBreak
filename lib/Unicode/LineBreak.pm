@@ -201,7 +201,15 @@ sub break ($$) {
     my $self = shift;
     my $str = shift;
     return '' unless defined $str and length $str;
-    return $self->break_partial($str) . $self->break_partial(undef);
+    my $result = '';
+
+    while (1000 < length $str) {
+	my $s = substr($str, 0, 1000);
+	$str = substr($str, 1000);
+	$result .= $self->break_partial($s);
+    }
+    $result .= $self->break_partial($str);
+    return $result . $self->break_partial(undef);
 }
 
 sub break_partial ($$) {
@@ -389,7 +397,7 @@ sub break_partial ($$) {
 
 	    # Check prohibited break.
 	    if ($action == PROHIBITED or
-		$action == INDIRECT and	!$before{spc}) {
+		($action == INDIRECT and $before{spc}->length == 0)) {
 
 		# When conjunction of $before{frg} and $after{frg} is
 		# expected to exceed CharactersMax, try urgent breaking.

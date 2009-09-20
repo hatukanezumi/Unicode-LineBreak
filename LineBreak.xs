@@ -3,16 +3,8 @@
 #include "XSUB.h"
 #include "ppport.h"
 #include "linebreak.h"
+#include "gcstring.h"
 
-extern linebreak_t *linebreak_new();
-extern linebreak_t *linebreak_incref(linebreak_t *);
-extern void linebreak_destroy(linebreak_t *);
-extern propval_t linebreak_eawidth(linebreak_t *, unichar_t);
-extern propval_t linebreak_lbclass(linebreak_t *, unichar_t);
-extern propval_t linebreak_lbrule(propval_t, propval_t);
-extern size_t linebreak_strsize(linebreak_t *, size_t, unistr_t *,
-				gcstring_t *, gcstring_t *, size_t);
-extern char *linebreak_unicode_version;
 extern gcstring_t *gcstring_new(unistr_t *, linebreak_t *);
 extern gcstring_t *gcstring_copy(gcstring_t *);
 extern void gcstring_destroy(gcstring_t *);
@@ -22,9 +14,7 @@ extern int gcstring_cmp(gcstring_t *, gcstring_t *);
 extern gcstring_t *gcstring_concat(gcstring_t *, gcstring_t *);
 extern int gcstring_eot(gcstring_t *);
 extern gcchar_t *gcstring_next(gcstring_t *);
-extern void gcstring_prev(gcstring_t *);
-extern void gcstring_reset(gcstring_t *);
-extern gcstring_t *gcstring_substr(gcstring_t *, int, int);
+extern gcstring_t *gcstring_substr(gcstring_t *, int, int, gcstring_t *);
 
 /*
  * 
@@ -81,7 +71,7 @@ unistr_t *_utf8tounistr(unistr_t *buf, SV *str)
 
     if (!buf) {
 	if ((buf = malloc(sizeof(unistr_t))) == NULL)
-	    croak("_utf8tounistr: Memory exausted");
+	    croak("_utf8tounistr: Can't allocate memory");
     } else if (buf->str)
 	free(buf->str);
     buf->str = NULL;
@@ -96,7 +86,7 @@ unistr_t *_utf8tounistr(unistr_t *buf, SV *str)
     utf8 = (U8 *)SvPV(str, utf8len);
     unilen = utf8_length(utf8, utf8 + utf8len);
     if ((buf->str = (unichar_t *)malloc(sizeof(unichar_t) * unilen)) == NULL)
-	croak("_utf8tounistr: Memory exausted");
+	croak("_utf8tounistr: Can't allocate memory");
 
     utf8ptr = utf8;
     uniptr = buf->str;
@@ -137,7 +127,7 @@ SV *_unistrtoutf8(unistr_t *unistr, size_t uniidx, size_t unilen)
         if ((newbuf = realloc(buf,
                               sizeof(U8) * (utf8len + UTF8_MAXBYTES + 1)))
             == NULL) {
-            croak("_unistrtoutf8: Cannot allocate memory");
+            croak("_unistrtoutf8: Can't allocate memory");
         }
         buf = newbuf;
         utf8len = uvuni_to_utf8(buf + utf8len, *uniptr) - buf;
@@ -162,7 +152,7 @@ wchar_t *_utf8towstr(SV *str)
 
     _utf8tounistr(&unistr, str);
     if ((wstr = malloc(sizeof(wchar_t) * (unistr.len + 1))) == NULL)
-	croak("_utf8towstr: Cannot allocate memory");
+	croak("_utf8towstr: Can't allocate memory");
     if (sizeof(wchar_t) == sizeof(unichar_t)) {
 	memcpy(wstr, unistr.str, sizeof(wchar_t) * unistr.len);
 	wstr[unistr.len] = 0;
@@ -189,7 +179,7 @@ SV *_wstrtoutf8(wchar_t *unistr, size_t unilen)
 	if ((newbuf = realloc(buf,
 			      sizeof(U8) * (utf8len + UTF8_MAXBYTES + 1)))
 	    == NULL) {
-	    croak("_wstrtoutf8: Cannot allocate memory");
+	    croak("_wstrtoutf8: Can't allocate memory");
 	}
 	buf = newbuf;
 	utf8len = uvuni_to_utf8(buf + utf8len, *uniptr) - buf;
@@ -271,7 +261,7 @@ _config(self)
     CODE:
 	if ((obj = _selftolinebreak(self)) == NULL) {
 	    if ((obj = linebreak_new()) == NULL)
-		croak("_config: Cannot allocate memory");
+		croak("_config: Can't allocate memory");
 	    else
 		obj->map = NULL;
 	    if (hv_store((HV *)SvRV(self), "_obj", 4,
@@ -614,6 +604,23 @@ as_string(self, ...)
     OUTPUT:
 	RETVAL
 
+size_t
+chars(self)
+	SV *self;
+    PROTOTYPE: $
+    INIT:
+	gcstring_t *gcstr;
+    CODE:
+	if (!sv_isobject(self))
+	    XSRETURN_UNDEF;
+	gcstr = (gcstring_t *)SvIV(SvRV(self));    
+	if (gcstr == NULL)
+	    RETVAL = 0;
+	else
+	    RETVAL = gcstr->len;
+    OUTPUT:
+	RETVAL
+
 int
 cmp(self, str, ...)
 	SV *self;
@@ -622,14 +629,14 @@ cmp(self, str, ...)
     INIT:
 	gcstring_t *gcstr1, *gcstr2 = NULL;
 	int ret;
+	unistr_t unistr = {0, 0};
     CODE:
 	if (!sv_isobject(self))
 	    XSRETURN_UNDEF;
 	gcstr1 = (gcstring_t *)SvIV(SvRV(self));    
 	if (!sv_isobject(str)) {
-	    gcstr2 = (gcstring_t *)_utf8tounistr((unistr_t *)gcstr2, str);
-	    gcstr2->gcstr = NULL;
-	    gcstr2->lbobj = NULL;
+	    _utf8tounistr(&unistr, str);
+	    gcstr2 = gcstring_new(&unistr, gcstr1->lbobj);
         } else if (sv_derived_from(str, "Unicode::GCString"))
 	    gcstr2 = (gcstring_t *)SvIV(SvRV(str));    
 	else
@@ -740,7 +747,7 @@ flag(self, ...)
 	    XSRETURN_UNDEF;
 	if (2 < items) {
 	    flag = SvUV(ST(2));
-	    if (flag == (flag & LINEBREAK_FLAGS))
+	    if (flag == (flag & 255))
 		gcstr->gcstr[i].flag = (unsigned char)flag;
 	    else
 		warn("flag: unknown flag(s)");
@@ -827,44 +834,15 @@ next(self, ...)
     OUTPUT:
 	RETVAL
 
-void
-prev(self)
-	SV *self;
-    PROTOTYPE: $
-    INIT:
-	gcstring_t *gcstr;
-    CODE:
-	if (!sv_isobject(self))
-	    return;
-	gcstr = (gcstring_t *)SvIV(SvRV(self));    
-	if (gcstr == NULL)
-	    return;
-	else
-	    gcstring_prev(gcstr);
-
-void
-reset(self)
-	SV *self;
-    PROTOTYPE: $
-    INIT:
-	gcstring_t *gcstr;
-    CODE:
-	if (!sv_isobject(self))
-	    return;
-	gcstr = (gcstring_t *)SvIV(SvRV(self));    
-	if (gcstr == NULL)
-	    return;
-	else
-	    gcstring_reset(gcstr);
-
 SV *
 substr(self, offset, ...)
 	SV *self;
 	int offset;
-    PROTOTYPE: $$;$
+    PROTOTYPE: $$;$;$
     INIT:
 	int length;
-	gcstring_t *gcstr, *ret;
+	gcstring_t *gcstr, *replacement, *ret;
+	unistr_t unistr = {0, 0};
     CODE:
 	if (!sv_isobject(self))
 	    XSRETURN_UNDEF;
@@ -873,8 +851,22 @@ substr(self, offset, ...)
 	    length = SvIV(ST(2));
 	else
 	    length = gcstr->gclen;
+        if (3 < items) {
+            if (!sv_isobject(ST(3))) {
+                _utf8tounistr(&unistr, ST(3));
+                replacement = gcstring_new(&unistr, gcstr->lbobj);
+            } else if (sv_derived_from(ST(3), "Unicode::GCString"))
+                replacement = (gcstring_t *)SvIV(SvRV(ST(3)));    
+            else
+                croak("Unknown object %s", HvNAME(SvSTASH(SvRV(ST(3)))));
+        } else
+            replacement = NULL;
 
-	ret = gcstring_substr(gcstr, offset, length);
+	ret = gcstring_substr(gcstr, offset, length, replacement);
+        if (3 < items && !sv_isobject(ST(3)))
+            gcstring_destroy(replacement);
+	if (ret == NULL)
+	    croak("Error %d", errno);
 	RETVAL = _gcstringtoself(ret);
     OUTPUT:
 	RETVAL
