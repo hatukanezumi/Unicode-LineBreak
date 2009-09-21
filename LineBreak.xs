@@ -5,17 +5,6 @@
 #include "linebreak.h"
 #include "gcstring.h"
 
-extern gcstring_t *gcstring_new(unistr_t *, linebreak_t *);
-extern gcstring_t *gcstring_copy(gcstring_t *);
-extern void gcstring_destroy(gcstring_t *);
-/* extern gcstring_t *gcstring_append(gcstring_t *, gcstring_t *); */
-extern size_t gcstring_columns(gcstring_t *);
-extern int gcstring_cmp(gcstring_t *, gcstring_t *);
-extern gcstring_t *gcstring_concat(gcstring_t *, gcstring_t *);
-extern int gcstring_eot(gcstring_t *);
-extern gcchar_t *gcstring_next(gcstring_t *);
-extern gcstring_t *gcstring_substr(gcstring_t *, int, int, gcstring_t *);
-
 /*
  * 
  */
@@ -831,6 +820,27 @@ next(self, ...)
 	    XSRETURN_UNDEF;
 	gc = gcstring_next(gcstr);
 	RETVAL = _gcstringtoself(_gctogcstring(gcstr, gc));
+    OUTPUT:
+	RETVAL
+
+size_t
+pos(self, ...)
+	SV *self;
+    PROTOTYPE: $;$
+    INIT:
+	gcstring_t *gcstr;
+    CODE:
+	if (!sv_isobject(self))
+	    XSRETURN_UNDEF;
+	gcstr = (gcstring_t *)SvIV(SvRV(self));    
+	
+	if (gcstr == NULL)
+	    RETVAL = 0;
+	else {
+	    if (1 < items)
+		gcstring_setpos(gcstr, SvIV(ST(1)));
+	    RETVAL = gcstr->pos;
+	}
     OUTPUT:
 	RETVAL
 

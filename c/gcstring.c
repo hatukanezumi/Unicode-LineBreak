@@ -330,21 +330,11 @@ gcstring_t *gcstring_concat(gcstring_t *gcstr, gcstring_t *appe)
     return gcstring_append(new, appe);
 }
 
-int gcstring_eot(gcstring_t *gcstr)
-{
-    return gcstr->gclen <= gcstr->pos;
-}
-
 gcchar_t *gcstring_next(gcstring_t *gcstr)
 {
-    if (gcstring_eot(gcstr))
+    if (gcstr->gclen <= gcstr->pos)
 	return NULL;
     return gcstr->gcstr + (gcstr->pos++);
-}
-
-size_t gcstring_getpos(gcstring_t *gcstr)
-{
-    return gcstr->pos;
 }
 
 void gcstring_setpos(gcstring_t *gcstr, int pos)

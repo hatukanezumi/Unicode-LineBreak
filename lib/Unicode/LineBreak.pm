@@ -104,8 +104,8 @@ my %FORMAT_FUNCS = (
 	if ($event eq 'eol') {
 	    return $self->{Newline};
 	} elsif ($event =~ /^eo/) {
-	    $str = substr($str, 1)
-		while length $str and $self->lbclass($str) == LB_SP;
+	    $str = $str->substr(1)
+		while $str->length and $str->lbclass(0) == LB_SP;
 	    return $str;
 	}
 	undef;
@@ -230,13 +230,12 @@ sub break_partial ($$) {
     ## Line buffer.
     # frg: Unbreakable text fragment.
     # spc: Trailing spaces.
-    # cols: Number of columns of frg.
+    # cols: Number of columns of frg: It can be differ from {frg}->columns.
     my %line = %{$s->{_line}};
     ## ``before'' and ``after'' buffers.
     # cls: Line breaking class.
     # frg: Unbreakable text fragment.
     # spc: Trailing spaces.
-    # urg: This buffer had been broken by urgent breaking.
     # eop: There is a mandatory breaking point at end of this buffer.
     my %before = ('frg' => $null, 'spc' => $null);
     my %after = ('frg' => $null, 'spc' => $null);
@@ -250,8 +249,8 @@ sub break_partial ($$) {
 
     ## Result.
     my $result = '';
-    ## Queue of buffers broken by urgent breaking.
-    my @urgent = ();
+    ## End of substring broken by urgent breaking.
+    my $urg_end = 0;
 
     while (1) {
 	### Chop off a pair of unbreakable character clusters from text.
@@ -261,12 +260,11 @@ sub break_partial ($$) {
 	    my $gcls;
 
 	    # End of input.
-	    last CHARACTER_PAIR if !scalar(@urgent) and $str->eot;
+	    last CHARACTER_PAIR if $str->eot;
 	    # Mandatory break
 	    last CHARACTER_PAIR if defined $before{cls} and $before{eop};
 
-	    ## Use urgent buffer at first.
-	    if (!scalar(@urgent)) {
+	    if (1) {
 		## Then, go ahead reading input.
 
 		$gcls = $str->lbclass;
@@ -345,7 +343,7 @@ sub break_partial ($$) {
 
 			# clear ``before'' buffer if it was empty.
 			$before{spc} =
-			    $before{spc}->substr(0, $before{spc}->length - 1);
+			    $before{spc}->substr(0, -1);
 			$before{cls} = undef
 			    unless $before{frg}->length or
 			    $before{spc}->length;
@@ -359,9 +357,7 @@ sub break_partial ($$) {
 		} else {
 		    $after{cls} = $gcls;
 		}
-	    } else {
-		%after = (%{shift @urgent});
-	    } # if (!scalar(@urgent))
+	    } # if (1)
 
 	    # - Start of text
 
@@ -374,16 +370,12 @@ sub break_partial ($$) {
 	} # CHARACTER_PAIR: while (1)
 
 	## Determin line breaking action by classes of adjacent characters.
-	## URGENT is used only internally.
 
 	my $action;
 
 	# Mandatory break.
 	if ($before{eop}) {
 	    $action = MANDATORY;
-	# Broken by urgent breaking.
-	} elsif ($before{urg}) {
-	    $action = URGENT;
 	# LB11 - LB29 and LB31: Tailorable rules (except LB11, LB12).
         # Or custom/complex breaking.
 	} elsif (defined $after{cls}) {
@@ -402,58 +394,34 @@ sub break_partial ($$) {
 		# When conjunction of $before{frg} and $after{frg} is
 		# expected to exceed CharactersMax, try urgent breaking.
 		my $bsa = $before{frg}.$before{spc}.$after{frg};
-		if ($s->{CharactersMax} < length $bsa->as_string) {
+		if ($s->{CharactersMax} < $bsa->chars) {
 		    my @c = $s->_urgent_break(0, '', '', $after{cls},
 					      $bsa, $after{spc});
-		    my @cc = ();
-
-		    # When urgent break wasn't carried out and $before{frg}
-		    # was not longer than CharactersMax, break between
-		    # $before{frg} and $after{frg} so that character clusters
-		    # might not be broken.
-		    if (scalar @c == 1 and $c[0]->{frg} eq $bsa and
-			length $before{frg}->as_string <= $s->{CharactersMax}) {
-			push @cc, {%before};
-			$cc[0]->{cls} = LB_XX;
-			$cc[0]->{urg} = 1;
-			push @cc, {%after};
-		    # Otherwise, if any of urgently broken fragments still
-		    # exceed CharactersMax, force chop them.
-		    } else {
-			foreach my $c (@c) {
-			    my ($cls, $frg, $spc, $urg) =
-				($c->{cls}, $c->{frg}, $c->{spc}, $c->{urg});
-			    while ($s->{CharactersMax} < length $frg->as_string) {
-				my $b = substr($frg, 0, $s->{CharactersMax});
-				$frg = substr($frg, $s->{CharactersMax});
-				if ($s->lbclass($frg) == LB_CM) {
-				    while (length $b) {
-					my $t = substr($b, -1);
-					$b = substr($b, length($b) - 1);
-					$frg = $t.$frg;
-					unless ($s->lbclass($t) == LB_CM) {
-					    last;
-					}
-				    }
-				}
-				if (length $b) {
-				    push @cc, {'cls' => LB_XX, 'frg' => $b,
-					       'spc' => $null, 'urg' => 1};
-				}
+		    my $broken = $null;
+		    foreach my $c (@c) {
+			$c->flag(0, BREAK_BEFORE);
+			my $max = $s->{CharactersMax};
+			# If any of urgently broken fragments still
+			# exceed CharactersMax, force chop them.
+			if ($max and $max < $c->chars) {
+			    while ($max < $c->chars and
+				   $s->lbclass(substr($c->as_string, $max))
+				   == LB_CM) {
+				$max++;
 			    }
-			    push @cc, {'cls' => $cls, 'frg' => $frg,
-				       'spc' => $spc, 'urg' => $urg};
+			    my $brk =
+				Unicode::GCString->new(substr("$c", 0, $max)
+						       || "", #FIXME
+						       $s);
+			    $c->flag($brk->length, BREAK_BEFORE);
 			}
-			if (scalar @cc) {
-			    $cc[$#cc]->{eop} = $after{eop};
-			    # As $after{frg} may be an incomplete fragment,
-			    # urgent break won't be carried out at its end.
-			    $cc[$#cc]->{urg} = 0;
-			}
+			$broken .= $c;
 		    }
-
-		    # Shift back urgently broken fragments then retry.
-		    unshift @urgent, @cc;
+		    my $l = ($bsa.$after{spc})->length;
+		    my $newpos = $str->pos - $l;
+		    $urg_end = $str->pos;
+		    $str->substr($newpos, $l, $broken);
+		    $str->pos($newpos);
 		    %before = ('frg' => $null, 'spc' => $null);
 		    %after = ('frg' => $null, 'spc' => $null);
 		    next;
@@ -467,7 +435,7 @@ sub break_partial ($$) {
 	} # if ($before{eop})
 
         # Check end of input.
-        if (!$eot and !defined $after{cls} and !scalar @urgent and $str->eot) {
+        if (!$eot and !defined $after{cls} and $str->eot) {
 	    # Save status then output partial result.
 	    $s->{_line} = \%line;
 	    $s->{_unread} = ($before{frg}.$before{spc})->as_string;
@@ -497,7 +465,7 @@ sub break_partial ($$) {
 
 	    # When arbitrary break is expected to generate very short line,
 	    # or when $before{frg} will exceed ColumnsMax, try urgent breaking.
-	    unless ($before{urg}) {
+	    if ($urg_end < $str->pos - ($after{frg}.$after{spc})->length) {
 		my @c = ();
 		if ($line{cols} and $line{cols} < $s->{ColumnsMin}) {
 		    @c = $s->_urgent_break($line{cols}, $line{frg}, $line{spc},
@@ -509,9 +477,17 @@ sub break_partial ($$) {
 					   $before{spc});
 		}
 		if (scalar @c) {
-		    $c[$#c]->{eop} = $before{eop};
-		    push @c, {%after} if defined $after{cls};
-		    unshift @urgent, @c;
+		    my $broken = $null;
+		    foreach my $c (@c) {
+			$c->flag(0, BREAK_BEFORE) unless $c->flag(0);
+			$broken .= $c;
+		    }
+		    my $blen = ($before{frg}.$before{spc})->length;
+		    my $alen = ($after{frg}.$after{spc})->length;
+		    my $newpos = $str->pos - ($blen + $alen);
+		    $urg_end = $newpos + $broken->length;
+		    $str->substr($newpos, $blen, $broken);
+		    $str->pos($newpos);
 		    %before = ('frg' => $null, 'spc' => $null);
 		    %after = ('frg' => $null, 'spc' => $null);
 		    next;
@@ -537,7 +513,7 @@ sub break_partial ($$) {
 	} # if ($s->{ColumnsMax} and ...)
 
 	# Mandatory break or end-of-text.
-	if ($eot and !defined $after{cls} and !scalar @urgent and $str->eot) {
+	if ($eot and !defined $after{cls} and $str->eot) {
 	    last;
 	}
 	if ($action == MANDATORY) {
@@ -817,21 +793,20 @@ sub context (@) {
 sub _format ($$$) {
     my $self = shift;
     my $action = shift || '';
-    my $str = shift;
+    my $frg = shift;
 
     my $result;
-    my $is_obj = ref $str;
     local $@;
 
-    $str = $str->as_string if ref $str;
+    $frg = Unicode::GCString->new($frg, $self) unless ref $frg;
     eval {
-	$result = &{$self->{_format_func}}($self, $action, $str);
+	$result = &{$self->{_format_func}}($self, $action, $frg);
     };
     if ($@) {
 	carp $@;
-	$result = $str;
-    } elsif (!defined $result) {
-	$result = $str;
+	$result = $frg;
+    } elsif (!defined $result or $result eq $frg) {
+	$result = $frg;
     }
 
     $result = Unicode::GCString->new($result, $self) if !ref $result;
@@ -847,23 +822,27 @@ sub _urgent_break ($$$$$$$) {
     my $frg = shift;
     my $spc = shift;
 
-    $l_frg = $l_frg->as_string if ref $l_frg;
-    $l_spc = $l_spc->as_string if ref $l_spc;
-    $frg = $frg->as_string if ref $frg;
-    $spc = $spc->as_string if ref $spc;
-
     if (ref $self->{_urgent_breaking_func}) {
-	my @broken = map { {'cls' => LB_XX, 'frg' => $_, 'spc' => '',
-			    'urg' => 1}; }
-	&{$self->{_urgent_breaking_func}}($self, $l_len, $l_frg, $l_spc, $frg);
-	$broken[$#broken]->{cls} = $cls;
-	$broken[$#broken]->{spc} = $spc;
+	$l_frg = $l_frg->as_string if ref $l_frg;
+	$l_spc = $l_spc->as_string if ref $l_spc;
+	my $str;
+	if (ref $frg) {
+	    $str = $frg->as_string;
+	} else {
+	    $str = $frg;
+	}
+	my @broken = map
+	{ Unicode::GCString->new($_, $self) }
+	&{$self->{_urgent_breaking_func}}($self, $l_len, $l_frg, $l_spc, $str);
+	if (scalar @broken) {
+	    $broken[$#broken] .= $spc;
+	} else {
+	    @broken = ($frg.$spc);
+	}
 	return @broken;
     }
 
-    $frg = Unicode::GCString->new($frg, $self);
-    $spc = Unicode::GCString->new($spc, $self);
-    return ({'cls' => $cls, 'frg' => $frg, 'spc' => $spc, 'urg' => 1});
+    return ($frg.$spc);
 }
 
 sub _sizing ($$$$$;$) {
