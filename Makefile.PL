@@ -9,7 +9,7 @@ require 'lib/Unicode/LineBreak/Version.pm';
 
 my $unicode_version = Unicode::LineBreak::DEFAULT_UNICODE_VERSION();
 my $enable_libthai;
-my $csubdir = 'c';
+my $csubdir = 'linebreak';
 
 sub postamble {
     return <<EOF;

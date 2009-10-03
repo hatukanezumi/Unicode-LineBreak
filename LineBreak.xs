@@ -18,7 +18,7 @@
 #include "gcstring.h"
 
 /*
- * 
+ * Create C property map from Perl arrayref.
  */
 static
 mapent_t *_loadmap(mapent_t *propmap, SV *mapref, size_t *mapsiz)
@@ -141,9 +141,15 @@ SV *_unistrtoutf8(unistr_t *unistr, size_t uniidx, size_t unilen)
     return utf8;
 }
 
+/*
+ * Convert Perl object to C object
+ */
 #define PerltoC(type, self) \
     ((type)SvIV(SvRV(self)))
 
+/*
+ * Create Perl object from C object
+ */
 static
 SV *CtoPerl(char *klass, void *obj)
 {
@@ -152,10 +158,15 @@ SV *CtoPerl(char *klass, void *obj)
     ref = newSViv(0);
     rv = newSVrv(ref, klass);
     sv_setiv(rv, (IV)obj);
-    // SvREADONLY_on(rv); /* FIXME:Can't bless derived class */
+#if 0
+    SvREADONLY_on(rv); /* FIXME:Can't bless derived class */
+#endif /* 0 */
     return ref;
 }
 
+/*
+ * Convert Perl SV to boolean (n.b. string "YES" means true).
+ */
 static
 int SVtoboolean(SV *sv)
 {
@@ -169,6 +180,9 @@ int SVtoboolean(SV *sv)
     return SvNV(sv) != 0.0;
 }
 
+/*
+ * Create grapheme cluster string with single grapheme cluster.
+ */
 static
 gcstring_t *_gctogcstring(gcstring_t *gcstr, gcchar_t *gc)
 {
@@ -726,8 +740,7 @@ as_array(self)
 	    for (i = 0; i < gcstr->gclen; i++)
 		XPUSHs(sv_2mortal(
 			   CtoPerl("Unicode::GCString", 
-				      _gctogcstring(gcstr,
-						    gcstr->gcstr + i))));
+				   _gctogcstring(gcstr, gcstr->gcstr + i))));
 
 SV *
 as_string(self, ...)

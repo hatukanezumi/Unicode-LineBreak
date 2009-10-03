@@ -207,34 +207,31 @@ See L<Unicode::LineBreak/Options>.
 sub config {
     my $self = shift;
     my @opts = qw{Charset Language OutputCharset};
+    my %opts = map { (uc $_ => $_) } @opts;
 
     # Get config.
     if (scalar @_ == 1) {
-	foreach my $o (@opts) {
-            if (uc $_[0] eq uc $o) {
-		return $self->{$o};
-            }
-        }
+	if ($opts{uc $_[0]}) {
+	    return $self->{$opts{uc $_[0]}};
+	}
 	return $self->SUPER::config($_[0]);
     }
 
     # Set config.
     my @o = ();
     my %params = @_;
-    OPTS: foreach my $k (keys %params) {
+    foreach my $k (keys %params) {
         my $v = $params{$k};
-	foreach my $o (@opts) {
-            if (uc $k eq uc $o) {
-		$self->{$o} = $v;
-		next OPTS;
-            }
-        }
-	push @o, $k => $v;
+	if ($opts{uc $k}) {
+	    $self->{$opts{uc $k}} = $v;
+	} else {
+	    push @o, $k => $v;
+	}
     }
     $self->SUPER::config(@o) if scalar @o;
 
     # Character set and language assumed.
-    if (ref $self->{Charset}) {
+    if (ref $self->{Charset} eq 'MIME::Charset') {
         $self->{_charset} = $self->{Charset};
     } else {
         $self->{Charset} ||= $Config->{Charset};
@@ -243,7 +240,7 @@ sub config {
     $self->{Charset} = $self->{_charset}->as_string;
     my $ocharset = uc($self->{OutputCharset} || $self->{Charset});
     $ocharset = MIME::Charset->new($ocharset)
-	unless ref $ocharset or $ocharset eq '_UNICODE_';
+	unless ref $ocharset eq 'MIME::Charset' or $ocharset eq '_UNICODE_';
     unless ($ocharset eq '_UNICODE_') {
 	$self->{_charset}->encoder($ocharset);
 	$self->{OutputCharset} = $ocharset->as_string;
@@ -254,7 +251,7 @@ sub config {
     Unicode::LineBreak::config($self,
 			       Context =>
 			       context(Charset => $self->{Charset},
-					  Language => $self->{Language}));
+				       Language => $self->{Language}));
 }
 
 =over 4

@@ -1,10 +1,11 @@
-1.003_07  Xxx Oct XX 2009
+1.003_07  Sat Oct 03 2009
 
+	* Transitional release - NOTE that this release is VERY slow.
 	* Imp/Chg: Custom functions (for sizing, user breaking, urgent breaking
 	  and format) accepts grapheme cluster string.
 	* Cleanup: separate C codes.
 	* Doc: Added examples and link to CPAN RT page.
-	* Doc: Added BUGS
+	* Doc: Added items to BUGS section.
 
 1.003_06	Sat Sep 12 2009
 
