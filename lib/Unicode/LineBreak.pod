@@ -68,10 +68,18 @@ Give C<undef> as STRING argument to specify that input was completed.
 
 =item $self->config (KEY)
 
-=item config (SELF, KEY => VALUE, ...)
+=item $self->config (KEY => VALUE, ...)
 
 I<Instance method>.
 Get or update configuration.  About KEY => VALUE pairs see L</Options>.
+
+=begin comment
+
+=item $self->ctx ([VALUE])
+
+I<Undocumented>.
+
+=end comment
 
 =back
 

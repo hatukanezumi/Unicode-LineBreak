@@ -1,3 +1,20 @@
+/*
+ * linebreak.c - implementation of Linebreak object.
+ * 
+ * Copyright (C) 2009 by Hatuka*nezumi - IKEDA Soji.  All rights reserved.
+ *
+ * This file is part of the Linebreak Package.  This program is free
+ * software; you can redistribute it and/or modify it under the terms
+ * of the GNU General Public License as published by the Free Software
+ * Foundation; either version 2 of the License, or (at your option)
+ * any later version.  This program is distributed in the hope that
+ * it will be useful, but WITHOUT ANY WARRANTY; without even the
+ * implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+ * PURPOSE.  See the COPYING file for more details.
+ *
+ * $id$
+ */
+
 #include "linebreak.h"
 #include "gcstring.h"
 
@@ -27,6 +44,7 @@ linebreak_t *linebreak_copy(linebreak_t *obj)
 {
     linebreak_t *newobj;
     mapent_t *newmap;
+    unichar_t *newstr;
 
     if ((newobj = malloc(sizeof(linebreak_t)))== NULL)
 	return NULL;
@@ -43,6 +61,29 @@ linebreak_t *linebreak_copy(linebreak_t *obj)
     else
 	newobj->map = NULL;
 
+    if (obj->newline && obj->newlinesiz) {
+	if ((newstr = malloc(sizeof(unichar_t) * obj->newlinesiz)) == NULL) {
+	    if (newobj->map) free(newobj->map);
+	    free(newobj);
+	    return NULL;
+	}
+	memcpy(newstr, obj->newline, sizeof(unichar_t) * obj->newlinesiz);
+	newobj->newline = newstr;
+	newobj->newlinesiz = obj->newlinesiz;
+    }
+
+    if (newobj->ref_func) {
+	if (newobj->stash)
+	    (*newobj->ref_func)(newobj->stash, LINEBREAK_REF_STASH, +1);
+	if (newobj->format_data)
+	    (*newobj->ref_func)(newobj->format_data, LINEBREAK_REF_FORMAT, +1);
+	if (newobj->sizing_data)
+	    (*newobj->ref_func)(newobj->sizing_data, LINEBREAK_REF_SIZING, +1);
+	if (newobj->urgent_data)
+	    (*newobj->ref_func)(newobj->urgent_data, LINEBREAK_REF_URGENT, +1);
+	if (newobj->user_data)
+	    (*newobj->ref_func)(newobj->user_data, LINEBREAK_REF_USER, +1);
+    }
     newobj->refcount = 1UL;
     return newobj;
 }
@@ -54,6 +95,19 @@ void linebreak_destroy(linebreak_t *obj)
     if ((obj->refcount -= 1UL))
 	return;
     if (obj->map) free(obj->map);
+    if (obj->newline) free(obj->newline);
+    if (obj->ref_func) {
+	if (obj->stash)
+	    (*obj->ref_func)(obj->stash, LINEBREAK_REF_STASH, -1);
+	if (obj->format_data)
+	    (*obj->ref_func)(obj->format_data, LINEBREAK_REF_FORMAT, -1);
+	if (obj->sizing_data)
+	    (*obj->ref_func)(obj->sizing_data, LINEBREAK_REF_SIZING, -1);
+	if (obj->urgent_data)
+	    (*obj->ref_func)(obj->urgent_data, LINEBREAK_REF_URGENT, -1);
+	if (obj->user_data)
+	    (*obj->ref_func)(obj->user_data, LINEBREAK_REF_USER, -1);
+    }
     free(obj);
 }
 

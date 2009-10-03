@@ -13,7 +13,9 @@ extern propval_t linebreak_lbclass(linebreak_t *, unichar_t);
 extern propval_t linebreak_lbrule(propval_t, propval_t);
 extern size_t linebreak_strsize(linebreak_t *, size_t, gcstring_t *,
                                 gcstring_t *, gcstring_t *, size_t);
-extern char *linebreak_unicode_version;
+extern const char *linebreak_unicode_version;
+extern const char *linebreak_southeastasian_supported;
+extern void linebreak_southeastasian_flagbreak(gcstring_t *);
 
 /* <<< */
 #define LB_BK ((propval_t)0)

@@ -348,7 +348,7 @@ print DATA_C <<"EOF";
 
 #include "linebreak.h"
 #define UNICODE_VERSION "$version"
-char *linebreak_unicode_version = UNICODE_VERSION;
+const char *linebreak_unicode_version = UNICODE_VERSION;
 
 EOF
 

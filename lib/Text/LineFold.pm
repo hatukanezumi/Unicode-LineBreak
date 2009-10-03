@@ -44,7 +44,7 @@ use Unicode::LineBreak qw(:all);
 ### Globals
 
 ### The package version, both in 1.23 style *and* usable by MakeMaker:
-our $VERSION = '0.006';
+our $VERSION = '0.007';
 
 ### Public Configuration Attributes
 our $Config = {
@@ -63,19 +63,19 @@ my %FORMAT_FUNCS = (
 	my $str = shift;
 	if ($action =~ /^so[tp]/) {
 	    $self->{_} = {};
-	    $self->{_}->{ColumnsMax} = $self->{ColumnsMax};
-	    $self->config(ColumnsMax => 0) if $str =~ /^>/;
+	    $self->{_}->{'ColumnsMax'} = $self->config('ColumnsMax');
+	    $self->config('ColumnsMax' => 0) if $str =~ /^>/;
 	} elsif ($action eq "") {
 	    $self->{_}->{line} = $str;
 	} elsif ($action eq "eol") {
-	    return $self->{Newline};
+	    return $self->config('Newline');
 	} elsif ($action =~ /^eo/) {
-	    if (length $self->{_}->{line} and $self->{ColumnsMax}) {
-		$str = $self->{Newline}.$self->{Newline};
+	    if (length $self->{_}->{line} and $self->config('ColumnsMax')) {
+		$str = $self->config('Newline').$self->config('Newline');
 	    } else {
-		$str = $self->{Newline};
+		$str = $self->config('Newline');
 	    }
-	    $self->config(ColumnsMax => $self->{_}->{ColumnsMax});
+	    $self->config('ColumnsMax' => $self->{_}->{'ColumnsMax'});
 	    delete $self->{_};
 	    return $str;
 	}
@@ -105,12 +105,12 @@ my %FORMAT_FUNCS = (
 	    $self->{_}->{line} = $str;
 	} elsif ($action eq 'eol') {
 	    $str = ' ' if length $str;
-	    return $str.' '.$self->{Newline};
+	    return $str.' '.$self->config('Newline');
 	} elsif ($action =~ /^eo/) {
 	    if (length $self->{_}->{line} and !length $self->{_}->{prefix}) {
-		$str = ' '.$self->{Newline}.$self->{Newline};
+		$str = ' '.$self->config('Newline').$self->config('Newline');
 	    } else {
-		$str = $self->{Newline};
+		$str = $self->config('Newline');
 	    }
 	    delete $self->{_};
 	    return $str;
@@ -118,11 +118,10 @@ my %FORMAT_FUNCS = (
 	undef;
     },
     'PLAIN' => sub {
-	return $_[0]->{Newline} if $_[1] =~ /^eo/;
+	return $_[0]->config('Newline') if $_[1] =~ /^eo/;
 	undef;
     },
 );
-
 
 =head2 Public Interface
 
@@ -139,9 +138,9 @@ About KEY => VALUE pairs see config method.
 
 sub new {
     my $class = shift;
-    my $self = Unicode::LineBreak->new();
-    &config($self, @_);
-    bless $self, $class;
+    my $self = bless __PACKAGE__->SUPER::new(), $class;
+    $self->config(@_);
+    $self;
 }
 
 =over 4
@@ -207,11 +206,7 @@ See L<Unicode::LineBreak/Options>.
 
 sub config {
     my $self = shift;
-    my %params = @_;
     my @opts = qw{Charset Language OutputCharset};
-    my @lbopts = qw{CharactersMax ColumnsMin ColumnsMax
-			HangulAsAL LegacyCM Newline SizingMethod
-			TailorEA TailorLB UrgentBreaking UserBreaking};
 
     # Get config.
     if (scalar @_ == 1) {
@@ -220,16 +215,12 @@ sub config {
 		return $self->{$o};
             }
         }
-	foreach my $o (@lbopts) {
-            if (uc $_[0] eq uc $o) {
-		return $self->SUPER::config($o);
-            }
-        }
-	carp "No such option: $_[0]";
+	return $self->SUPER::config($_[0]);
     }
 
     # Set config.
     my @o = ();
+    my %params = @_;
     OPTS: foreach my $k (keys %params) {
         my $v = $params{$k};
 	foreach my $o (@opts) {
@@ -238,14 +229,9 @@ sub config {
 		next OPTS;
             }
         }
-	foreach my $o (@lbopts) {
-	    if (uc $k eq uc $o) {
-		push @o, $o => $v;
-		last;
-	    }
-	}
+	push @o, $k => $v;
     }
-    Unicode::LineBreak::config($self, @o) if scalar @o;
+    $self->SUPER::config(@o) if scalar @o;
 
     # Character set and language assumed.
     if (ref $self->{Charset}) {
@@ -398,18 +384,18 @@ sub unfold {
 	    pos($s) = 0;
 	    while ($s !~ /\G\z/cg) {
 		if ($s =~ /\G\n/cg) {
-		    $result .= $self->{Newline};
+		    $result .= $self->config('Newline');
 		} elsif ($s =~ /\G(.+)\n\n/cg) {
-		    $result .= $1.$self->{Newline};
+		    $result .= $1.$self->config('Newline');
 		} elsif ($s =~ /\G(>.*)\n/cg) {
-		    $result .= $1.$self->{Newline};
+		    $result .= $1.$self->config('Newline');
 		} elsif ($s =~ /\G(.+)\n(?=>)/cg) {
-		    $result .= $1.$self->{Newline};
+		    $result .= $1.$self->config('Newline');
 		} elsif ($s =~ /\G(.+?)( *)\n(?=(.))/cg) {
 		    my ($l, $s, $n) = ($1, $2, $3);
 		    $result .= $l;
 		    if ($n eq ' ') {
-			$result .= $self->{Newline};
+			$result .= $self->config('Newline');
 		    } elsif (length $s) {
 			$result .= $s;
 		    } elsif (length $l) {
@@ -428,9 +414,9 @@ sub unfold {
 			}
 		    }
 		} elsif ($s =~ /\G(.+)\n/cg) {
-		    $result .= $1.$self->{Newline};
+		    $result .= $1.$self->config('Newline');
 		} elsif ($s =~ /\G(.+)/cg) {
-		    $result .= $1.$self->{Newline};
+		    $result .= $1.$self->config('Newline');
 		    last;
 		}
 	    }
@@ -443,13 +429,13 @@ sub unfold {
 		    unless (defined $prefix) {
 			$result .= $p.' '.$l;
 		    } elsif ($p ne $prefix) {
-			$result .= $self->{Newline};
+			$result .= $self->config('Newline');
 			$result .= $p.' '.$l;
 		    } else {
 			$result .= $l;
 		    }
 		    unless (length $s) {
-			$result .= $self->{Newline};
+			$result .= $self->config('Newline');
 			$prefix = undef;
 		    } else {
 			$prefix = $p;
@@ -459,19 +445,19 @@ sub unfold {
 		    unless (defined $prefix) {
 			$result .= $l;
 		    } elsif ('' ne $prefix) {
-			$result .= $self->{Newline};
+			$result .= $self->config('Newline');
 			$result .= $l;
 		    } else {
 			$result .= $l;
 		    }
 		    unless (length $s) {
-			$result .= $self->{Newline};
+			$result .= $self->config('Newline');
 			$prefix = undef;
 		    } else {
 			$prefix = '';
 		    }
 		} elsif ($s =~ /\G ?(.*)/cg) {
-		    $result .= $1.$self->{Newline};
+		    $result .= $1.$self->config('Newline');
 		    last;
 		}
 	    }

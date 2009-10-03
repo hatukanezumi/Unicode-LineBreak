@@ -7,14 +7,23 @@ use vars qw(@ISA);
 @ISA = qw(ExtUtils::MakeMaker);
 require 'lib/Unicode/LineBreak/Version.pm';
 
+my $unicode_version = Unicode::LineBreak::DEFAULT_UNICODE_VERSION();
+my $enable_libthai;
+my $csubdir = 'c';
+
 sub postamble {
-    my $ret = '';
-    foreach my $version (@{Unicode::LineBreak::UNICODE_VERSIONS()},
-			 qw(charprop gcstring linebreak)) {
-	$ret .= $version.'$(OBJ_EXT)'.": c/$version.c c/linebreak.h\n";
-	$ret .= "\t".'$(CCCMD) $(CCCDLFLAGS) "-I$(PERL_INC)" $(PASTHRU_DEFINE) $(DEFINE) -o $@ '."c/$version.c\n";
-    }
-    $ret;
+    return <<EOF;
+\$(MYEXTLIB): $csubdir/Makefile
+	cd $csubdir && \$(MAKE)
+$csubdir/Makefile: $csubdir/configure
+	cd $csubdir && ./configure --disable-shared --enable-static \\
+	--with-unicode-version=$unicode_version \\
+	--enable-libthai=$enable_libthai \\
+        CFLAGS='\$(CCFLAGS) \$(OPTIMIZE) \$(CCCDLFLAGS)'
+$csubdir/configure: $csubdir/configure.in
+	cd $csubdir && ./autogen.sh && \\
+	\$(PERL) -i -pe '/\\bVERSION\\b/ and \$\$_="/* \$\$_ */"' config.h.in
+EOF
 }
 
 my @opts = ();
@@ -22,18 +31,12 @@ my $libthai = `pkg-config --modversion libthai`;
 chomp $libthai;
 if ($libthai and ($ARGV[0] || '') ne 'nolibthai') {
     print "Use libthai $libthai\n";
-    push @opts, ('DEFINE' => "-DUSE_LIBTHAI=\\\"libthai/$libthai\\\"",
-		 'INC' => '-I./c ' . `pkg-config --cflags libthai`,
-		 'LIBS' => `pkg-config --libs libthai`,
-		 );
+    $enable_libthai = 'yes';
+    push @opts, ('LIBS' => `pkg-config --libs libthai`);
 } else {
-    push @opts, ('INC' => '-I./c');
+    $enable_libthai = 'no';
 }
-my $object = '$(BASEEXT)$(OBJ_EXT)';
-$object .= ' charprop$(OBJ_EXT) gcstring$(OBJ_EXT) linebreak$(OBJ_EXT)';
-$object .= ' ';
-$object .= Unicode::LineBreak::DEFAULT_UNICODE_VERSION().'$(OBJ_EXT)';
-push @opts, ('OBJECT' => $object);
+push @opts, ('INC' => "-I./$csubdir");
 
 WriteMakefile(
 	'NAME'		=> 'Unicode::LineBreak',
@@ -46,10 +49,8 @@ WriteMakefile(
 	    'MIME::Charset'	=> '1.006.2',
 	    'Test::More'	=> '0.45',
 	},
+	'MYEXTLIB' => "$csubdir/.libs/libinebreak\$(LIB_EXT)",
 	# Un-comment this if you add C files to link with later:
 	# 'OBJECT'	=> '$(O_FILES)', # link all the C files too
-	# My external library
-	# 'MYEXTLIB'	=> 'mylib/libmylib$(LIB_EXT)',
 	@opts,
 );
-

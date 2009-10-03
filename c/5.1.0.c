@@ -4,7 +4,7 @@
 
 #include "linebreak.h"
 #define UNICODE_VERSION "5.1.0"
-char *linebreak_unicode_version = UNICODE_VERSION;
+const char *linebreak_unicode_version = UNICODE_VERSION;
 
 #define r(cc) static propval_t rule_##cc[]
 /* Note: Entries related to BK, CR, CM, LF, NL, SP aren't used by break(). */
