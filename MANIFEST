@@ -5,14 +5,14 @@ data/Constants.pm.in
 data/custom.pl
 data/data.pl
 data/EastAsianWidth-5.1.0.custom
-data/EastAsianWidth-5.2.0beta.custom
+data/EastAsianWidth-5.2.0.custom
 data/LBCLASSES
 data/LineBreak-5.1.0.custom
-data/LineBreak-5.2.0beta.custom
+data/LineBreak-5.2.0.custom
 data/linebreak.h.in
 data/makefile
 data/Rules-5.1.0.txt
-data/Rules-5.2.0beta.txt
+data/Rules-5.2.0.txt
 data/rules2pl.pl
 GPL
 lib/Text/LineFold.pm
@@ -27,7 +27,7 @@ lib/Unicode/LineBreak/JA_JP.pod
 lib/Unicode/LineBreak/Version.pm
 LineBreak.xs
 linebreak/5.1.0.c
-linebreak/5.2.0beta.c
+linebreak/5.2.0.c
 linebreak/AUTHORS
 linebreak/autogen.sh
 linebreak/break.c

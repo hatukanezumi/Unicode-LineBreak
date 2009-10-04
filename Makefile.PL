@@ -10,29 +10,31 @@ require 'lib/Unicode/LineBreak/Version.pm';
 my $unicode_version = Unicode::LineBreak::DEFAULT_UNICODE_VERSION();
 my $enable_libthai;
 my $csubdir = 'linebreak';
+my $pkg_config = $ENV{'PKG_CONFIG'} || 'pkg-config';
 
 sub postamble {
     return <<EOF;
 \$(MYEXTLIB): $csubdir/Makefile
 	cd $csubdir && \$(MAKE)
 $csubdir/Makefile: $csubdir/configure
-	cd $csubdir && ./configure --disable-shared --enable-static \\
+	cd $csubdir && \\
+	\$(PERL) -i -pe '/\\bVERSION\\b/ and \$\$_="/* \$\$_ */" unless m(/\\*)' config.h.in && \\
+	./configure --disable-shared --enable-static \\
 	--with-unicode-version=$unicode_version \\
 	--enable-libthai=$enable_libthai \\
         CFLAGS='\$(CCFLAGS) \$(OPTIMIZE) \$(CCCDLFLAGS)'
 $csubdir/configure: $csubdir/configure.in
-	cd $csubdir && ./autogen.sh && \\
-	\$(PERL) -i -pe '/\\bVERSION\\b/ and \$\$_="/* \$\$_ */"' config.h.in
+	cd $csubdir && ./autogen.sh
 EOF
 }
 
 my @opts = ();
-my $libthai = `pkg-config --modversion libthai`;
+my $libthai = `$pkg_config --modversion libthai`;
 chomp $libthai;
 if ($libthai and ($ARGV[0] || '') ne 'nolibthai') {
     print "Use libthai $libthai\n";
     $enable_libthai = 'yes';
-    push @opts, ('LIBS' => `pkg-config --libs libthai`);
+    push @opts, ('LIBS' => `$pkg_config --libs libthai`);
 } else {
     $enable_libthai = 'no';
 }

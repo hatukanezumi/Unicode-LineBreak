@@ -1,7 +1,7 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ(2.59)
-AC_INIT(linebreak, 1.3beta7, hatuka@nezumi.nu)
+AC_INIT(linebreak, 1.3beta9, hatuka@nezumi.nu)
 LPATH="$PATH:/usr/local/bin"
 
 AM_INIT_AUTOMAKE
@@ -34,7 +34,7 @@ AC_CHECK_FUNCS([strcasecmp])
 AM_CONDITIONAL(HAVE_STRCASECMP, [test "$ac_cv_func_strcasecmp" = "yes"])
 
 PKG_CHECK_MODULES(LIBTHAI, [libthai],
-  [LIBTHAI="libthai/`pkg-config --modversion libthai`"])
+  [LIBTHAI="libthai/`$PKG_CONFIG --modversion libthai`"], [LIBTHAI=])
 AC_MSG_CHECKING(whether libthai support enabled)
 AC_ARG_ENABLE(libthai,
   [  --disable-libthai       Disable libthai support],

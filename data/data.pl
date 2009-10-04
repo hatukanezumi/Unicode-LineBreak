@@ -338,7 +338,7 @@ $INDEX[$MODULUS] = $HASHLEN; # Sentinel.
 
 ### Output
 
-open DATA_C, '>', "../c/$version.c";
+open DATA_C, '>', "../linebreak/$version.c";
 
 # Print postamble.
 print DATA_C <<"EOF";

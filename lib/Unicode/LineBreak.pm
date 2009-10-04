@@ -216,7 +216,7 @@ sub break ($$) {
 }
 
 sub break_partial ($$) {
-    my $s = shift;
+    my $self = shift;
     my $str = shift;
     my $eot = 0;
 
@@ -226,6 +226,17 @@ sub break_partial ($$) {
     } elsif ($str =~ /[^\x00-\x7F]/s and !is_utf8($str)) {
         croak "Unicode string must be given."
     }
+
+    ## Unread and additional input.
+    $str = $self->_gcstring_new($self->{_unread}.$str);
+
+    $self->_break_partial($str, $eot);
+}
+
+sub _break_partial ($$$) {
+    my $s = shift;
+    my $str = shift;
+    my $eot = shift;
 
     # Constant.
     my $null = Unicode::GCString->new('', $s);
@@ -243,8 +254,6 @@ sub break_partial ($$) {
     # eop: There is a mandatory breaking point at end of this buffer.
     my %before = ('frg' => $null, 'spc' => $null);
     my %after = ('frg' => $null, 'spc' => $null);
-    ## Unread and additional input.
-    $str = $s->_gcstring_new($s->{_unread}.$str);
     ## Start of text/paragraph status.
     # 0: Start of text not done.
     # 1: Start of text done while start of paragraph not done.

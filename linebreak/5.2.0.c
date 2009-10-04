@@ -3,7 +3,7 @@
  */
 
 #include "linebreak.h"
-#define UNICODE_VERSION "5.2.0beta"
+#define UNICODE_VERSION "5.2.0"
 const char *linebreak_unicode_version = UNICODE_VERSION;
 
 #define r(cc) static propval_t rule_##cc[]

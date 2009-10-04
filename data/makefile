@@ -1,9 +1,9 @@
 ## 
 
 MODULE_VERSION = 1.003
-BETA_VERSION = 08
-UNICODE_VERSIONS = 5.1.0 5.2.0beta
-CURRENT_UNICODE_VERSION = 5.1.0
+BETA_VERSION = 09
+UNICODE_VERSIONS = 5.1.0 5.2.0
+CURRENT_UNICODE_VERSION = 5.2.0
 
 WGET = wget
 UCD_BASE = http://www.unicode.org/Public/$(UNICODE_VERSION)/ucd/
@@ -17,9 +17,9 @@ LINEBREAK_CUSTOM = LineBreak-$(UNICODE_VERSION).custom
 SCRIPTS = Scripts-$(UNICODE_VERSION).txt
 #SCRIPTS_CUSTOM = Scripts-$(UNICODE_VERSION).custom
 SCRIPTS_CUSTOM =
-DATA_C = ../c/$(UNICODE_VERSION).c
+DATA_C = ../linebreak/$(UNICODE_VERSION).c
 CONSTANTS_PM = ../lib/Unicode/LineBreak/Constants.pm
-LINEBREAK_H = ../c/linebreak.h
+LINEBREAK_H = ../linebreak/linebreak.h
 VERSION_PM = ../lib/Unicode/LineBreak/Version.pm
 META_YML = ../META.yml
 
