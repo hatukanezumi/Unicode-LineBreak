@@ -66,14 +66,6 @@ I<インスタンスメソッド>。
 設定を取得または変更する。
 KEY => VALUE の対については L</オプション> を参照。
 
-=begin comment
-
-=item $self->ctx ([VALUE])
-
-I<Undocumented>.
-
-=end comment
-
 =back
 
 =head2 情報の取得

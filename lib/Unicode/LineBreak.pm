@@ -574,27 +574,6 @@ sub _gcstring_new ($$) {
 
 	# Break unmatched fragment.
 	if (length $s) {
-
-=begin comment
-
-	    my %sa_break = map { ($_ => 1); }
-	    Unicode::LineBreak::SouthEastAsian::break_indexes($s);
-	    $s = Unicode::GCString->new($s, $self);
-	    my $pos = 0;
-	    for (my $i = 0; !$s->eot; $i++) {
-		my $item = $s->next;
-		if ($item->lbclass == LB_SA) {
-		    $s->flag($i,
-			     $sa_break{$pos}? BREAK_BEFORE: PROHIBIT_BEFORE);
-		}
-		$pos += length $item->[0];
-	    }
-	    $ret .= $s;
-
-=end comment
-
-=cut
-
 	    $s = Unicode::GCString->new($s, $self);
 	    $s = Unicode::LineBreak::SouthEastAsian::flagbreak($s);
 	    $ret .= $s;

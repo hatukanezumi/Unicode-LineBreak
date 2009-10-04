@@ -165,7 +165,7 @@ L<http://hatuka.nezumi.nu/repos/Unicode-LineBreak/>
 
 [UAX #29]
 Mark Davis (2009).
-<Unicode Standard Annex #29: Unicode Text Segmentation>, Revision 15.
+I<Unicode Standard Annex #29: Unicode Text Segmentation>, Revision 15.
 L<http://www.unicode.org/reports/tr29/>.
 
 =head1 AUTHOR
