@@ -73,14 +73,6 @@ Give C<undef> as STRING argument to specify that input was completed.
 I<Instance method>.
 Get or update configuration.  About KEY => VALUE pairs see L</Options>.
 
-=begin comment
-
-=item $self->ctx ([VALUE])
-
-I<Undocumented>.
-
-=end comment
-
 =back
 
 =head2 Getting Informations
@@ -590,7 +582,7 @@ Following characters behave as if they were CM.
     U+0360 |COMB. DOUBLE TILDE                  |GL |Extend
     U+0361 |COMB. DOUBLE INVERTED BREVE         |GL |Extend
     U+0362 |COMB. DOUBLE RIGHTWARDS ARROW BELOW |GL |Extend
-    U+0F7F |TIBETAN SIGN RNAM BCAD              |BA |SpacingMark
+    U+0F7F |TIBETAN SIGN RNAM BCAD (visarga)    |BA |SpacingMark
     U+FF9E |HW. KATAKANA VOICED SOUND MARK      |NS |Extend
     U+FF9F |HW. KATAKANA SEMI-VOICED SOUND MARK |NS |Extend
     ------------------------------------------------------------
