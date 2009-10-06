@@ -11,18 +11,26 @@ my $enable_libthai;
 my $csubdir = 'linebreak';
 my $pkg_config = $ENV{'PKG_CONFIG'} || 'pkg-config';
 
+sub clean_subdirs {
+    return <<EOF;
+clean_subdirs:
+\tif \$(TEST_F) $csubdir/Makefile; then cd $csubdir; \$(MAKE) distclean; fi
+EOF
+}
+
 sub postamble {
     return <<EOF;
 \$(MYEXTLIB): $csubdir/Makefile
-	cd $csubdir && \$(MAKE)
+\tcd $csubdir && \$(MAKE)
 $csubdir/Makefile: $csubdir/configure
-	cd $csubdir && \\
-	\$(PERL) -i -pe '/\\bVERSION\\b/ and \$\$_="/* \$\$_ */" unless m(/\\*)' config.h.in && \\
-	./configure --disable-shared --enable-static \\
-	--enable-libthai=$enable_libthai \\
-        CFLAGS='\$(CCFLAGS) \$(OPTIMIZE) \$(CCCDLFLAGS)'
+\tcd $csubdir && \\
+\t\$(PERL) -i -pe '/\\bVERSION\\b/ and \$\$_="/* \$\$_ */" unless m(/\\*)' \\
+\tconfig.h.in && \\
+\t./configure --disable-shared --enable-static \\
+\t--enable-libthai=$enable_libthai \\
+\tCFLAGS='\$(CCFLAGS) \$(OPTIMIZE) \$(CCCDLFLAGS)'
 $csubdir/configure: $csubdir/configure.in
-	cd $csubdir && ./autogen.sh
+\tcd $csubdir && ./autogen.sh
 EOF
 }
 

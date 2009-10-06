@@ -31,6 +31,7 @@ our $VERSION = '0.004_01';
 
 use overload 
     '@{}' => \&as_arrayref,
+    '${}' => \&as_scalarref,
     '""' => \&as_string,
     '.' => \&concat,
     #XXX'.=' => \&concat, #FIXME:segfault

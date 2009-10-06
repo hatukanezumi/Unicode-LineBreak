@@ -731,6 +731,36 @@ as_hashref(self, ...)
     OUTPUT:
 	RETVAL
 
+SV*
+as_scalarref(self, ...)
+	SV *self;
+    INIT:
+	linebreak_t *obj;
+	char buf[64];
+    CODE:
+	obj = PerltoC(linebreak_t *, self);
+	buf[0] = '\0';
+	snprintf(buf, 64, "%s(0x%lx)", HvNAME(SvSTASH(SvRV(self))),
+		 (unsigned long)(void *)obj);
+	RETVAL = newRV_noinc(newSVpv(buf, 0));
+    OUTPUT:
+	RETVAL
+
+SV *
+as_string(self, ...)
+	SV *self;
+    INIT:
+	linebreak_t *obj;
+	char buf[64];
+    CODE:
+	obj = PerltoC(linebreak_t *, self);
+	buf[0] = '\0';
+	snprintf(buf, 64, "%s(0x%lx)", HvNAME(SvSTASH(SvRV(self))),
+		 (unsigned long)(void *)obj);
+	RETVAL = newSVpv(buf, 0);
+    OUTPUT:
+	RETVAL
+
 propval_t
 eawidth(self, str)
 	SV *self;
@@ -1089,6 +1119,21 @@ as_array(self)
 		XPUSHs(sv_2mortal(
 			   CtoPerl("Unicode::GCString", 
 				   gctogcstring(gcstr, gcstr->gcstr + i))));
+
+SV*
+as_scalarref(self, ...)
+	SV *self;
+    INIT:
+	linebreak_t *obj;
+	char buf[64];
+    CODE:
+	obj = PerltoC(linebreak_t *, self);
+	buf[0] = '\0';
+	snprintf(buf, 64, "%s(0x%lx)", HvNAME(SvSTASH(SvRV(self))),
+		 (unsigned long)(void *)obj);
+	RETVAL = newRV_noinc(newSVpv(buf, 0));
+    OUTPUT:
+	RETVAL
 
 SV *
 as_string(self, ...)

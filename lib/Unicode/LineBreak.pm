@@ -182,7 +182,10 @@ my %USER_BREAKING_FUNCS = (
 );
 
 use overload
-    '%{}' => \&as_hashref;
+    '%{}' => \&as_hashref,
+    '${}' => \&as_scalarref,
+    '""' => \&as_string,
+    ;
 
 sub new {
     my $class = shift;
