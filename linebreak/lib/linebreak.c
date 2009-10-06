@@ -16,7 +16,6 @@
  */
 
 #include "linebreak.h"
-#include "gcstring.h"
 
 extern propval_t *linebreak_rules[];
 extern size_t linebreak_rulessiz;
@@ -60,7 +59,6 @@ linebreak_t *linebreak_copy(linebreak_t *obj)
     }
     else
 	newobj->map = NULL;
-
     if (obj->newline && obj->newlinesiz) {
 	if ((newstr = malloc(sizeof(unichar_t) * obj->newlinesiz)) == NULL) {
 	    if (newobj->map) free(newobj->map);
@@ -69,8 +67,48 @@ linebreak_t *linebreak_copy(linebreak_t *obj)
 	}
 	memcpy(newstr, obj->newline, sizeof(unichar_t) * obj->newlinesiz);
 	newobj->newline = newstr;
-	newobj->newlinesiz = obj->newlinesiz;
     }
+    else
+	newobj->newline = NULL;
+    if (obj->bufstr && obj->bufstrsiz) {
+	if ((newstr = malloc(sizeof(unichar_t) * obj->bufstrsiz)) == NULL) {
+	    if (newobj->map) free(newobj->map);
+	    if (newobj->newline) free(newobj->newline);
+	    free(newobj);
+	    return NULL;
+	}
+	memcpy(newstr, obj->bufstr, sizeof(unichar_t) * obj->bufstrsiz);
+	newobj->bufstr = newstr;
+    }
+    else
+	newobj->bufstr = NULL;
+    if (obj->bufspc && obj->bufspcsiz) {
+	if ((newstr = malloc(sizeof(unichar_t) * obj->bufspcsiz)) == NULL) {
+	    if (newobj->map) free(newobj->map);
+	    if (newobj->newline) free(newobj->newline);
+	    if (newobj->bufstr) free(newobj->bufstr);
+	    free(newobj);
+	    return NULL;
+	}
+	memcpy(newstr, obj->bufspc, sizeof(unichar_t) * obj->bufspcsiz);
+	newobj->bufspc = newstr;
+    }
+    else
+	newobj->bufspc = NULL;
+    if (obj->unread && obj->unreadsiz) {
+	if ((newstr = malloc(sizeof(unichar_t) * obj->unreadsiz)) == NULL) {
+	    if (newobj->map) free(newobj->map);
+	    if (newobj->newline) free(newobj->newline);
+	    if (newobj->bufstr) free(newobj->bufstr);
+	    if (newobj->bufspc) free(newobj->bufspc);
+	    free(newobj);
+	    return NULL;
+	}
+	memcpy(newstr, obj->unread, sizeof(unichar_t) * obj->unreadsiz);
+	newobj->unread = newstr;
+    }
+    else
+	newobj->unread = NULL;
 
     if (newobj->ref_func) {
 	if (newobj->stash)
@@ -96,6 +134,8 @@ void linebreak_destroy(linebreak_t *obj)
 	return;
     if (obj->map) free(obj->map);
     if (obj->newline) free(obj->newline);
+    if (obj->bufstr) free(obj->bufstr);
+    if (obj->unread) free(obj->unread);
     if (obj->ref_func) {
 	if (obj->stash)
 	    (*obj->ref_func)(obj->stash, LINEBREAK_REF_STASH, -1);
@@ -109,6 +149,29 @@ void linebreak_destroy(linebreak_t *obj)
 	    (*obj->ref_func)(obj->user_data, LINEBREAK_REF_USER, -1);
     }
     free(obj);
+}
+
+void linebreak_reset(linebreak_t *lbobj)
+{
+    if (lbobj == NULL)
+	return;
+    if (lbobj->unread) {
+	free(lbobj->unread);
+	lbobj->unread = NULL;
+	lbobj->unreadsiz = 0;
+    }
+    if (lbobj->bufstr) {
+	free(lbobj->bufstr);
+	lbobj->bufstr = NULL;
+	lbobj->bufstrsiz = 0;
+    }
+    if (lbobj->bufspc) {
+	free(lbobj->bufspc);
+	lbobj->bufspc = NULL;
+	lbobj->bufspcsiz = 0;
+    }
+    lbobj->bufcols = 0.0;
+    lbobj->state = LINEBREAK_STATE_NONE;
 }
 
 propval_t linebreak_lbrule(propval_t b_idx, propval_t a_idx)
@@ -147,7 +210,7 @@ propval_t linebreak_eawidth(linebreak_t *obj, unichar_t c)
     return eaw;
 }
 
-size_t linebreak_strsize(linebreak_t *obj, size_t len, gcstring_t *pre,
+double linebreak_strsize(linebreak_t *obj, double len, gcstring_t *pre,
 			 gcstring_t *spc, gcstring_t *str, size_t max)
 {
     gcstring_t *spcstr;
@@ -179,11 +242,11 @@ size_t linebreak_strsize(linebreak_t *obj, size_t len, gcstring_t *pre,
 	    else
 		idx -= spc->len;
 	    gcstring_destroy(spcstr);
-	    return idx;
+	    return (double)idx;
 	}
 	idx += gc->len;
 	len += gcol;
     }
     gcstring_destroy(spcstr);
-    return str->len;
+    return (double)(str->len);
 }

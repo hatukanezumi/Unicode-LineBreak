@@ -430,8 +430,9 @@ gcstring_t *gcstring_substr(gcstring_t *gcstr, int offset, int length,
 	gcstring_destroy(new);
 	return NULL;
     }
-    memcpy(new->str, gcstr->str + gcstr->gcstr[offset].idx,
-	   sizeof(unichar_t) * ulength);
+    if (ulength)
+	memcpy(new->str, gcstr->str + gcstr->gcstr[offset].idx,
+	       sizeof(unichar_t) * ulength);
     new->len = ulength;
     for (i = 0; i < length; i++) {
 	memcpy(new->gcstr + i, gcstr->gcstr + offset + i, sizeof(gcchar_t));

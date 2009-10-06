@@ -15,11 +15,11 @@
  * $id$
  */
 
+#include "linebreak.h"
 #ifdef USE_LIBTHAI
 #    include "thai/thwchar.h"
 #    include "thai/thwbrk.h"
 #endif /* USE_LIBTHAI */
-#include "linebreak.h"
 
 const char *linebreak_southeastasian_supported =
 #ifdef USE_LIBTHAI
@@ -48,13 +48,14 @@ void linebreak_southeastasian_flagbreak(gcstring_t *gcstr)
     /* Flag breaking points. */
     for (i = 0, j = 0; buf[j] && th_wbrk(buf + j, &brk, 1); j += brk)
 	for (; i < gcstr->gclen && gcstr->gcstr[i].idx <= j + brk; i++)
-	    if (gcstr->gcstr[i].lbc == LB_SA)
+	    if (gcstr->gcstr[i].lbc == LB_SA && !gcstr->gcstr[i].flag)
 		gcstr->gcstr[i].flag = 
 		    (gcstr->gcstr[i].idx == j + brk)?
 		    LINEBREAK_FLAG_BREAK_BEFORE:
 		    LINEBREAK_FLAG_PROHIBIT_BEFORE;
     for (; i < gcstr->gclen && gcstr->gcstr[i].lbc == LB_SA; i++)
-	gcstr->gcstr[i].flag = LINEBREAK_FLAG_PROHIBIT_BEFORE;
+	if (!gcstr->gcstr[i].flag)
+	    gcstr->gcstr[i].flag = LINEBREAK_FLAG_PROHIBIT_BEFORE;
 
     free(buf);
 #endif /* USE_LIBTHAI */

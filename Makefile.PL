@@ -7,7 +7,6 @@ use vars qw(@ISA);
 @ISA = qw(ExtUtils::MakeMaker);
 require 'lib/Unicode/LineBreak/Version.pm';
 
-my $unicode_version = Unicode::LineBreak::DEFAULT_UNICODE_VERSION();
 my $enable_libthai;
 my $csubdir = 'linebreak';
 my $pkg_config = $ENV{'PKG_CONFIG'} || 'pkg-config';
@@ -20,7 +19,6 @@ $csubdir/Makefile: $csubdir/configure
 	cd $csubdir && \\
 	\$(PERL) -i -pe '/\\bVERSION\\b/ and \$\$_="/* \$\$_ */" unless m(/\\*)' config.h.in && \\
 	./configure --disable-shared --enable-static \\
-	--with-unicode-version=$unicode_version \\
 	--enable-libthai=$enable_libthai \\
         CFLAGS='\$(CCFLAGS) \$(OPTIMIZE) \$(CCCDLFLAGS)'
 $csubdir/configure: $csubdir/configure.in
@@ -38,7 +36,7 @@ if ($libthai and ($ARGV[0] || '') ne 'nolibthai') {
 } else {
     $enable_libthai = 'no';
 }
-push @opts, ('INC' => "-I./$csubdir");
+push @opts, ('INC' => "-I$csubdir/include -I$csubdir");
 
 WriteMakefile(
 	'NAME'		=> 'Unicode::LineBreak',

@@ -158,7 +158,7 @@ foreach my $attr (@attr) {
 }
 $LBCLASSES .= ");\n\n1;\n";
 
-open LINEBREAK_H, '>', '../linebreak/linebreak.h' || die $!;
+open LINEBREAK_H, '>', '../linebreak/include/linebreak_constants.h' || die $!;
 open CONSTANTS_PM, '>', '../lib/Unicode/LineBreak/Constants.pm' || die $!;
 open LBCLASSES, '>', 'LBCLASSES' || $!;
 

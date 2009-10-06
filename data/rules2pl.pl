@@ -135,7 +135,7 @@ foreach my $b (@LBCLASSES) {
 }
 
 open DATA_PM, '>>', "../lib/Unicode/LineBreak/$version.pm" || $!;
-open DATA_C, '>>', "../linebreak/$version.c" || $!;
+open DATA_C, '>>', "../linebreak/lib/$version.c" || $!;
 
 print DATA_PM "# Note: Entries related to BK, CR, CM, LF, NL, SP aren't used by break().\n";
 print DATA_PM "our \$RULES = [\n";
