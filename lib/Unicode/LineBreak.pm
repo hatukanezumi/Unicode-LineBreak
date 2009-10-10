@@ -129,10 +129,17 @@ my %URGENT_BREAKING_FUNCS = (
     return () unless length $spc or length $str;
 
     my $max = $self->config('ColumnsMax') || 0;
+    my $sizing = $self->{SizingMethod};
+    unless (ref $sizing eq 'CODE') {
+	if ($sizing) {
+	    $sizing = $SIZING_FUNCS{$sizing};
+	}
+ 	$sizing ||= \&strsize;
+    }
     my @result = ();
 
     while (1) {
-        my $idx = $self->_sizing($len, $pre, $spc, $str, $max);
+        my $idx = &{$sizing}($self, $len, $pre, $spc, $str, $max);
         if (0 < $idx) {
 	    push @result, substr($str, 0, $idx);
 	    $str = substr($str, $idx);
@@ -211,6 +218,27 @@ sub break ($$) {
     return $result . $self->break_partial(undef);
 }
 
+
+sub lbclass_custom {
+    my $self = shift;
+    my $str = shift;
+    my $base = shift;
+    my $lbc;
+
+    # LB9: Treat X CM+ as if it were X  
+    # where X is anything except BK, CR, LF, NL, SP or ZW  
+    $lbc = $str->lbclass($base);
+    # LB10: Treat any remaining CM+ as if it were AL.
+    if ($lbc == LB_CM) {
+	$lbc = LB_AL;
+    # LB27: Treat hangul syllable as if it were ID (or AL).
+    } elsif ($lbc == LB_H2 or $lbc == LB_H3 or
+	     $lbc == LB_JL or $lbc == LB_JV or $lbc == LB_JT) {
+	$lbc = $self->config('HangulAsAL')? LB_AL: LB_ID;
+    }
+    $lbc;
+}
+
 sub break_partial ($$) {
     my $s = shift;
     my $str = shift;
@@ -220,52 +248,57 @@ sub break_partial ($$) {
 
     ## Unread and additional input.
     $str = $s->_break_partial($str);
+    $str->pos(0);
 
     # Constant.
     my $null = Unicode::GCString->new('', $s);
 
     ### Initialize status.
+
     ## Line buffer.
-    # _frg: Unbreakable text fragment.
-    # _spc: Trailing spaces.
-    # _cols: Number of columns of _frg: can be differ from _frg->columns.
-    my $line_frg = $s->attr('_unwritten_frg');
-    my $line_spc = $s->attr('_unwritten_spc');
-    my $line_cols = $s->attr('_unwritten_cols');
-    ## ``before'' and ``after'' buffers.
-    # cls: Line breaking class.
-    # frg: Unbreakable text fragment.
-    # spc: Trailing spaces.
-    # eop: There is a mandatory breaking point at end of this buffer.
-    my %before = ('frg' => $null, 'spc' => $null);
-    my %after = ('frg' => $null, 'spc' => $null);
-    ## Start of text/paragraph status.
+    # bufStr: Unbreakable text fragment.
+    # bufSpc: Trailing spaces.
+    # bufCols: Number of columns of befStr: can be differ from bufStr->columns.
+    # State: Start of text/paragraph status.
     # 0: Start of text not done.
     # 1: Start of text done while start of paragraph not done.
-    # 2: Start of paragraph done.
-    my $sox = $s->attr('_sox');
+    # 2: Start of paragraph done while end of paragraph not done.
+    my $state = $s->attr('state');
+    my $bufStr = $s->attr('bufstr');
+    my $bufSpc = $s->attr('bufspc');
+    my $bufCols = $s->attr('bufcols');
+
+    ## Indexes and flags
+    # bBeg:  Start of unbreakable text fragment.
+    # bLen:  Length of unbreakable text fragment.
+    # bSpc:  Length of trailing spaces.
+    # urgEnd: End of substring broken by urgent breaking.
+    #
+    # ...read...| before :CM |  spaces  | after :CM |...unread...|
+    #           ^       ->bCM<-         ^      ->aCM<-           ^
+    #           |<-- bLen -->|<- bSpc ->|           ^            |
+    #          bBeg                 candidate    str->pos     end of
+    #                                breaking                  input
+    #                                 point
+    # `read' positions shall never be read more.
+    #
+    my ($bBeg, $bLen, $bCM, $bSpc, $aCM) = (0, 0, 0, 0, 0);
+    my $urgEnd = 0;
 
     ## Result.
     my $result = '';
-    ## End of substring broken by urgent breaking.
-    my $urg_end = 0;
 
     while (1) {
 	### Chop off a pair of unbreakable character clusters from text.
 
       CHARACTER_PAIR:
-	while (1) {
-	    my $gcls;
-
-	    # End of input.
-	    last CHARACTER_PAIR if $str->eot;
-	    # Mandatory break
-	    last CHARACTER_PAIR if defined $before{cls} and $before{eop};
+	while (!$str->eos) {
+	    my $lbc;
 
 	    if (1) {
-		## Then, go ahead reading input.
+		## Go ahead reading input.
 
-		$gcls = $str->lbclass;
+		$lbc = $str->lbclass;
 
 		#
 		# Append SP/ZW/eop to ``before'' buffer.
@@ -274,41 +307,40 @@ sub break_partial ($$) {
 		    # - Explicit breaks and non-breaks
 
 		    # LB7(1): × SP+
-		    if ($gcls == LB_SP) {
-			$before{spc} .= $str->next;
-			# Treat (sot | eop) SP+  as if it were WJ.
-			$before{cls} = LB_WJ unless defined $before{cls};
+		    if ($lbc == LB_SP) {
+			$str->next;
+			$bSpc++;
 
 			# End of input.
-			last CHARACTER_PAIR if $str->eot;
-			$gcls = $str->lbclass;
+			last CHARACTER_PAIR if $str->eos;
+			$lbc = $str->lbclass;
 		    }
 
 		    # - Mandatory breaks
 
 		    # LB4 - LB7: × SP* (BK | CR LF | CR | LF | NL) !
-		    if ($gcls == LB_BK or $gcls == LB_CR or $gcls == LB_LF or
-			$gcls == LB_NL) {
-			$before{spc} .= $str->next;
-			$before{cls} = $gcls;
-			$before{eop} = 1
-			    unless !$eot and $gcls == LB_CR and $str->eot;
+		    if ($lbc == LB_BK or $lbc == LB_CR or $lbc == LB_LF or
+			$lbc == LB_NL) {
+			$str->next;
+			$bSpc++;
 			last CHARACTER_PAIR;
 		    }
 
 		    # - Explicit breaks and non-breaks
 
 		    # LB7(2): × (SP* ZW+)+
-		    if ($gcls == LB_ZW) {
-			$before{frg} .= $before{spc}.($str->next);
-			$before{spc} = $null;
-			$before{cls} = $gcls;
+		    if ($lbc == LB_ZW) {
+			$str->next;
+			$bLen += $bSpc + 1;
+			$bCM = 0;
+			$bSpc = 0;
 
 			# End of input
-			last CHARACTER_PAIR if $str->eot;
-			$gcls = $str->lbclass;
+			last CHARACTER_PAIR if $str->eos;
+			$lbc = $str->lbclass;
 			next;
 		    }
+
 		    last;
 		} # while (1)
 
@@ -319,126 +351,110 @@ sub break_partial ($$) {
 		# - Rules for other line breaking classes
 
 		# LB1: Assign a line breaking class to each characters.
-		%after = ('frg' => $str->next, 'spc' => $null);
+		$str->next;
 
 		# - Combining marks  
 		# LB9: Treat X CM+ as if it were X  
 		# where X is anything except BK, CR, LF, NL, SP or ZW  
 		# (NB: Some CM characters may be single grapheme cluster
 		# since they have Grapheme_Cluster_Break property Control.)
-		while (!$str->eot) {  
-		    last unless $str->lbclass eq LB_CM;
-		    $after{frg} .= $str->next;
-		}
-		# Legacy-CM: Treat SP CM+ as if it were ID.  cf. [UAX #14] 9.1.
-		# LB10: Treat any remaining CM+ as if it were AL.
-		if ($gcls == LB_CM) {
-		    if ($s->config('LegacyCM') and
-			defined $before{cls} and $before{spc}->length and
-			$before{spc}->substr(-1)->lbclass == LB_SP) {
-			$after{frg} = $before{spc}->substr(-1).$after{frg};
-			$after{cls} = LB_ID;
-
-			# clear ``before'' buffer if it was empty.
-			$before{spc} =
-			    $before{spc}->substr(0, -1);
-			$before{cls} = undef
-			    unless $before{frg}->length or
-			    $before{spc}->length;
-		    } else {
-			$after{cls} = LB_AL;
-		    }
-		# LB27: Treat hangul syllable as if it were ID (or AL).
-		} elsif ($gcls == LB_H2 or $gcls == LB_H3 or
-			 $gcls == LB_JL or $gcls == LB_JV or $gcls == LB_JT) {
-		    $after{cls} =
-			$s->config('HangulAsAL')? LB_AL: LB_ID;
-		} else {
-		    $after{cls} = $gcls;
+		while (!$str->eos && $str->lbclass == LB_CM) {
+		    $str->next;
+		    $aCM++;
 		}
 	    } # if (1)
 
 	    # - Start of text
 
 	    # LB2: sot ×
-	    last if defined $before{cls};
+	    last if 0 < $bLen or 0 < $bSpc;
 
 	    # shift buffers.
-	    %before = (%after);
-	    %after = ('frg' => $null, 'spc' => $null);
-	} # CHARACTER_PAIR: while (1)
+	    #XXX$bBeg += $bLen + $bSpc;
+	    $bLen = $str->pos - $bBeg;
+	    $bSpc = 0;
+	    $bCM = $aCM;
+	    $aCM = 0;
+	} # CHARACTER_PAIR: while (!$str->eos)
 
 	## Determin line breaking action by classes of adjacent characters.
 
 	my $action;
 
 	# Mandatory break.
-	if ($before{eop}) {
+	my $lbc;
+	if (0 < $bSpc and
+	    ($lbc = $str->lbclass($bBeg + $bLen + $bSpc - 1)) != LB_SP and
+	    ($lbc != LB_CR or $eot or !$str->eos)) {
 	    $action = MANDATORY;
 	# LB11 - LB29 and LB31: Tailorable rules (except LB11, LB12).
-        # Or custom/complex breaking.
-	} elsif (defined $after{cls}) {
-	    if ($after{frg}->flag(0) & BREAK_BEFORE) {
+        # Or urgent breaking.
+	} elsif ($bBeg + $bLen + $bSpc < $str->pos) {
+	    if ($str->flag($bBeg + $bLen + $bSpc) & BREAK_BEFORE) {
 		$action = DIRECT;
-	    } elsif ($after{frg}->flag(0) & PROHIBIT_BEFORE) {
+	    } elsif ($str->flag($bBeg + $bLen + $bSpc) & PROHIBIT_BEFORE) {
+		$action = PROHIBITED;
+	    } elsif ($bLen == 0 and 0 < $bSpc) {
+		# Prohibit break at sot or after breaking,
+		# alhtough rules doesn't tell it obviously.
 		$action = PROHIBITED;
 	    } else {
-		$action = $s->lbrule($before{cls}, $after{cls});
+		my ($blbc, $albc);
+
+		$blbc = $s->lbclass_custom($str, $bBeg + $bLen - $bCM - 1);
+		$albc = $s->lbclass_custom($str, $bBeg + $bLen + $bSpc);
+		$action = $s->lbrule($blbc, $albc);
 	    }
 
 	    # Check prohibited break.
 	    if ($action == PROHIBITED or
-		($action == INDIRECT and $before{spc}->length == 0)) {
+		($action == INDIRECT and $bSpc == 0)) {
 
-		# When conjunction of $before{frg} and $after{frg} is
-		# expected to exceed CharactersMax, try urgent breaking.
-		my $bsa = $before{frg}.$before{spc}.$after{frg};
+		# When conjunction of is expected to exceed CharactersMax,
+		# try urgent breaking.
+		my $bsa = $str->substr($bBeg, $str->pos - $bBeg);
 		if ($s->config('CharactersMax') < $bsa->chars) {
-		    my @c = $s->_urgent_break(0, '', '', $after{cls},
-					      $bsa, $after{spc});
-		    my $broken = $null;
-		    foreach my $c (@c) {
-			$c->flag(0, BREAK_BEFORE);
+		    my $broken = $s->_urgent_break(0, '', '', $bsa);
+
+		    #FIXME:
+		        #----$broken->flag(0, BREAK_BEFORE);
 			my $max = $s->config('CharactersMax');
 			# If any of urgently broken fragments still
 			# exceed CharactersMax, force chop them.
-			if ($max and $max < $c->chars) {
-			    while ($max < $c->chars and
-				   $s->lbclass(substr($c->as_string, $max))
-				   == LB_CM) {
+			if ($max and $max < $broken->chars) {
+			    while ($max < $broken->chars and
+				   $s->lbclass(substr($broken->as_string,
+						      $max)) == LB_CM) {
 				$max++;
 			    }
-			    my $substr = substr("$c", 0, $max); #FIXME:
+			    my $substr = substr("$broken", 0, $max); #FIXME:
 			    my $brk = Unicode::GCString->new($substr, $s);
-			    $c->flag($brk->length, BREAK_BEFORE);
+			    $broken->flag($brk->length, BREAK_BEFORE);
 			}
-			$broken .= $c;
-		    }
-		    my $l = ($bsa.$after{spc})->length;
-		    my $newpos = $str->pos - $l;
-		    $urg_end = $str->pos;
-		    $str->substr($newpos, $l, $broken);
-		    $str->pos($newpos);
-		    %before = ('frg' => $null, 'spc' => $null);
-		    %after = ('frg' => $null, 'spc' => $null);
+
+		    $urgEnd = $broken->length;
+		    $str->substr(0, $str->pos, $broken);
+		    $str->pos(0);
+		    $bBeg = $bLen = $bCM = $bSpc = $aCM = 0;
 		    next;
 		} 
 		# Otherwise, fragments may be conjuncted safely.  Read more.
-		my $frg = $before{frg}.$before{spc}.$after{frg};
-		%before = (%after); $before{frg} = $frg;
-		%after = ('frg' => $null, 'spc' => $null);
+		$bLen = $str->pos - $bBeg;
+		$bSpc = 0;
+		$bCM = $aCM;
+		$aCM = 0;
 		next;
 	    } # if ($action == PROHIBITED or ...)
-	} # if ($before{eop})
+	} # if (0 < $bSpc and ...)
 
         # Check end of input.
-        if (!$eot and !defined $after{cls} and $str->eot) {
+        if (!$eot and $str->length <= $bBeg + $bLen + $bSpc) {
 	    # Save status then output partial result.
-	    $s->attr('_unwritten_frg' => $line_frg);
-	    $s->attr('_unwritten_spc' => $line_spc);
-	    $s->attr('_unwritten_cols' => $line_cols);
-	    $s->attr('_unread' => $before{frg}.$before{spc});
-	    $s->attr('_sox' => $sox);
+	    $s->attr('bufstr' => $bufStr);
+	    $s->attr('bufspc' => $bufSpc);
+	    $s->attr('bufcols' => $bufCols);
+	    $s->attr('unread' => $str->substr($bBeg));
+	    $s->attr('state' => $state);
 	    return $result;
         }
 
@@ -446,94 +462,119 @@ sub break_partial ($$) {
 
 	### Examine line breaking action
 
-	if ($sox == 0) { # sot undone.
+	my $beforeFrg = $str->substr($bBeg, $bLen);
+	my $fmt;
+
+	if ($state == 0) { # sot undone.
 	    # Process start of text.
-	    $before{frg} = $s->_format('sot', $before{frg});
-	    $sox = 1;
-	} elsif ($sox == 1) { # sop undone.
+	    # FIXME:need test.
+	    $fmt = $s->_format('sot', $beforeFrg);
+	    if ($beforeFrg."" ne $fmt."") {
+		$fmt .= $str->substr($bBeg + $bLen, $bSpc);
+		$fmt .= $str->substr($bBeg + $bLen + $bSpc,
+				     $str->pos - ($bBeg + $bLen + $bSpc));
+		$str->substr(0, $str->pos, $fmt);
+		$str->pos(0);
+		$bBeg = $bLen = $bCM = $bSpc = $aCM = 0;
+
+		$state = -1;
+		next;
+	    }
+	    $state = 1;
+	} elsif ($state == -1) {
+	    $state = 1;
+	} elsif ($state == 1) { # sop undone.
 	    # Process start of paragraph.
-	    $before{frg} = $s->_format('sop', $before{frg});
-	    $sox = 2;
+	    # FIXME:need test.
+	    $fmt = $s->_format('sop', $beforeFrg);
+	    if ($beforeFrg."" ne $fmt."") {
+		$fmt .= $str->substr($bBeg + $bLen, $bSpc);
+		$fmt .= $str->substr($bBeg + $bLen + $bSpc,
+				     $str->pos - ($bBeg + $bLen + $bSpc));
+		$str->substr(0, $str->pos, $fmt);
+		$str->pos(0);
+		$bBeg = $bLen = $bCM = $bSpc = $aCM = 0;
+
+		$state = -2;
+		next;
+	    }
+	    $state = 2;
+	} elsif ($state == -2) {
+	    $state = 2;
 	}
 
 	# Check if arbitrary break is needed.
-	my $newcols = $s->_sizing($line_cols, $line_frg, $line_spc,
-				  $before{frg});
+	my $newcols = $s->_sizing($bufCols, $bufStr, $bufSpc, $beforeFrg);
 	if ($s->config('ColumnsMax') and $s->config('ColumnsMax') < $newcols) {
-	    $newcols = $s->_sizing(0, '', '', $before{frg}); 
+	    $newcols = $s->_sizing(0, '', '', $beforeFrg); 
 
 	    # When arbitrary break is expected to generate very short line,
-	    # or when $before{frg} will exceed ColumnsMax, try urgent breaking.
-	    if ($urg_end < $str->pos - ($after{frg}.$after{spc})->length) {
-		my @c = ();
-		if ($line_cols and $line_cols < $s->config('ColumnsMin')) {
-		    @c = $s->_urgent_break($line_cols, $line_frg, $line_spc,
-					   $before{cls}, $before{frg},
-					   $before{spc});
+	    # or when $beforeFrg will exceed ColumnsMax, try urgent breaking.
+	    if ($urgEnd < $bBeg + $bLen + $bSpc) {
+		my $broken;
+		if (0 < $bufCols and $bufCols < $s->config('ColumnsMin')) {
+		    $broken = $s->_urgent_break($bufCols, $bufStr,
+						$bufSpc, $beforeFrg);
 		} elsif ($s->config('ColumnsMax') < $newcols) {
-		    @c = $s->_urgent_break(0, '', '',
-					   $before{cls}, $before{frg},
-					   $before{spc});
+		    $broken = $s->_urgent_break(0, '', '', $beforeFrg);
 		}
-		if (scalar @c) {
-		    my $broken = $null;
-		    foreach my $c (@c) {
-			$c->flag(0, BREAK_BEFORE) unless $c->flag(0);
-			$broken .= $c;
-		    }
-		    my $blen = ($before{frg}.$before{spc})->length;
-		    my $alen = ($after{frg}.$after{spc})->length;
-		    my $newpos = $str->pos - ($blen + $alen);
-		    $urg_end = $newpos + $broken->length;
-		    $str->substr($newpos, $blen, $broken);
-		    $str->pos($newpos);
-		    %before = ('frg' => $null, 'spc' => $null);
-		    %after = ('frg' => $null, 'spc' => $null);
+		if (defined $broken) {
+		    $broken .= $str->substr($bBeg + $bLen, $bSpc);
+		    $str->substr(0, $bBeg + $bLen + $bSpc, $broken);
+		    $str->pos(0);
+		    $urgEnd = $broken->length;
+		    $bBeg = $bLen = $bCM = $bSpc = $aCM = 0;
+		    $beforeFrg = $null; # destroy
 		    next;
 		}
 	    }
 
 	    # Otherwise, process arbitrary break.
-	    if (length $line_frg or length $line_spc) {
-		$result .= $s->_format('', $line_frg)->as_string;
-		$result .= $s->_format('eol', $line_spc)->as_string;
-		my $bak = $before{frg};
-		$before{frg} = $s->_format('sol', $before{frg});
-		$newcols = $s->_sizing(0, '', '', $before{frg})
-		    unless $bak eq $before{frg};
+	    if (length $bufStr or length $bufSpc) {
+		$result .= $s->_format('', $bufStr)->as_string;
+		$result .= $s->_format('eol', $bufSpc)->as_string;
+
+		$fmt = $s->_format('sol', $beforeFrg);
+		if ($beforeFrg ne $fmt) {
+		    $beforeFrg = $fmt;
+		    $newcols = $s->_sizing(0, '', '', $beforeFrg);
+		}
 	    }
-	    $line_frg = $before{frg};
-	    $line_spc = $before{spc};
-	    $line_cols = $newcols;
+	    $bufStr = $beforeFrg;
+	    $bufSpc = $str->substr($bBeg + $bLen, $bSpc);
+	    $bufCols = $newcols;
 	# Arbitrary break is not needed.
 	} else {
-	    $line_frg = $line_frg.$line_spc.$before{frg};
-	    $line_spc = $before{spc};
-	    $line_cols = $newcols;
+	    $bufStr .= $bufSpc.$beforeFrg;
+	    $bufSpc = $str->substr($bBeg + $bLen, $bSpc);
+	    $bufCols = $newcols;
 	} # if ($s->config('ColumnsMax') and ...)
 
 	# Mandatory break or end-of-text.
-	if ($eot and !defined $after{cls} and $str->eot) {
+	if ($eot and $str->length <= $bBeg + $bLen + $bSpc) {
 	    last;
 	}
 	if ($action == MANDATORY) {
 	    # Process mandatory break.
-	    $result .= $s->_format('', $line_frg)->as_string;
-	    $result .= $s->_format('eop', $line_spc)->as_string;
-	    $sox = 1; # eop done then sop must be carried out.
-	    $line_frg = '';
-	    $line_spc = '';
-	    $line_cols = 0;
+	    $result .= $s->_format('', $bufStr)->as_string;
+	    $result .= $s->_format('eop', $bufSpc)->as_string;
+	    $state = 1; # eop done then sop must be carried out.
+	    $bufStr = $null;
+	    $bufSpc = $null;
+	    $bufCols = 0;
 	}
 
 	# Shift buffers.
-	%before = (%after);
-	%after = ('frg' => $null, 'spc' => $null);
+	$bBeg += $bLen + $bSpc;
+	$bLen = $str->pos - $bBeg;
+	$bSpc = 0;
+	$bCM = $aCM;
+	$aCM = 0;
     } # TEXT: while (1)
 
     # Process end of text.
-    $result .= $s->_format('', $line_frg)->as_string;
-    $result .= $s->_format('eot', $line_spc)->as_string;
+    $result .= $s->_format('', $bufStr)->as_string;
+    $result .= $s->_format('eot', $bufSpc)->as_string;
 
     ## Reset status then return the rest of result.
     $s->_reset;
@@ -770,7 +811,6 @@ sub _urgent_break ($$$$$$$) {
     my $l_len = shift;
     my $l_frg = shift;
     my $l_spc = shift;
-    my $cls = shift;
     my $frg = shift;
     my $spc = shift;
 

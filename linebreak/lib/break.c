@@ -59,18 +59,15 @@ double _sizing(linebreak_t *lbobj, double len,
 }
 
 /* static */
-gcstring_t *_urgent_break(linebreak_t *lbobj, double bufcols,
-			  gcstring_t *bufstr, gcstring_t *bufspc,
-			  propval_t lbc, gcstring_t *str, gcstring_t *spc)
+gcstring_t *_urgent_break(linebreak_t *lbobj, double cols,
+			  gcstring_t *pre, gcstring_t *spc, gcstring_t *str)
 {
   gcstring_t *result;
 
     if (lbobj->urgent_data == NULL || lbobj->urgent_func == NULL ||
-	(result = lbobj->urgent_func(lbobj, bufcols, bufstr, bufspc, str))
-	== NULL) {
+	(result = lbobj->urgent_func(lbobj, cols, pre, spc, str)) == NULL) {
 	result = gcstring_copy(str);
     }
-    gcstring_append(result, spc);
     return result;
 }
 
@@ -79,6 +76,7 @@ gcstring_t *linebreak_break_partial(linebreak_t *lbobj, gcstring_t *input)
     int eot = (input == NULL);
     gcstring_t *str, *newstr;
     unistr_t unistr;
+    size_t i;
 
     unistr.str = lbobj->unread;
     unistr.len = lbobj->unreadsiz;
@@ -86,13 +84,26 @@ gcstring_t *linebreak_break_partial(linebreak_t *lbobj, gcstring_t *input)
 	return NULL;
     lbobj->unread = NULL;
     lbobj->unreadsiz = 0;
-
     if (gcstring_append(str, input) == NULL)
 	return NULL;
+    /* perform user breaking */
     newstr = _preprocess(lbobj, str);
     gcstring_destroy(str);
     if ((str = newstr) == NULL)
 	return NULL;
+    /* Legacy-CM: Treat SP CM+ as if it were ID.  cf. [UAX #14] 9.1. */
+    if (lbobj->options & LINEBREAK_OPTION_LEGACY_CM)
+	for (i = 1; i < str->gclen; i++)
+	    if (str->gcstr[i].lbc == LB_CM && str->gcstr[i - 1].lbc == LB_SP) {
+		str->gcstr[i - 1].len += str->gcstr[i].len;
+		str->gcstr[i - 1].lbc = LB_ID;
+		if (str->gclen - i - 1)
+		    memmove(str->gcstr + i, str->gcstr + i + 1,
+			    sizeof(gcchar_t) * (str->gclen - i - 1));
+		str->gclen--;
+		i--;
+	    }
+    /* South East Asian complex breaking. */
     linebreak_southeastasian_flagbreak(str);
 
 /*

@@ -28,7 +28,7 @@ void _gcinfo(linebreak_t *obj, unistr_t *str, size_t pos,
 	     size_t *glenptr, size_t *gcolptr, propval_t *glbcptr)
 {
     propval_t glbc = PROP_UNKNOWN, ggbc, gscr;
-    size_t glen, gcol;
+    size_t glen, gcol, pcol, ecol;
     propval_t lbc, eaw, gbc, ngbc, scr;
 
     if (!str || !str->str || !str->len) {
@@ -47,12 +47,11 @@ void _gcinfo(linebreak_t *obj, unistr_t *str, size_t pos,
     ggbc = gbc;
     gscr = scr;
 
-    /* GB4, GB5  */
-    /* NL (U+0085 NEXT LINE) is assigned to Grapheme_Cluster_Break Other. */
-    if (lbc == LB_BK || lbc == LB_NL || gbc == GB_LF) {
-	;
-    /* GB3, GB4, GB5 */
-    } else if (gbc == GB_CR) {
+    switch (gbc) {
+    case GB_LF: /* GB5 */
+	break;
+
+    case GB_CR: /* GB3, GB4, GB5 */
 	if (pos < str->len) {
 	    linebreak_charprop(obj, str->str[pos], NULL, NULL, &gbc, NULL);
 	    if (gbc == GB_LF) {
@@ -60,22 +59,17 @@ void _gcinfo(linebreak_t *obj, unistr_t *str, size_t pos,
 		glen++;
 	    }
 	}
-    }
-    /* Special case */
-    else if (lbc == LB_SP || lbc == LB_ZW || lbc == LB_WJ) {
-	while (1) {
-	    if (str->len <= pos)
-		break;
-	    linebreak_charprop(obj, str->str[pos], &lbc, &eaw, NULL, NULL);
- 	    if (lbc != glbc)
-		break;
-	    pos++;
-	    glen++;
-	    gcol += eaw2col(eaw);
-        }
-    }
-    else if (gbc != GB_Control) { /* GB4 */
-	size_t pcol = 0, ecol = 0;
+	break;
+
+    case GB_Control: /* GB4 */
+	break;
+
+    default:
+	if (glbc == LB_SP) /* Special case */
+	    break;
+
+	pcol = 0;
+	ecol = 0;
 	while (pos < str->len) { /* GB2 */
 	    linebreak_charprop(obj, str->str[pos], &lbc, &eaw, &ngbc, &scr);
 	    /* GB5 */
@@ -95,7 +89,8 @@ void _gcinfo(linebreak_t *obj, unistr_t *str, size_t pos,
 		gcol = 2;
 	    /* GB9, GB9a */
 	    /*
-	     * Some morbid sequences such as <L Extend V T> are allowed.
+	     * Some morbid sequences such as <L Extend V T> are allowed
+	       according to UAX #14.
 	     */
 	    else if (ngbc == GB_Extend || ngbc == GB_SpacingMark) {
 		ecol += eaw2col(eaw);
@@ -118,8 +113,9 @@ void _gcinfo(linebreak_t *obj, unistr_t *str, size_t pos,
 	    pos++;
 	    glen++;
 	    gbc = ngbc;
-	}
+	} /* while (pos < str->len) */
 	gcol += pcol + ecol;
+	break;
     }
 
     if (glbc == LB_SA) {
@@ -314,8 +310,8 @@ int gcstring_cmp(gcstring_t *a, gcstring_t *b)
 {
     size_t i;
 
-    if (!a->str || !b->str)
-	return (a->str? 1: 0) - (b->str? 1: 0);
+    if (!a->str || !a->len || !b->str || !b->len)
+      return ((a->str || a->len)? 1: 0) - ((b->str || b->len)? 1: 0);
     for (i = 0; i < a->len && i < b->len; i++)
 	if (a->str[i] != b->str[i])
 	    return a->str[i] - b->str[i];

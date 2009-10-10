@@ -357,9 +357,8 @@ double sizing_func(linebreak_t *lbobj, double len,
  * Call urgent breaking function
  */
 static
-gcstring_t *urgent_func(linebreak_t *lbobj, double bufcols,
-			gcstring_t *bufstr, gcstring_t *bufspc,
-			gcstring_t *str)
+gcstring_t *urgent_func(linebreak_t *lbobj, double cols,
+			gcstring_t *pre, gcstring_t *spc, gcstring_t *str)
 {
     SV *sv;
     int count;
@@ -371,9 +370,9 @@ gcstring_t *urgent_func(linebreak_t *lbobj, double bufcols,
     SAVETMPS;
     PUSHMARK(SP);
     XPUSHs(sv_2mortal(CtoPerl("Unicode::LineBreak", linebreak_copy(lbobj))));
-    XPUSHs(sv_2mortal(newSVnv(bufcols)));
-    XPUSHs(sv_2mortal(CtoPerl("Unicode::GCString", gcstring_copy(bufstr))));
-    XPUSHs(sv_2mortal(CtoPerl("Unicode::GCString", gcstring_copy(bufspc))));
+    XPUSHs(sv_2mortal(newSVnv(cols)));
+    XPUSHs(sv_2mortal(CtoPerl("Unicode::GCString", gcstring_copy(pre))));
+    XPUSHs(sv_2mortal(CtoPerl("Unicode::GCString", gcstring_copy(spc))));
     XPUSHs(sv_2mortal(CtoPerl("Unicode::GCString", gcstring_copy(str))));
     PUTBACK;
     count = call_sv(lbobj->urgent_data, G_ARRAY | G_EVAL);
@@ -411,8 +410,7 @@ extern gcstring_t *_format(linebreak_t *, linebreak_state_t, gcstring_t *);
 extern double _sizing(linebreak_t *, double,
 		      gcstring_t *, gcstring_t *, gcstring_t *, size_t);
 extern gcstring_t *_urgent_break(linebreak_t *, double,
-				 gcstring_t *, gcstring_t *,
-				 propval_t, gcstring_t *, gcstring_t *);
+				 gcstring_t *, gcstring_t *, gcstring_t *);
 
 MODULE = Unicode::LineBreak	PACKAGE = Unicode::LineBreak	
 
@@ -428,6 +426,28 @@ _new(klass)
 	RETVAL = CtoPerl(klass, lbobj);
     OUTPUT:
 	RETVAL
+
+SV *
+copy(self)
+	SV *self;
+    PROTOTYPE: $
+    INIT:
+	linebreak_t *lbobj, *ret;
+    CODE:
+	if (!sv_isobject(self))
+	    XSRETURN_UNDEF;
+	lbobj = PerltoC(linebreak_t *, self);    
+	ret = linebreak_copy(lbobj);
+	RETVAL = CtoPerl("Unicode::LineBreak", ret);
+    OUTPUT:
+	RETVAL
+
+void
+DESTROY(self)
+	SV *self;
+    PROTOTYPE: $
+    CODE:
+	linebreak_destroy(PerltoC(linebreak_t *, self));
 
 SV *
 _config(self, ...)
@@ -589,6 +609,7 @@ _config(self, ...)
     OUTPUT:
 	RETVAL
 
+# TEMP.
 SV*
 attr(self, key, ...)
 	SV *self;
@@ -604,7 +625,7 @@ attr(self, key, ...)
 	if (items < 2)
 	    croak("attr: Too few arguments");
 	else if (items < 3) {
-	    if (strcmp(key, "_unread") == 0) {
+	    if (strcmp(key, "unread") == 0) {
 		if (obj->unread == NULL)
 		    RETVAL = unistrtoSV(&unistr, 0, 0);
 		else {
@@ -612,7 +633,7 @@ attr(self, key, ...)
 		    unistr.len = obj->unreadsiz;
 		    RETVAL = unistrtoSV(&unistr, 0, obj->unreadsiz);
 		}
-	    } else if (strcmp(key, "_unwritten_frg") == 0) {
+	    } else if (strcmp(key, "bufstr") == 0) {
 		if (obj->bufstr == NULL)
 		    RETVAL = unistrtoSV(&unistr, 0, 0);
 		else {
@@ -620,7 +641,7 @@ attr(self, key, ...)
 		    unistr.len = obj->bufstrsiz;
 		    RETVAL = unistrtoSV(&unistr, 0, obj->bufstrsiz);
 		}
-	    } else if (strcmp(key, "_unwritten_spc") == 0) {
+	    } else if (strcmp(key, "bufspc") == 0) {
 		if (obj->bufspc == NULL)
 		    RETVAL = unistrtoSV(&unistr, 0, 0);
 		else {
@@ -628,15 +649,15 @@ attr(self, key, ...)
 		    unistr.len = obj->bufspcsiz;
 		    RETVAL = unistrtoSV(&unistr, 0, obj->bufspcsiz);
 		}
-	    } else if (strcmp(key, "_unwritten_cols") == 0)
+	    } else if (strcmp(key, "bufcols") == 0)
 		RETVAL = newSVnv((NV)obj->bufcols);
-	    else if (strcmp(key, "_sox") == 0)
+	    else if (strcmp(key, "state") == 0)
 		RETVAL = newSViv(obj->state);
 	    else
 		warn("attr: Getting unknown attribute %s", key);
 	} else {
 	    val = ST(2);
-	    if (strcmp(key, "_unread") == 0) {
+	    if (strcmp(key, "unread") == 0) {
 		if (obj->unread) free(obj->unread);
 		if (!sv_isobject(val)) {
 		    SVtounistr(&unistr, val);
@@ -654,7 +675,7 @@ attr(self, key, ...)
 		    }
 		} else
 		    croak("Unknown object %s", HvNAME(SvSTASH(SvRV(val))));
-	    } else if (strcmp(key, "_unwritten_frg") == 0) {
+	    } else if (strcmp(key, "bufstr") == 0) {
 		if (obj->bufstr) free(obj->bufstr);
 		if (!sv_isobject(val)) {
 		    SVtounistr(&unistr, val);
@@ -672,7 +693,7 @@ attr(self, key, ...)
 		    }
 		} else
 		    croak("Unknown object %s", HvNAME(SvSTASH(SvRV(val))));
-	    } else if (strcmp(key, "_unwritten_spc") == 0) {
+	    } else if (strcmp(key, "bufspc") == 0) {
 		if (obj->bufspc) free(obj->bufspc);
 		if (!sv_isobject(val)) {
 		    SVtounistr(&unistr, val);
@@ -690,22 +711,15 @@ attr(self, key, ...)
 		    }
 		} else
 		    croak("Unknown object %s", HvNAME(SvSTASH(SvRV(val))));
-	    } else if (strcmp(key, "_unwritten_cols") == 0)
+	    } else if (strcmp(key, "bufcols") == 0)
 		obj->bufcols = (double)SvNV(val);		
-	    else if (strcmp(key, "_sox") == 0)
+	    else if (strcmp(key, "state") == 0)
 		obj->state = (int)SvIV(val);
 	    else
 		warn("attr: Setting unknown attribute %s", key);
 	}
     OUTPUT:
 	RETVAL
-
-void
-DESTROY(self)
-	SV *self;
-    PROTOTYPE: $
-    CODE:
-	linebreak_destroy(PerltoC(linebreak_t *, self));
 
 void
 _reset(self)
@@ -722,7 +736,7 @@ as_hashref(self, ...)
     CODE:
 	obj = PerltoC(linebreak_t *, self);
 	if (obj->stash == NULL)
-	    obj->stash = newRV_inc((SV *)sv_2mortal((SV *)newHV()));
+	    obj->stash = newRV_noinc((SV *)newHV());
 	RETVAL = obj->stash;
 	if (RETVAL == NULL)
 	    XSRETURN_UNDEF;
@@ -927,6 +941,7 @@ UNICODE_VERSION()
     OUTPUT:
 	RETVAL
 
+# TEMP.
 SV *
 _format(self, actionstr, str)
 	SV *self;
@@ -970,6 +985,7 @@ _format(self, actionstr, str)
     OUTPUT:
 	RETVAL
 
+# TEMP.
 double
 _sizing(self, len, pre, spc, str, ...)
 	SV *self;
@@ -1002,41 +1018,31 @@ _sizing(self, len, pre, spc, str, ...)
     OUTPUT:
 	RETVAL
 
+# TEMP.
 SV *
-_urgent_break(self, bufcols, bufstr, bufspc, lbc, str, spc)
+_urgent_break(self, cols, pre, spc, str)
 	SV *self;
-	double bufcols;
-	SV *bufstr;
-	SV *bufspc;
-	SV *lbc;
-	SV *str;
+	double cols;
+	SV *pre;
 	SV *spc;
-    PROTOTYPE: $$$$$$$
+	SV *str;
+    PROTOTYPE: $$$$$
     INIT:
 	linebreak_t *lbobj;
-	gcstring_t *gcbufstr, *gcbufspc, *gcstr, *gcspc, *ret;
-	propval_t glbc;
+	gcstring_t *gcpre, *gcspc, *gcstr, *ret;
     CODE:
 	lbobj = PerltoC(linebreak_t *, self);
-	gcbufstr = SVtogcstring(bufstr, lbobj);
-	gcbufspc = SVtogcstring(bufspc, lbobj);
-	gcstr = SVtogcstring(str, lbobj);
+	gcpre = SVtogcstring(pre, lbobj);
 	gcspc = SVtogcstring(spc, lbobj);
-	if (!SvOK(lbc))
-	    glbc = PROP_UNKNOWN;
-	else
-	    glbc = (propval_t)SvIV(lbc);
+	gcstr = SVtogcstring(str, lbobj);
 
-	ret = _urgent_break(lbobj, bufcols, gcbufstr, gcbufspc,
-			    glbc, gcstr, gcspc);
-	if (!sv_isobject(bufstr) && gcbufstr)
-	    gcstring_destroy(gcbufstr);
-	if (!sv_isobject(bufspc) && gcbufspc)
-	    gcstring_destroy(gcbufspc);
-	if (!sv_isobject(str) && gcstr)
-	    gcstring_destroy(gcstr);
+	ret = _urgent_break(lbobj, cols, gcpre, gcspc, gcstr);
+	if (!sv_isobject(pre) && gcpre)
+	    gcstring_destroy(gcpre);
 	if (!sv_isobject(spc) && gcspc)
 	    gcstring_destroy(gcspc);
+	if (!sv_isobject(str) && gcstr)
+	    gcstring_destroy(gcstr);
 	if (ret == NULL)
 	    croak("%s", strerror(errno));
 	RETVAL = CtoPerl("Unicode::GCString", ret);
@@ -1243,7 +1249,7 @@ copy(self)
 	RETVAL
 
 int
-eot(self)
+eos(self)
 	SV *self;
     INIT:
 	gcstring_t *gcstr;
@@ -1254,7 +1260,7 @@ eot(self)
 	if (gcstr == NULL)
 	    RETVAL = 0;
 	else
-	    RETVAL = gcstring_eot(gcstr);
+	    RETVAL = gcstring_eos(gcstr);
     OUTPUT:
 	RETVAL
 
@@ -1359,7 +1365,7 @@ next(self, ...)
 	if (!sv_isobject(self))
 	    XSRETURN_UNDEF;
 	gcstr = PerltoC(gcstring_t *, self);    
-	if (gcstring_eot(gcstr))
+	if (gcstring_eos(gcstr))
 	    XSRETURN_UNDEF;
 	gc = gcstring_next(gcstr);
 	RETVAL = CtoPerl("Unicode::GCString", gctogcstring(gcstr, gc));

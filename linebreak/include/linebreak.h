@@ -40,6 +40,10 @@ typedef enum {
     LINEBREAK_STATE_EOL, LINEBREAK_STATE_EOP, LINEBREAK_STATE_EOT,
     LINEBREAK_STATE_MAX
 } linebreak_state_t;
+#define LINEBREAK_STATE_SOT_FORMAT (-LINEBREAK_STATE_SOT)
+#define LINEBREAK_STATE_SOP_FORMAT (-LINEBREAK_STATE_SOP)
+#define LINEBREAK_STATE_SOL_FORMAT (-LINEBREAK_STATE_SOL)
+
 
 /* Unicode string */
 typedef struct {
@@ -159,7 +163,7 @@ extern gcchar_t *gcstring_next(gcstring_t *);
 extern void gcstring_setpos(gcstring_t *, int);
 extern gcstring_t *gcstring_substr(gcstring_t *, int, int, gcstring_t *);
 
-#define gcstring_eot(gcstr) \
+#define gcstring_eos(gcstr) \
   ((gcstr)->gclen <= (gcstr)->pos)
 #define gcstring_getpos(gcstr) \
   ((gcstr)->pos)

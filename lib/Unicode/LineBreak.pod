@@ -73,6 +73,11 @@ Give C<undef> as STRING argument to specify that input was completed.
 I<Instance method>.
 Get or update configuration.  About KEY => VALUE pairs see L</Options>.
 
+=item $self->copy
+
+I<Copy constructor>.
+Create a copy of object instance.
+
 =back
 
 =head2 Getting Informations

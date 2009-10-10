@@ -20392,8 +20392,8 @@ fi
 echo "$as_me:$LINENO: result: `eval echo '${'$as_ac_File'}'`" >&5
 echo "${ECHO_T}`eval echo '${'$as_ac_File'}'`" >&6
 if test `eval echo '${'$as_ac_File'}'` = yes; then
-  echo "$as_me:$LINENO: result: \"$UNICODE_VERSION\"" >&5
-echo "${ECHO_T}\"$UNICODE_VERSION\"" >&6
+  echo "$as_me:$LINENO: result: Use Unicode version $UNICODE_VERSION" >&5
+echo "${ECHO_T}Use Unicode version $UNICODE_VERSION" >&6
 else
   { { echo "$as_me:$LINENO: error: unknown Unicode version $UNICODE_VERSION" >&5
 echo "$as_me: error: unknown Unicode version $UNICODE_VERSION" >&2;}

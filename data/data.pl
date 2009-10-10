@@ -270,18 +270,42 @@ for (my $c = 0; $c <= $#PROPS; $c++) {
     # Check exceptions
     if ($PROPS[$c]->{'gb'} =~ /Extend|SpacingMark/ and
 	$PROPS[$c]->{'lb'} !~ /CM|SA/ or
-	#XXX$PROPS[$c]->{'gb'} !~ /Extend|SpacingMark/ and
-	#XXX$PROPS[$c]->{'lb'} eq 'CM' or
 	$PROPS[$c]->{'gb'} eq 'Prepend' and
 	$PROPS[$c]->{'lb'} !~ /AL|SA/
 	) {
-	warn sprintf 'U+%04X: lb => %s, ea => %s, gb => %s, sc => %s'."\n",
+	warn sprintf '!CM:U+%04X: lb => %s, ea => %s, gb => %s, sc => %s'."\n",
 	$c,
 	$PROPS[$c]->{'lb'} || '-',
 	$PROPS[$c]->{'ea'} || '-',
 	$PROPS[$c]->{'gb'} || '-',
 	$PROPS[$c]->{'sc'} || '-';
     }
+
+    # Check exceptions
+    if ($PROPS[$c]->{'gb'} ne 'Control' and
+	$PROPS[$c]->{'lb'} =~ /ZW|WJ|BK|NL/) {
+	warn sprintf '!Control:U+%04X: lb => %s, ea => %s, gb => %s, sc => %s'."\n",
+	$c,
+	$PROPS[$c]->{'lb'} || '-',
+	$PROPS[$c]->{'ea'} || '-',
+	$PROPS[$c]->{'gb'} || '-',
+	$PROPS[$c]->{'sc'} || '-';
+    }
+
+=begin comment
+
+    if ($PROPS[$c]->{'gb'} !~ /Extend|SpacingMark/ and
+	$PROPS[$c]->{'lb'} eq 'CM') {
+	warn sprintf 'CM: U+%04X: lb => %s, ea => %s, gb => %s, sc => %s'."\n",
+	$c,
+	$PROPS[$c]->{'lb'} || '-',
+	$PROPS[$c]->{'ea'} || '-',
+	$PROPS[$c]->{'gb'} || '-',
+	$PROPS[$c]->{'sc'} || '-';
+    }
+
+=cut
+
 }
 
 
