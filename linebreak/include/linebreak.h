@@ -142,7 +142,6 @@ typedef struct {
 #define DIRECT (D)
 #define INDIRECT (I)
 #define PROHIBITED (P)
-#define URGENT (200)
 
 #include "linebreak_constants.h"
 
@@ -161,6 +160,7 @@ extern int gcstring_cmp(gcstring_t *, gcstring_t *);
 extern gcstring_t *gcstring_concat(gcstring_t *, gcstring_t *);
 extern gcchar_t *gcstring_next(gcstring_t *);
 extern void gcstring_setpos(gcstring_t *, int);
+extern void gcstring_shrink(gcstring_t *, int);
 extern gcstring_t *gcstring_substr(gcstring_t *, int, int, gcstring_t *);
 
 #define gcstring_eos(gcstr) \

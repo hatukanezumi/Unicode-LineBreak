@@ -221,7 +221,9 @@ double linebreak_strsize(linebreak_t *obj, double len, gcstring_t *pre,
     if ((!spc || !spc->str || !spc->len) && (!str || !str->str || !str->len))
 	return max? 0: len;
 
-    if ((spcstr = gcstring_concat(spc, str)) == NULL)
+    if (!spc || !spc->str)
+	spcstr = gcstring_copy(str);
+    else if ((spcstr = gcstring_concat(spc, str)) == NULL)
 	return -1;
     if (!max) {
 	len += gcstring_columns(spcstr);
@@ -237,7 +239,9 @@ double linebreak_strsize(linebreak_t *obj, double len, gcstring_t *pre,
 	gcol = gc->col;
 
 	if (max < len + gcol) {
-	    if (idx < spc->len)
+	    if (!spc || !spc->str)
+		;
+	    else if (idx < spc->len)
 		idx = 0;
 	    else
 		idx -= spc->len;

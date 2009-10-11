@@ -16,6 +16,10 @@
 #include "ppport.h"
 #include "linebreak.h"
 
+/***
+ *** Utilities.
+ ***/
+
 /*
  * Create C property map from Perl arrayref.
  */
@@ -58,6 +62,10 @@ mapent_t *_loadmap(mapent_t *propmap, SV *mapref, size_t *mapsiz)
     }
     return propmap;
 }
+
+/***
+ *** Data conversion.
+ ***/
 
 /*
  * Create Unicode string from Perl utf8-flagged string.
@@ -211,7 +219,7 @@ gcstring_t *gctogcstring(gcstring_t *gcstr, gcchar_t *gc)
 }
 
 /***
- *** Following functions are C interfaces for Perl object.
+ *** Callbacs for linebreak library.
  ***/
 
 /*
@@ -244,12 +252,14 @@ gcstring_t *user_func(linebreak_t *lbobj, gcstring_t *str)
     XPUSHs((SV *)lbobj->user_data); /* shouldn't be mortal. */
     XPUSHs(sv_2mortal(CtoPerl("Unicode::GCString", gcstring_copy(str))));
     PUTBACK;
-    count = call_pv("preprocess", G_SCALAR | G_EVAL);
+    count = call_pv("Unicode::LineBreak::preprocess", G_SCALAR | G_EVAL);
 
     SPAGAIN;
-    if (SvTRUE(ERRSV))
+    if (SvTRUE(ERRSV)) {
+	warn("%s", SvPV_nolen(ERRSV));
+	POPs;
 	return NULL;
-    else if (count != 1)
+    } else if (count != 1)
 	croak("user_func: internal error");
     else
 	sv = POPs; /* note that return value is mortal. */
@@ -294,9 +304,11 @@ gcstring_t *format_func(linebreak_t *lbobj, linebreak_state_t action,
     count = call_sv(lbobj->format_data, G_SCALAR | G_EVAL);
 
     SPAGAIN;
-    if (SvTRUE(ERRSV))
+    if (SvTRUE(ERRSV)) {
+	warn("%s", SvPV_nolen(ERRSV));
+	POPs;
 	return NULL;
-    else if (count != 1)
+    } else if (count != 1)
 	croak("format_func: internal error");
     else
 	sv = POPs;
@@ -339,9 +351,11 @@ double sizing_func(linebreak_t *lbobj, double len,
     count = call_sv(lbobj->sizing_data, G_SCALAR | G_EVAL);
 
     SPAGAIN;
-    if (SvTRUE(ERRSV))
+    if (SvTRUE(ERRSV)) {
+	warn("%s", SvPV_nolen(ERRSV));
+	POPs;
 	return -1;
-    else if (count != 1)
+    } else if (count != 1)
 	croak("sizing_func: internal error");
     else
 	ret = POPn;
@@ -378,9 +392,10 @@ gcstring_t *urgent_func(linebreak_t *lbobj, double cols,
     count = call_sv(lbobj->urgent_data, G_ARRAY | G_EVAL);
 
     SPAGAIN;
-    if (SvTRUE(ERRSV))
+    if (SvTRUE(ERRSV)) {
+	warn("%s", SvPV_nolen(ERRSV));
 	return NULL;
-    if (count == 0)
+    } if (count == 0)
 	return NULL;
 
     ret = gcstring_new(NULL, lbobj);
@@ -403,14 +418,6 @@ gcstring_t *urgent_func(linebreak_t *lbobj, double cols,
     return ret;
 }
 
-/*
- * TEMP. DEFS.
- */
-extern gcstring_t *_format(linebreak_t *, linebreak_state_t, gcstring_t *);
-extern double _sizing(linebreak_t *, double,
-		      gcstring_t *, gcstring_t *, gcstring_t *, size_t);
-extern gcstring_t *_urgent_break(linebreak_t *, double,
-				 gcstring_t *, gcstring_t *, gcstring_t *);
 
 MODULE = Unicode::LineBreak	PACKAGE = Unicode::LineBreak	
 
@@ -609,125 +616,6 @@ _config(self, ...)
     OUTPUT:
 	RETVAL
 
-# TEMP.
-SV*
-attr(self, key, ...)
-	SV *self;
-	char *key;
-    PROTOTYPE: $$;$
-    INIT:
-	linebreak_t *obj;
-	unistr_t unistr = {0, 0};
-	SV *val;
-    CODE:
-	obj = PerltoC(linebreak_t *, self);
-	RETVAL = NULL;
-	if (items < 2)
-	    croak("attr: Too few arguments");
-	else if (items < 3) {
-	    if (strcmp(key, "unread") == 0) {
-		if (obj->unread == NULL)
-		    RETVAL = unistrtoSV(&unistr, 0, 0);
-		else {
-		    unistr.str = obj->unread;
-		    unistr.len = obj->unreadsiz;
-		    RETVAL = unistrtoSV(&unistr, 0, obj->unreadsiz);
-		}
-	    } else if (strcmp(key, "bufstr") == 0) {
-		if (obj->bufstr == NULL)
-		    RETVAL = unistrtoSV(&unistr, 0, 0);
-		else {
-		    unistr.str = obj->bufstr;
-		    unistr.len = obj->bufstrsiz;
-		    RETVAL = unistrtoSV(&unistr, 0, obj->bufstrsiz);
-		}
-	    } else if (strcmp(key, "bufspc") == 0) {
-		if (obj->bufspc == NULL)
-		    RETVAL = unistrtoSV(&unistr, 0, 0);
-		else {
-		    unistr.str = obj->bufspc;
-		    unistr.len = obj->bufspcsiz;
-		    RETVAL = unistrtoSV(&unistr, 0, obj->bufspcsiz);
-		}
-	    } else if (strcmp(key, "bufcols") == 0)
-		RETVAL = newSVnv((NV)obj->bufcols);
-	    else if (strcmp(key, "state") == 0)
-		RETVAL = newSViv(obj->state);
-	    else
-		warn("attr: Getting unknown attribute %s", key);
-	} else {
-	    val = ST(2);
-	    if (strcmp(key, "unread") == 0) {
-		if (obj->unread) free(obj->unread);
-		if (!sv_isobject(val)) {
-		    SVtounistr(&unistr, val);
-		    obj->unread = unistr.str;
-		    obj->unreadsiz = unistr.len;
-		} else if (sv_derived_from(val, "Unicode::GCString")) {
-	            gcstring_t *gcstr = PerltoC(gcstring_t *, val);
-		    if ((obj->unread =
-			malloc(sizeof(unichar_t) * gcstr->len)) == NULL)
-			croak("_config: Can't allocate memory");
-		    else {
-			memcpy(obj->unread, gcstr->str,
-			       sizeof(unichar_t) * gcstr->len);
-			obj->unreadsiz = gcstr->len;
-		    }
-		} else
-		    croak("Unknown object %s", HvNAME(SvSTASH(SvRV(val))));
-	    } else if (strcmp(key, "bufstr") == 0) {
-		if (obj->bufstr) free(obj->bufstr);
-		if (!sv_isobject(val)) {
-		    SVtounistr(&unistr, val);
-		    obj->bufstr = unistr.str;
-		    obj->bufstrsiz = unistr.len;
-		} else if (sv_derived_from(val, "Unicode::GCString")) {
-	            gcstring_t *gcstr = PerltoC(gcstring_t *, val);
-		    if ((obj->bufstr =
-			malloc(sizeof(unichar_t) * gcstr->len)) == NULL)
-			croak("_config: Can't allocate memory");
-		    else {
-			memcpy(obj->bufstr, gcstr->str,
-			       sizeof(unichar_t) * gcstr->len);
-			obj->bufstrsiz = gcstr->len;
-		    }
-		} else
-		    croak("Unknown object %s", HvNAME(SvSTASH(SvRV(val))));
-	    } else if (strcmp(key, "bufspc") == 0) {
-		if (obj->bufspc) free(obj->bufspc);
-		if (!sv_isobject(val)) {
-		    SVtounistr(&unistr, val);
-		    obj->bufspc = unistr.str;
-		    obj->bufspcsiz = unistr.len;
-		} else if (sv_derived_from(val, "Unicode::GCString")) {
-	            gcstring_t *gcstr = PerltoC(gcstring_t *, val);
-		    if ((obj->bufspc =
-			malloc(sizeof(unichar_t) * gcstr->len)) == NULL)
-			croak("_config: Can't allocate memory");
-		    else {
-			memcpy(obj->bufspc, gcstr->str,
-			       sizeof(unichar_t) * gcstr->len);
-			obj->bufspcsiz = gcstr->len;
-		    }
-		} else
-		    croak("Unknown object %s", HvNAME(SvSTASH(SvRV(val))));
-	    } else if (strcmp(key, "bufcols") == 0)
-		obj->bufcols = (double)SvNV(val);		
-	    else if (strcmp(key, "state") == 0)
-		obj->state = (int)SvIV(val);
-	    else
-		warn("attr: Setting unknown attribute %s", key);
-	}
-    OUTPUT:
-	RETVAL
-
-void
-_reset(self)
-	SV *self;
-    PROTOTYPE: $
-    CODE:
-	linebreak_reset(PerltoC(linebreak_t *, self));
-
 SV*
 as_hashref(self, ...)
 	SV *self;
@@ -862,6 +750,13 @@ lbrule(self, b_idx, a_idx)
     OUTPUT:
 	RETVAL
 
+void
+reset(self)
+	SV *self;
+    PROTOTYPE: $
+    CODE:
+	linebreak_reset(PerltoC(linebreak_t *, self));
+
 double
 strsize(self, len, pre, spc, str, ...)
 	SV *self;
@@ -900,13 +795,14 @@ strsize(self, len, pre, spc, str, ...)
 	RETVAL
 
 SV *
-_break_partial(self, input)
+break_partial(self, input)
 	SV *self;
 	SV *input;
     PROTOTYPE: $$
     INIT:
 	linebreak_t *lbobj;
 	gcstring_t *gcstr, *ret;
+	unistr_t unistr;
     CODE:
 	lbobj = PerltoC(linebreak_t *, self);
 	if (!SvOK(input))
@@ -930,7 +826,10 @@ _break_partial(self, input)
 	if (ret == NULL)
 	    croak("%s", strerror(errno));
 
-	RETVAL = CtoPerl("Unicode::GCString", ret);
+	unistr.str = ret->str;
+	unistr.len = ret->len;
+	RETVAL = unistrtoSV(&unistr, 0, ret->len);
+	gcstring_destroy(ret);
     OUTPUT:
 	RETVAL
 
@@ -941,131 +840,8 @@ UNICODE_VERSION()
     OUTPUT:
 	RETVAL
 
-# TEMP.
-SV *
-_format(self, actionstr, str)
-	SV *self;
-	char *actionstr;
-	SV *str;
-    PROTOTYPE: $$$
-    INIT:
-	linebreak_t *lbobj;
-	gcstring_t *gcstr, *ret;
-	int action;
-    CODE:
-	lbobj = PerltoC(linebreak_t *, self);
-	if (!SvOK(str))
-	    gcstr = NULL;
-	else
-	    gcstr = SVtogcstring(str, lbobj);
-
-	if (actionstr == NULL || *actionstr == '\0')
-	    action = LINEBREAK_STATE_LINE;
-	else if (strcasecmp(actionstr, "sot") == 0)
-	    action = LINEBREAK_STATE_SOT;
-	else if (strcasecmp(actionstr, "sop") == 0)
-	    action = LINEBREAK_STATE_SOP;
-	else if (strcasecmp(actionstr, "sol") == 0)
-	    action = LINEBREAK_STATE_SOL;
-	else if (strcasecmp(actionstr, "eol") == 0)
-	    action = LINEBREAK_STATE_EOL;
-	else if (strcasecmp(actionstr, "eop") == 0)
-	    action = LINEBREAK_STATE_EOP;
-	else if (strcasecmp(actionstr, "eot") == 0)
-	    action = LINEBREAK_STATE_EOT;
-	else
-	    croak("_format: Unknown action \"%s\"", actionstr);
-
-	ret = _format(lbobj, action, gcstr);
-	if (!sv_isobject(str) && gcstr)
-	    gcstring_destroy(gcstr);
-	if (ret == NULL)
-	    croak("%s", strerror(errno));
-	RETVAL = CtoPerl("Unicode::GCString", ret);
-    OUTPUT:
-	RETVAL
-
-# TEMP.
-double
-_sizing(self, len, pre, spc, str, ...)
-	SV *self;
-	double len;
-	SV *pre;
-	SV *spc;
-	SV *str;
-    PROTOTYPE: $$$$$;$
-    INIT:
-	linebreak_t *lbobj;
-	gcstring_t *gcpre, *gcspc, *gcstr;
-	size_t max;
-    CODE:
-	lbobj = PerltoC(linebreak_t *, self);
-	gcpre = SVtogcstring(pre, lbobj);
-	gcspc = SVtogcstring(spc, lbobj);
-	gcstr = SVtogcstring(str, lbobj);
-	if (5 < items)
-	    max = SvUV(ST(5));
-	else
-	    max = 0;
-
-	RETVAL = _sizing(lbobj, len, gcpre, gcspc, gcstr, max);
-	if (!sv_isobject(pre))
-	    gcstring_destroy(gcpre);
-	if (!sv_isobject(spc))
-	    gcstring_destroy(gcspc);
-	if (!sv_isobject(str))
-	    gcstring_destroy(gcstr);
-    OUTPUT:
-	RETVAL
-
-# TEMP.
-SV *
-_urgent_break(self, cols, pre, spc, str)
-	SV *self;
-	double cols;
-	SV *pre;
-	SV *spc;
-	SV *str;
-    PROTOTYPE: $$$$$
-    INIT:
-	linebreak_t *lbobj;
-	gcstring_t *gcpre, *gcspc, *gcstr, *ret;
-    CODE:
-	lbobj = PerltoC(linebreak_t *, self);
-	gcpre = SVtogcstring(pre, lbobj);
-	gcspc = SVtogcstring(spc, lbobj);
-	gcstr = SVtogcstring(str, lbobj);
-
-	ret = _urgent_break(lbobj, cols, gcpre, gcspc, gcstr);
-	if (!sv_isobject(pre) && gcpre)
-	    gcstring_destroy(gcpre);
-	if (!sv_isobject(spc) && gcspc)
-	    gcstring_destroy(gcspc);
-	if (!sv_isobject(str) && gcstr)
-	    gcstring_destroy(gcstr);
-	if (ret == NULL)
-	    croak("%s", strerror(errno));
-	RETVAL = CtoPerl("Unicode::GCString", ret);
-    OUTPUT:
-	RETVAL
-
 
 MODULE = Unicode::LineBreak	PACKAGE = Unicode::LineBreak::SouthEastAsian
-
-SV *
-flagbreak(str)
-	SV *str;
-    PROTOTYPE: $
-    INIT:
-	gcstring_t *gcstr;
-    CODE:
-	gcstr = SVtogcstring(str, NULL);
-        if (sv_isobject(str))
-            gcstr = gcstring_copy(gcstr);
-	linebreak_southeastasian_flagbreak(gcstr);
-	RETVAL = CtoPerl("Unicode::GCString", gcstr);
-    OUTPUT:
-	RETVAL
 
 const char *
 supported()
@@ -1147,11 +923,15 @@ as_string(self, ...)
     PROTOTYPE: $;$;$
     INIT:
 	gcstring_t *gcstr;
+	unistr_t unistr = {0, 0};
     CODE:
 	if (!sv_isobject(self))
 	    XSRETURN_UNDEF;
 	gcstr = PerltoC(gcstring_t *, self);    
-	RETVAL = unistrtoSV((unistr_t *)gcstr, 0, gcstr->len);
+	if (gcstr == NULL)
+	    RETVAL = unistrtoSV(&unistr, 0, 0);
+	else
+	    RETVAL = unistrtoSV((unistr_t *)gcstr, 0, gcstr->len);
     OUTPUT:
 	RETVAL
 

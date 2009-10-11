@@ -1,8 +1,9 @@
-1.003_09  Xxx Oct XX 2009
+1.003_11  Sun Oct 11 2009
 
+	* Imp: Almost full XS version.  Isolated pure-C codes to linebreak library.
 	* Chg: Update Unicode data to version 5.2.0.
 
-1.003_08  Sun Oct 04 2009
+1.003_09  Sun Oct 04 2009
 
 	* Transitional release - NOTE that this release is VERY slow.
 	* Imp/Chg: Custom functions (for sizing, user breaking, urgent breaking

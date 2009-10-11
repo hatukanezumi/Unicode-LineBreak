@@ -78,6 +78,14 @@ Get or update configuration.  About KEY => VALUE pairs see L</Options>.
 I<Copy constructor>.
 Create a copy of object instance.
 
+=begin comment
+
+=item $self->reset
+
+I<Undocumented>.
+
+=end comment
+
 =back
 
 =head2 Getting Informations
