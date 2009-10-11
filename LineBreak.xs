@@ -16,6 +16,11 @@
 #include "ppport.h"
 #include "linebreak.h"
 
+/* by CPAN test #5515619 */
+#ifndef UTF8_MAXBYTES
+#define UTF8_MAXBYTES (13)
+#endif
+
 /***
  *** Utilities.
  ***/
