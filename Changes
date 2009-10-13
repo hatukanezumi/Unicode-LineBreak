@@ -1,8 +1,20 @@
+1.003_12  Mon Oct 12 2009
+
+	* NOTE: For changes on linebreak library see linebreak/ChangeLog.
+	* Fix: Makefile.PL: for dmake+MSWin32 (hopefully).
+	* Imp: LineBreak.xs: Check data type of self argument.
+	* Imp: preprocess() get Perl (utf8) string then returns array.  Faster.
+	* Imp: XS'ized break().
+	* New: Unicode::GCString::join().
+	* Added test for Format feature.
+	* Doc: Small fixes.
+	
 1.003_11  Sun Oct 11 2009
 
 	* Imp: Almost full XS version.  Isolated pure-C codes to linebreak library.
 	* Chg: Update Unicode data to version 5.2.0.
-
+	* Doc: Small fix.
+	
 1.003_09  Sun Oct 04 2009
 
 	* Transitional release - NOTE that this release is VERY slow.

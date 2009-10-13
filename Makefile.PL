@@ -24,8 +24,7 @@ sub postamble {
 \tcd $csubdir && \$(MAKE)
 $csubdir/Makefile: $csubdir/configure
 \tcd $csubdir && \\
-\t\$(PERL) -i -pe '/\\bVERSION\\b/ and \$\$_="/* \$\$_ */" unless m(/\\*)' \\
-\tconfig.h.in && \\
+\t\$(PERL) -i -ne "print unless /\\bVERSION\\b/" config.h.in && \\
 \t./configure --disable-shared --enable-static \\
 \t--enable-libthai=$enable_libthai \\
 \tCFLAGS='\$(CCFLAGS) \$(OPTIMIZE) \$(CCCDLFLAGS)'

@@ -470,7 +470,10 @@ sub unfold {
 
 =head1 BUGS
 
-Please report bugs or buggy behaviors to developer.  See L</AUTHOR>.
+Please report bugs or buggy behaviors to developer.
+
+CPAN Request Tracker:
+L<http://rt.cpan.org/Public/Dist/Display.html?Name=Unicode-LineBreak>.
 
 =head1 VERSION
 

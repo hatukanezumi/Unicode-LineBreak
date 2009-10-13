@@ -11,8 +11,6 @@ Unicode::GCString::JA_JP - UAX #29 書記素クラスタの列としての文字
     
 =head1 DESCRIPTION
 
-B<注意: このモジュールはアルファバージョンなので、バグや不確定な仕様をいくつも含んでいる。>
-
 Unicode::GCString はUnicode文字列を、Unicode標準附属書29 [UAX #29] で定義される「拡張書記素クラスタ」〔extended grapheme cluster〕の列として扱う。
 
 B<書記素クラスタ>〔grapheme cluster〕は、Unicode文字の列で、ひとつのB<書記素基底>〔grapheme base〕と、付加的なB<書記素エキステンダ>〔grapheme extender〕および/またはB<前置文字>〔prepend character〕から成る。これは人が「文字」とみなすものに近い。
@@ -89,6 +87,12 @@ STRING のどちらかがUnicode文字列でもよい。
 結果の文字列の桁数 (columns() を参照) や書記素クラスタの数 (length() を参照) は、ふたつの文字列のそれの和になるとはかぎらないことに注意。
 新たな文字列では、次の位置は左辺の文字列にセットされていた位置になる。
 
+=item join ([STRING, ...])
+
+I<インスタンスメソッド>。
+STRING を、書記素クラスタ文字列をはさんでつなげる。
+STRING のうちに Unicode文字列があってもよい。
+
 =item substr (OFFSET, [LENGTH, [REPLACEMENT]])
 
 I<インスタンスメソッド>。
@@ -120,7 +124,10 @@ I<インスタンスメソッド>。
 
 =item flag ([OFFSET, [VALUE]])
 
-I<Undocumented>.
+I<インスタンスメソッド>。
+OFFSET番めの書記素クラスタのフラグ値を取得、設定する。
+OFFSET を指定しないと、次の位置の書記素クラスタのフラグ値を返す。
+フラグ値は 255 を超えない非負整数で、はじめは 0。
 
 =end comment
 

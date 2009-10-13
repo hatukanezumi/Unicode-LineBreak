@@ -70,8 +70,7 @@
 #undef USE_LIBTHAI
 
 /* Version number of package */
-/* #undef VERSION
- */
+
 /* Define to empty if `const' does not conform to ANSI C. */
 #undef const
 

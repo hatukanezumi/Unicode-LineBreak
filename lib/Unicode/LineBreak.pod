@@ -155,6 +155,7 @@ Possible maximum number of characters in one line,
 not counting trailing SPACEs and newline sequence.
 Note that number of characters generally doesn't represent length of line.
 Default is C<998>.
+Should not be C<0>.
 
 =item ColumnsMin => NUMBER
 
@@ -300,7 +301,6 @@ Following methods are available.
 =item C<"NONBREAKURI">
 
 Won't break URIs.
-Currently HTTP(S) and (S)FTP(S) URIs are supported.
 
 =item C<"BREAKURI">
 

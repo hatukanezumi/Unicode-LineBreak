@@ -178,6 +178,8 @@ extern propval_t linebreak_lbclass(linebreak_t *, unichar_t);
 extern propval_t linebreak_lbrule(propval_t, propval_t);
 extern double linebreak_strsize(linebreak_t *, double, gcstring_t *,
                                 gcstring_t *, gcstring_t *, size_t);
+extern unistr_t *linebreak_break(linebreak_t *, unistr_t *);
+extern gcstring_t *linebreak_break_fast(linebreak_t *, gcstring_t *);
 extern gcstring_t *linebreak_break_partial(linebreak_t *, gcstring_t *);
 extern const char *linebreak_unicode_version;
 extern const char *linebreak_southeastasian_supported;

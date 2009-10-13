@@ -177,7 +177,7 @@ SV *CtoPerl(char *klass, void *obj)
 }
 
 /*
- * Convert Perl utf8-flagged string to grapheme cluster string.
+ * Convert Perl utf8-flagged string (GCString) to grapheme cluster string.
  */
 static
 gcstring_t *SVtogcstring(SV *sv, linebreak_t *lbobj)
@@ -189,6 +189,20 @@ gcstring_t *SVtogcstring(SV *sv, linebreak_t *lbobj)
 	return gcstring_new(&unistr, lbobj);
     } else if (sv_derived_from(sv, "Unicode::GCString"))
 	return PerltoC(gcstring_t *, sv);
+    else
+	croak("Unknown object %s", HvNAME(SvSTASH(SvRV(sv))));
+}
+
+/*
+ * Convert Perl LineBreak object to C linebreak object.
+ */
+static
+linebreak_t *SVtolinebreak(SV *sv)
+{
+    if (!sv_isobject(sv))
+	croak("Not object");
+    else if (sv_derived_from(sv, "Unicode::LineBreak"))
+	return PerltoC(linebreak_t *, sv);
     else
 	croak("Unknown object %s", HvNAME(SvSTASH(SvRV(sv))));
 }
@@ -245,8 +259,8 @@ static
 gcstring_t *user_func(linebreak_t *lbobj, gcstring_t *str)
 {
     SV *sv;
-    int count;
-    gcstring_t *ret;
+    int count, i;
+    gcstring_t *gcstr, *ret;
 
     dSP;
     ENTER;
@@ -255,22 +269,27 @@ gcstring_t *user_func(linebreak_t *lbobj, gcstring_t *str)
     /* FIXME:sync refcount between C & Perl */
     XPUSHs(sv_2mortal(CtoPerl("Unicode::LineBreak", linebreak_copy(lbobj))));
     XPUSHs((SV *)lbobj->user_data); /* shouldn't be mortal. */
-    XPUSHs(sv_2mortal(CtoPerl("Unicode::GCString", gcstring_copy(str))));
+    gcstr = gcstring_copy(str);
+    XPUSHs(sv_2mortal(unistrtoSV((unistr_t *)gcstr, 0, gcstr->len)));
+    gcstring_destroy(gcstr);
     PUTBACK;
-    count = call_pv("Unicode::LineBreak::preprocess", G_SCALAR | G_EVAL);
+    count = call_pv("Unicode::LineBreak::preprocess", G_ARRAY | G_EVAL);
 
     SPAGAIN;
     if (SvTRUE(ERRSV)) {
 	warn("%s", SvPV_nolen(ERRSV));
-	POPs;
 	return NULL;
-    } else if (count != 1)
-	croak("user_func: internal error");
-    else
-	sv = POPs; /* note that return value is mortal. */
-    ret = SVtogcstring(sv, lbobj);
-    if (sv_isobject(sv))
-	ret = gcstring_copy(ret);
+    }
+    ret = gcstring_new(NULL, lbobj);
+    for (i = 0; i < count; i++) {
+	sv = POPs;
+	if (!SvOK(sv))
+	    continue;
+	gcstr = SVtogcstring(sv, lbobj);
+	gcstring_substr(ret, 0, 0, gcstr);
+	if (!sv_isobject(sv))
+	    gcstring_destroy(gcstr);
+    }
 
     PUTBACK;
     FREETMPS;
@@ -446,9 +465,7 @@ copy(self)
     INIT:
 	linebreak_t *lbobj, *ret;
     CODE:
-	if (!sv_isobject(self))
-	    XSRETURN_UNDEF;
-	lbobj = PerltoC(linebreak_t *, self);    
+	lbobj = SVtolinebreak(self);    
 	ret = linebreak_copy(lbobj);
 	RETVAL = CtoPerl("Unicode::LineBreak", ret);
     OUTPUT:
@@ -459,23 +476,22 @@ DESTROY(self)
 	SV *self;
     PROTOTYPE: $
     CODE:
-	linebreak_destroy(PerltoC(linebreak_t *, self));
+	linebreak_destroy(SVtolinebreak(self));
 
 SV *
 _config(self, ...)
 	SV *self;
     INIT:
-	linebreak_t *obj;
+	linebreak_t *lbobj;
 	size_t i;
 	char *key;
 	SV *val;
 	size_t mapsiz;
 	char *opt;
     CODE:
-	if ((obj = PerltoC(linebreak_t *, self)) == NULL) {
-	    if ((obj = linebreak_new()) == NULL)
+	if ((lbobj = SVtolinebreak(self)) == NULL)
+	    if ((lbobj = linebreak_new()) == NULL)
 		croak("_config: Can't allocate memory");
-	}
 
 	RETVAL = NULL;
 	if (items < 2)
@@ -484,26 +500,26 @@ _config(self, ...)
 	    key = (char *)SvPV_nolen(ST(1));
 
 	    if (strcasecmp(key, "CharactersMax") == 0)
-		RETVAL = newSVuv(obj->charmax);
+		RETVAL = newSVuv(lbobj->charmax);
 	    else if (strcasecmp(key, "ColumnsMax") == 0)
-		RETVAL = newSVnv((NV)obj->colmax);
+		RETVAL = newSVnv((NV)lbobj->colmax);
 	    else if (strcasecmp(key, "ColumnsMin") == 0)
-		RETVAL = newSVnv((NV)obj->colmin);
+		RETVAL = newSVnv((NV)lbobj->colmin);
 	    else if (strcasecmp(key, "Context") == 0) {
-		if (obj->options & LINEBREAK_OPTION_EASTASIAN_CONTEXT)
+		if (lbobj->options & LINEBREAK_OPTION_EASTASIAN_CONTEXT)
 		    RETVAL = newSVpvn("EASTASIAN", 9);
 		else
 		    RETVAL = newSVpvn("NONEASTASIAN", 12);
 	    } else if (strcasecmp(key, "HangulAsAL") == 0)
-		RETVAL = newSVuv(obj->options & LINEBREAK_OPTION_HANGUL_AS_AL);
+		RETVAL = newSVuv(lbobj->options & LINEBREAK_OPTION_HANGUL_AS_AL);
 	    else if (strcasecmp(key, "LegacyCM") == 0)
-		RETVAL = newSVuv(obj->options & LINEBREAK_OPTION_LEGACY_CM);
+		RETVAL = newSVuv(lbobj->options & LINEBREAK_OPTION_LEGACY_CM);
 	    else if (strcasecmp(key, "Newline") == 0) {
-		unistr_t unistr = {obj->newline, obj->newlinesiz};
-		if (obj->newline == NULL || obj->newlinesiz == 0)
+		unistr_t unistr = {lbobj->newline, lbobj->newlinesiz};
+		if (lbobj->newline == NULL || lbobj->newlinesiz == 0)
 		    RETVAL = unistrtoSV(&unistr, 0, 0);
 		else
-		    RETVAL = unistrtoSV(&unistr, 0, obj->newlinesiz);
+		    RETVAL = unistrtoSV(&unistr, 0, lbobj->newlinesiz);
 	    } else {
 		warn("_config: Getting unknown option %s", key);
 		XSRETURN_UNDEF;
@@ -517,100 +533,100 @@ _config(self, ...)
 	    val = ST(i + 1);
 
 	    if (strcmp(key, "UserBreaking") == 0) {
-		if (obj->user_data)
-		    refcount(obj->user_data, LINEBREAK_REF_USER, -1);
+		if (lbobj->user_data)
+		    refcount(lbobj->user_data, LINEBREAK_REF_USER, -1);
 		if (SvOK(val)) {
-		    obj->user_data = (void *)val;
-		    obj->user_func = user_func;
+		    lbobj->user_data = (void *)val;
+		    lbobj->user_func = user_func;
 		    refcount(val, LINEBREAK_REF_USER, +1);
 		} else {
-		    obj->user_data = NULL;
-		    obj->user_func = NULL;
+		    lbobj->user_data = NULL;
+		    lbobj->user_func = NULL;
 		}
 	    } else if (strcmp(key, "Format") == 0) {
-		if (obj->format_data)
-		    refcount(obj->format_data, LINEBREAK_REF_FORMAT, -1);
+		if (lbobj->format_data)
+		    refcount(lbobj->format_data, LINEBREAK_REF_FORMAT, -1);
 		if (SvOK(val)) {
-		    obj->format_data = (void *)val;
-		    obj->format_func = format_func;
+		    lbobj->format_data = (void *)val;
+		    lbobj->format_func = format_func;
 		    refcount(val, LINEBREAK_REF_FORMAT, +1);
 		} else {
-		    obj->format_data = NULL;
-		    obj->format_func = NULL;
+		    lbobj->format_data = NULL;
+		    lbobj->format_func = NULL;
 		}
 	    } else if (strcmp(key, "SizingMethod") == 0) {
-		if (obj->sizing_data)
-		    refcount((SV *)obj->sizing_data, LINEBREAK_REF_SIZING, -1);
+		if (lbobj->sizing_data)
+		    refcount((SV *)lbobj->sizing_data, LINEBREAK_REF_SIZING, -1);
 		if (SvOK(val)) {
-		    obj->sizing_data = (void *)val;
-		    obj->sizing_func = sizing_func;
+		    lbobj->sizing_data = (void *)val;
+		    lbobj->sizing_func = sizing_func;
 		    refcount(val, LINEBREAK_REF_SIZING, +1);
 		} else {
-		    obj->sizing_data = NULL;
-		    obj->sizing_func = NULL;
+		    lbobj->sizing_data = NULL;
+		    lbobj->sizing_func = NULL;
 		}
 	    } else if (strcmp(key, "UrgentBreaking") == 0) {
-		if (obj->urgent_data)
-		    refcount(obj->urgent_data, LINEBREAK_REF_URGENT, -1);
+		if (lbobj->urgent_data)
+		    refcount(lbobj->urgent_data, LINEBREAK_REF_URGENT, -1);
 		if (SvOK(val)) {
-		    obj->urgent_data = (void *)val;
-		    obj->urgent_func = urgent_func;
+		    lbobj->urgent_data = (void *)val;
+		    lbobj->urgent_func = urgent_func;
 		    refcount(val, LINEBREAK_REF_URGENT, +1);
 		} else {
-		    obj->urgent_data = NULL;
-		    obj->urgent_func = NULL;
+		    lbobj->urgent_data = NULL;
+		    lbobj->urgent_func = NULL;
 		}
 	    } else if (strcmp(key, "_map") == 0) {
-		if (obj->map) {
-		    free(obj->map);
-		    obj->map = NULL;
-		    obj->mapsiz = 0;
+		if (lbobj->map) {
+		    free(lbobj->map);
+		    lbobj->map = NULL;
+		    lbobj->mapsiz = 0;
 		}
 		if (SvOK(val)) {
-		    obj->map = _loadmap(obj->map, val, &mapsiz);
-		    obj->mapsiz = mapsiz;
+		    lbobj->map = _loadmap(lbobj->map, val, &mapsiz);
+		    lbobj->mapsiz = mapsiz;
 		}
 	    } else if (strcasecmp(key, "CharactersMax") == 0)
-		obj->charmax = SvUV(val);
+		lbobj->charmax = SvUV(val);
 	    else if (strcasecmp(key, "ColumnsMax") == 0)
-		obj->colmax = (double)SvNV(val);
+		lbobj->colmax = (double)SvNV(val);
 	    else if (strcasecmp(key, "ColumnsMin") == 0)
-		obj->colmin = (double)SvNV(val);
+		lbobj->colmin = (double)SvNV(val);
 	    else if (strcasecmp(key, "Context") == 0) {
 		if (SvOK(val))
 		    opt = (char *)SvPV_nolen(val);
 		else
 		    opt = NULL;
 		if (opt && strcasecmp(opt, "EASTASIAN") == 0)
-		    obj->options |= LINEBREAK_OPTION_EASTASIAN_CONTEXT;
+		    lbobj->options |= LINEBREAK_OPTION_EASTASIAN_CONTEXT;
 		else
-		    obj->options &= ~LINEBREAK_OPTION_EASTASIAN_CONTEXT;
+		    lbobj->options &= ~LINEBREAK_OPTION_EASTASIAN_CONTEXT;
 	    } else if (strcasecmp(key, "HangulAsAL") == 0) {
 		if (SVtoboolean(val))
-		    obj->options |= LINEBREAK_OPTION_HANGUL_AS_AL;
+		    lbobj->options |= LINEBREAK_OPTION_HANGUL_AS_AL;
 		else
-		    obj->options &= ~LINEBREAK_OPTION_HANGUL_AS_AL;
+		    lbobj->options &= ~LINEBREAK_OPTION_HANGUL_AS_AL;
 	    } else if (strcasecmp(key, "LegacyCM") == 0) {
 		if (SVtoboolean(val))
-		    obj->options |= LINEBREAK_OPTION_LEGACY_CM;
+		    lbobj->options |= LINEBREAK_OPTION_LEGACY_CM;
 		else
-		    obj->options &= ~LINEBREAK_OPTION_LEGACY_CM;
+		    lbobj->options &= ~LINEBREAK_OPTION_LEGACY_CM;
 	    } else if (strcasecmp(key, "Newline") == 0) {
-		if (obj->newline) free(obj->newline);
+		if (lbobj->newline) free(lbobj->newline);
 		if (!sv_isobject(val)) {
 		    unistr_t unistr = {0, 0};
 		    SVtounistr(&unistr, val);
-		    obj->newline = unistr.str;
-		    obj->newlinesiz = unistr.len;
+		    lbobj->newline = unistr.str;
+		    lbobj->newlinesiz = unistr.len;
 		} else if (sv_derived_from(val, "Unicode::GCString")) {
 	            gcstring_t *gcstr = PerltoC(gcstring_t *, val);
-		    if ((obj->newline =
+		    if ((lbobj->newline =
 			malloc(sizeof(unichar_t) * gcstr->len)) == NULL)
 			croak("_config: Can't allocate memory");
 		    else {
-			memcpy(obj->newline, gcstr->str,
+			memcpy(lbobj->newline, gcstr->str,
 			       sizeof(unichar_t) * gcstr->len);
-			obj->newlinesiz = gcstr->len;
+			lbobj->newlinesiz = gcstr->len;
 		    }
 		} else
 		    croak("Unknown object %s", HvNAME(SvSTASH(SvRV(val))));
@@ -625,12 +641,12 @@ SV*
 as_hashref(self, ...)
 	SV *self;
     INIT:
-	linebreak_t *obj;
+	linebreak_t *lbobj;
     CODE:
-	obj = PerltoC(linebreak_t *, self);
-	if (obj->stash == NULL)
-	    obj->stash = newRV_noinc((SV *)newHV());
-	RETVAL = obj->stash;
+	lbobj = SVtolinebreak(self);
+	if (lbobj->stash == NULL)
+	    lbobj->stash = newRV_noinc((SV *)newHV());
+	RETVAL = lbobj->stash;
 	if (RETVAL == NULL)
 	    XSRETURN_UNDEF;
 	if (SvROK(RETVAL)) /* FIXME */
@@ -642,13 +658,13 @@ SV*
 as_scalarref(self, ...)
 	SV *self;
     INIT:
-	linebreak_t *obj;
+	linebreak_t *lbobj;
 	char buf[64];
     CODE:
-	obj = PerltoC(linebreak_t *, self);
+	lbobj = SVtolinebreak(self);
 	buf[0] = '\0';
 	snprintf(buf, 64, "%s(0x%lx)", HvNAME(SvSTASH(SvRV(self))),
-		 (unsigned long)(void *)obj);
+		 (unsigned long)(void *)lbobj);
 	RETVAL = newRV_noinc(newSVpv(buf, 0));
     OUTPUT:
 	RETVAL
@@ -657,13 +673,13 @@ SV *
 as_string(self, ...)
 	SV *self;
     INIT:
-	linebreak_t *obj;
+	linebreak_t *lbobj;
 	char buf[64];
     CODE:
-	obj = PerltoC(linebreak_t *, self);
+	lbobj = SVtolinebreak(self);
 	buf[0] = '\0';
 	snprintf(buf, 64, "%s(0x%lx)", HvNAME(SvSTASH(SvRV(self))),
-		 (unsigned long)(void *)obj);
+		 (unsigned long)(void *)lbobj);
 	RETVAL = newSVpv(buf, 0);
     OUTPUT:
 	RETVAL
@@ -674,12 +690,12 @@ eawidth(self, str)
 	SV *str;
     PROTOTYPE: $$
     INIT:
-	linebreak_t *obj;
+	linebreak_t *lbobj;
 	unichar_t c;
 	propval_t prop;
 	gcstring_t *gcstr;
     CODE:
-	obj = PerltoC(linebreak_t *, self);
+	lbobj = SVtolinebreak(self);
 	if (!sv_isobject(str)) {
 	    if (!SvCUR(str))
 		XSRETURN_UNDEF;
@@ -694,7 +710,7 @@ eawidth(self, str)
 	}
 	else
 	    croak("Unknown object %s", HvNAME(SvSTASH(SvRV(str))));
-	prop = linebreak_eawidth(obj, c);
+	prop = linebreak_eawidth(lbobj, c);
 	if (prop == PROP_UNKNOWN)
 	    XSRETURN_UNDEF;
 	RETVAL = prop;	
@@ -707,22 +723,22 @@ lbclass(self, str)
 	SV *str;
     PROTOTYPE: $$
     INIT:
-	linebreak_t *obj;
+	linebreak_t *lbobj;
 	unichar_t c;
 	propval_t prop;
 	gcstring_t *gcstr;
     CODE:
-	obj = PerltoC(linebreak_t *, self);
+	lbobj = SVtolinebreak(self);
 	if (!sv_isobject(str)) {
 	    if (!SvCUR(str))
 		XSRETURN_UNDEF;
 	    c = utf8_to_uvuni((U8 *)SvPV_nolen(str), NULL);
-	    prop = linebreak_lbclass(obj, c);
+	    prop = linebreak_lbclass(lbobj, c);
 	}
 	else if (sv_derived_from(str, "Unicode::GCString")) {
 	    gcstr = PerltoC(gcstring_t *, str);
 	    if (gcstr->gclen)
-		prop = gcstr->gcstr[gcstr->pos].lbc;
+		prop = gcstr->gcstr[0].lbc;
 	    else
 		prop = PROP_UNKNOWN;
 	}
@@ -741,12 +757,12 @@ lbrule(self, b_idx, a_idx)
 	propval_t a_idx;
     PROTOTYPE: $$$
     INIT:
-	linebreak_t *obj;
+	linebreak_t *lbobj;
 	propval_t prop;
     CODE:
 	if (!SvOK(ST(1)) || !SvOK(ST(2)))
 	    XSRETURN_UNDEF;
-	obj = PerltoC(linebreak_t *, self);
+	lbobj = SVtolinebreak(self);
 	prop = linebreak_lbrule(b_idx, a_idx);
 
 	if (prop == PROP_UNKNOWN)
@@ -760,7 +776,7 @@ reset(self)
 	SV *self;
     PROTOTYPE: $
     CODE:
-	linebreak_reset(PerltoC(linebreak_t *, self));
+	linebreak_reset(SVtolinebreak(self));
 
 double
 strsize(self, len, pre, spc, str, ...)
@@ -775,7 +791,7 @@ strsize(self, len, pre, spc, str, ...)
 	gcstring_t /* *gcpre, */ *gcspc, *gcstr;
 	size_t max;
     CODE:
-	lbobj = PerltoC(linebreak_t *, self);
+	lbobj = SVtolinebreak(self);
 	/* gcpre = SVtogcstring(pre, lbobj); */
 	gcspc = SVtogcstring(spc, lbobj);
 	gcstr = SVtogcstring(str, lbobj);
@@ -800,18 +816,55 @@ strsize(self, len, pre, spc, str, ...)
 	RETVAL
 
 SV *
+break(self, input)
+	SV *self;
+	SV *input;
+    PROTOTYPE: $$
+    INIT:
+	linebreak_t *lbobj;
+	unistr_t unistr = {0, 0}, *ret;
+    CODE:
+	lbobj = SVtolinebreak(self);
+	if (!SvOK(input))
+	    ;
+	else {
+	    if (!sv_isobject(input) && !SvUTF8(input)) {
+		char *s;
+		size_t len, i;
+		len = SvCUR(input);
+		s = SvPV(input, len);
+		for (i = 0; i < len; i++)
+		    if (127 < (unsigned char)s[i])
+			croak("Unicode string must be given.");
+	    }
+	    SVtounistr(&unistr, input);
+	}
+
+	ret = linebreak_break(lbobj, &unistr);
+	if (ret == NULL)
+	    croak("%s", strerror(errno));
+
+	RETVAL = unistrtoSV(ret, 0, ret->len);
+	if (ret->str)
+	    free(ret->str);
+	free(ret);
+	if (unistr.str)
+	    free(unistr.str);
+    OUTPUT:
+	RETVAL
+
+SV *
 break_partial(self, input)
 	SV *self;
 	SV *input;
     PROTOTYPE: $$
     INIT:
 	linebreak_t *lbobj;
-	gcstring_t *gcstr, *ret;
-	unistr_t unistr;
+	gcstring_t  *gcstr, *ret;
     CODE:
-	lbobj = PerltoC(linebreak_t *, self);
+	lbobj = SVtolinebreak(self);
 	if (!SvOK(input))
-	    gcstr = NULL;
+	    ret = linebreak_break_partial(lbobj, NULL);
 	else {
 	    if (!sv_isobject(input) && !SvUTF8(input)) {
 		char *s;
@@ -823,17 +876,15 @@ break_partial(self, input)
 			croak("Unicode string must be given.");
 	    }
 	    gcstr = SVtogcstring(input, lbobj);
+	    ret = linebreak_break_partial(lbobj, gcstr);
+	    if (!sv_isobject(input))
+		gcstring_destroy(gcstr);
 	}
 
-	ret = linebreak_break_partial(lbobj, gcstr);
-	if (!sv_isobject(input) && gcstr)
-	    gcstring_destroy(gcstr);
 	if (ret == NULL)
 	    croak("%s", strerror(errno));
 
-	unistr.str = ret->str;
-	unistr.len = ret->len;
-	RETVAL = unistrtoSV(&unistr, 0, ret->len);
+	RETVAL = unistrtoSV((unistr_t *)ret, 0, ret->len);
 	gcstring_destroy(ret);
     OUTPUT:
 	RETVAL
@@ -873,7 +924,7 @@ new(klass, str, ...)
 	if (!SvOK(str)) /* prevent segfault. */
 	    XSRETURN_UNDEF;
 	if (2 < items)
-	    lbobj = PerltoC(linebreak_t *, ST(2));
+	    lbobj = SVtolinebreak(ST(2));
 	else
 	    lbobj = NULL;
 	SVtounistr(&unistr, str);
@@ -888,7 +939,9 @@ DESTROY(self)
 	SV *self;
     PROTOTYPE: $
     CODE:
-	gcstring_destroy(PerltoC(gcstring_t *, self));
+	if (!sv_isobject(self))
+	    croak("Not object");
+	gcstring_destroy(SVtogcstring(self, NULL));
 
 void
 as_array(self)
@@ -900,7 +953,7 @@ as_array(self)
     PPCODE:
 	if (!sv_isobject(self))
 	    return;
-	gcstr = PerltoC(gcstring_t *, self);    
+	gcstr = SVtogcstring(self, NULL);    
 	if (gcstr != NULL)
 	    for (i = 0; i < gcstr->gclen; i++)
 		XPUSHs(sv_2mortal(
@@ -911,13 +964,13 @@ SV*
 as_scalarref(self, ...)
 	SV *self;
     INIT:
-	linebreak_t *obj;
+	linebreak_t *lbobj;
 	char buf[64];
     CODE:
-	obj = PerltoC(linebreak_t *, self);
+	lbobj = SVtolinebreak(self);
 	buf[0] = '\0';
 	snprintf(buf, 64, "%s(0x%lx)", HvNAME(SvSTASH(SvRV(self))),
-		 (unsigned long)(void *)obj);
+		 (unsigned long)(void *)lbobj);
 	RETVAL = newRV_noinc(newSVpv(buf, 0));
     OUTPUT:
 	RETVAL
@@ -932,7 +985,7 @@ as_string(self, ...)
     CODE:
 	if (!sv_isobject(self))
 	    XSRETURN_UNDEF;
-	gcstr = PerltoC(gcstring_t *, self);    
+	gcstr = SVtogcstring(self, NULL);    
 	if (gcstr == NULL)
 	    RETVAL = unistrtoSV(&unistr, 0, 0);
 	else
@@ -949,7 +1002,7 @@ chars(self)
     CODE:
 	if (!sv_isobject(self))
 	    XSRETURN_UNDEF;
-	gcstr = PerltoC(gcstring_t *, self);    
+	gcstr = SVtogcstring(self, NULL);    
 	if (gcstr == NULL)
 	    RETVAL = 0;
 	else
@@ -968,7 +1021,7 @@ cmp(self, str, ...)
     CODE:
 	if (!sv_isobject(self))
 	    XSRETURN_UNDEF;
-	gcstr1 = PerltoC(gcstring_t *, self);    
+	gcstr1 = SVtogcstring(self, NULL);    
 	gcstr2 = SVtogcstring(str, gcstr1->lbobj);
 	if (2 < items && SvOK(ST(2)) && SvIV(ST(2)))
 	    ret = gcstring_cmp(gcstr2, gcstr1);
@@ -988,7 +1041,7 @@ columns(self)
     CODE:
 	if (!sv_isobject(self))
 	    XSRETURN_UNDEF;
-	gcstr = PerltoC(gcstring_t *, self);    
+	gcstr = SVtogcstring(self, NULL);    
 	if (gcstr == NULL)
 	    RETVAL = 0;
 	else
@@ -1006,7 +1059,7 @@ concat(self, str, ...)
     CODE:
 	if (!sv_isobject(self))
 	    XSRETURN_UNDEF;
-	gcstr = PerltoC(gcstring_t *, self);    
+	gcstr = SVtogcstring(self, NULL);    
 	appe = SVtogcstring(str, gcstr->lbobj);
 	if (2 < items && SvOK(ST(2)) && SvIV(ST(2)))
 	    ret = gcstring_concat(appe, gcstr);
@@ -1027,7 +1080,7 @@ copy(self)
     CODE:
 	if (!sv_isobject(self))
 	    XSRETURN_UNDEF;
-	gcstr = PerltoC(gcstring_t *, self);    
+	gcstr = SVtogcstring(self, NULL);    
 	ret = gcstring_copy(gcstr);
 	RETVAL = CtoPerl("Unicode::GCString", ret);
     OUTPUT:
@@ -1041,7 +1094,7 @@ eos(self)
     CODE:
 	if (!sv_isobject(self))
 	    XSRETURN_UNDEF;
-	gcstr = PerltoC(gcstring_t *, self);    
+	gcstr = SVtogcstring(self, NULL);    
 	if (gcstr == NULL)
 	    RETVAL = 0;
 	else
@@ -1060,7 +1113,7 @@ flag(self, ...)
     CODE:
 	if (!sv_isobject(self))
 	    XSRETURN_UNDEF;
-	gcstr = PerltoC(gcstring_t *, self);    
+	gcstr = SVtogcstring(self, NULL);    
 	if (1 < items)
 	    i = SvIV(ST(1));
 	else
@@ -1088,7 +1141,7 @@ item(self, ...)
     CODE:
 	if (!sv_isobject(self))
 	    XSRETURN_UNDEF;
-	gcstr = PerltoC(gcstring_t *, self);    
+	gcstr = SVtogcstring(self, NULL);    
 	if (1 < items)
 	    i = SvIV(ST(1));
 	else
@@ -1098,6 +1151,45 @@ item(self, ...)
 
 	RETVAL = CtoPerl("Unicode::GCString",
 			 gctogcstring(gcstr, gcstr->gcstr + i));
+    OUTPUT:
+	RETVAL
+
+SV *
+join(self, ...)
+	SV *self;
+    INIT:
+	size_t i;
+	gcstring_t *gcstr, *str, *ret;
+    CODE:
+	if (!sv_isobject(self))
+	    croak("Not object");
+	gcstr = SVtogcstring(self, NULL);
+
+	switch (items) {
+	case 0:
+	    croak("Too few arguments");
+	case 1:
+	    ret = gcstring_new(NULL, gcstr->lbobj);
+	    break;
+	case 2:
+	    ret = SVtogcstring(ST(1), gcstr->lbobj);
+	    if (sv_isobject(ST(1)))
+		ret = gcstring_copy(ret);
+	    break;
+	default:
+	    ret = SVtogcstring(ST(1), gcstr->lbobj);
+	    if (sv_isobject(ST(1)))
+		ret = gcstring_copy(ret);
+	    for (i = 2; i < items; i++) {
+		gcstring_append(ret, gcstr);
+		str = SVtogcstring(ST(i), gcstr->lbobj);
+		gcstring_append(ret, str);
+		if (!sv_isobject(ST(i)))
+		    gcstring_destroy(str);
+	    }
+	    break;
+	}
+	RETVAL = CtoPerl("Unicode::GCString", ret);
     OUTPUT:
 	RETVAL
 
@@ -1111,7 +1203,7 @@ lbclass(self, ...)
     CODE:
 	if (!sv_isobject(self))
 	    XSRETURN_UNDEF;
-	gcstr = PerltoC(gcstring_t *, self);    
+	gcstr = SVtogcstring(self, NULL);    
 	if (1 < items)
 	    i = SvIV(ST(1));
 	else
@@ -1131,7 +1223,7 @@ length(self)
     CODE:
 	if (!sv_isobject(self))
 	    XSRETURN_UNDEF;
-	gcstr = PerltoC(gcstring_t *, self);    
+	gcstr = SVtogcstring(self, NULL);    
 	if (gcstr == NULL)
 	    RETVAL = 0;
 	else
@@ -1149,7 +1241,7 @@ next(self, ...)
     CODE:
 	if (!sv_isobject(self))
 	    XSRETURN_UNDEF;
-	gcstr = PerltoC(gcstring_t *, self);    
+	gcstr = SVtogcstring(self, NULL);    
 	if (gcstring_eos(gcstr))
 	    XSRETURN_UNDEF;
 	gc = gcstring_next(gcstr);
@@ -1166,7 +1258,7 @@ pos(self, ...)
     CODE:
 	if (!sv_isobject(self))
 	    XSRETURN_UNDEF;
-	gcstr = PerltoC(gcstring_t *, self);    
+	gcstr = SVtogcstring(self, NULL);    
 	
 	if (gcstr == NULL)
 	    RETVAL = 0;
@@ -1189,7 +1281,7 @@ substr(self, offset, ...)
     CODE:
 	if (!sv_isobject(self))
 	    XSRETURN_UNDEF;
-	gcstr = PerltoC(gcstring_t *, self);    
+	gcstr = SVtogcstring(self, NULL);    
 	if (2 < items)
 	    length = SvIV(ST(2));
 	else

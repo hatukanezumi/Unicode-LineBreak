@@ -27,7 +27,7 @@ use Unicode::LineBreak;
 ### Globals
 
 # The package version
-our $VERSION = '0.004_01';
+our $VERSION = '0.005';
 
 use overload 
     '@{}' => \&as_arrayref,
@@ -58,8 +58,6 @@ Unicode::GCString - String as Sequence of UAX #29 Grapheme Clusters
     $gcstring = Unicode::GCString->new($string);
     
 =head1 DESCRIPTION
-
-B<WARNING: This module is alpha version therefore includes some bugs and unstable features.>
 
 Unicode::GCString treats Unicode string as a sequence of
 I<extended grapheme clusters> defined by Unicode Standard Annex #29 [UAX #29].
@@ -143,6 +141,12 @@ Note that number of columns (see columns()) or grapheme clusters
 strings.
 Next position of new string is that set on left value.
 
+=item join ([STRING, ...])
+
+I<Instance method>.
+Join STRINGs inserting grapheme cluster string.
+Any of STRINGs may be Unicode string.
+
 =item substr (OFFSET, [LENGTH, [REPLACEMENT]])
 
 I<Instance method>.
@@ -174,7 +178,10 @@ Test if current position is at end of grapheme cluster string.
 
 =item flag ([OFFSET, [VALUE]])
 
-I<Undocumented>.
+I<Instance method>.
+Get or set flag value of OFFEST-th grapheme cluster.
+If OFFSET was not specified, returns flag value of next grapheme cluster.
+Flag value is an non-zero integer not greater than 255 and initially is 0.
 
 =end comment
 

@@ -144,7 +144,10 @@ RFC 2646 (廃止) で定義される C<"Format=Flowed"> 形式をできるだけ
 
 =head1 BUGS
 
-バグやバグのような動作は開発者に教えてください。L</AUTHOR> 参照。
+バグやバグのような動作は開発者に教えてください。
+
+CPAN Request Tracker:
+L<http://rt.cpan.org/Public/Dist/Display.html?Name=Unicode-LineBreak>.
 
 =head1 VERSION
 

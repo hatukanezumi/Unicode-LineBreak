@@ -1,0 +1,6 @@
+1.3beta12  Mon Oct 12 2009
+	* Fix: linebreak_break_partial(): Memory leak saving status.
+	* Fix: linebreak_break_partial(): Fix state transition.
+	* Fix: gcstring_cmp(): Case of comparison with zero length string.
+	* New: linebreak_break().
+	* break.c: Cleanup codes.

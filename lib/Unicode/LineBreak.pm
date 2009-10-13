@@ -203,78 +203,6 @@ sub new {
     $self;
 }
 
-sub break ($$) {
-    my $self = shift;
-    my $str = shift;
-    return '' unless defined $str and length $str;
-    my $result = '';
-
-    while (1000 < length $str) {
-	my $s = substr($str, 0, 1000);
-	$str = substr($str, 1000);
-	$result .= $self->break_partial($s);
-    }
-    $result .= $self->break_partial($str);
-    return $result . $self->break_partial(undef);
-}
-
-sub preprocess ($$$) {
-    my $self = shift;
-    my $user_funcs = shift;
-    my $str = shift;
-
-    if (ref $str) {
-	$str = $str->as_string;
-    }
-    unless (defined $str and length $str) {
-	$str = '';
-    }
-
-    my $ret = Unicode::GCString->new('', $self);
-    while (length $str) {
-	my $func;
-	my ($s, $match, $post) = ($str, '', '');
-	foreach my $ub (@{$user_funcs}) {
-	    my ($re, $fn) = @{$ub};
-	    if ($str =~ /$re/) {
-		if (length $& and length $` < length $s) { #`
-		    ($s, $match, $post) = ($`, $&, $'); #'`
-		    $func = $fn;
-		}
-	    }
-	}
-	if (length $match) {
-	    $str = $post;
-	} else {
-	    $s = $str;
-	    $str = '';
-	}
-
-	$ret .= $s if length $s;
-
-	# Break matched fragment.
-	if (length $match) {
-	    my $first = 1;
-	    foreach my $s (&{$func}($self, $match)) {
-		$s = Unicode::GCString->new($s, $self);
-		my $length = $s->length;
-		if ($length) {
-		    if (!$first) {
-			$s->flag(0, BREAK_BEFORE);
-		    }
-		    for (my $i = 1; $i < $length; $i++) {
-			$s->flag($i, PROHIBIT_BEFORE);
-		    }
-		    $ret .= $s;
-		}
-		$first = 0;
-	    }
-	}
-    }
-
-    $ret;
-}
-
 sub config ($@) {
     my $self = shift;
     my @nopts = qw(CharactersMax ColumnsMin ColumnsMax Context
@@ -439,6 +367,60 @@ sub context (@) {
 	$context = 'NONEASTASIAN';
     }
     $context;
+}
+
+sub preprocess ($$$) {
+    my $self = shift;
+    my $user_funcs = shift;
+    my $str = shift;
+
+    unless (defined $str and length $str) {
+	$str = '';
+    }
+
+    my @ret = ();
+    while (length $str) {
+	my $func;
+	my ($s, $match, $post) = ($str, '', '');
+	foreach my $ub (@{$user_funcs}) {
+	    my ($re, $fn) = @{$ub};
+	    if ($str =~ /$re/) {
+		if (length $& and length $` < length $s) { #`
+		    ($s, $match, $post) = ($`, $&, $'); #'`
+		    $func = $fn;
+		}
+	    }
+	}
+	if (length $match) {
+	    $str = $post;
+	} else {
+	    $s = $str;
+	    $str = '';
+	}
+
+	push @ret, $s if length $s;
+
+	# Break matched fragment.
+	if (length $match) {
+	    my $first = 1;
+	    foreach my $s (&{$func}($self, $match)) {
+		$s = Unicode::GCString->new($s, $self);
+		my $length = $s->length;
+		if ($length) {
+		    if (!$first) {
+			$s->flag(0, BREAK_BEFORE);
+		    }
+		    for (my $i = 1; $i < $length; $i++) {
+			$s->flag($i, PROHIBIT_BEFORE);
+		    }
+		    push @ret, $s;
+		}
+		$first = 0;
+	    }
+	}
+    }
+
+    @ret;
 }
 
 1;

@@ -310,8 +310,8 @@ int gcstring_cmp(gcstring_t *a, gcstring_t *b)
 {
     size_t i;
 
-    if (!a->str || !a->len || !b->str || !b->len)
-      return ((a->str || a->len)? 1: 0) - ((b->str || b->len)? 1: 0);
+    if (!a->len || !b->len)
+      return (a->len? 1: 0) - (b->len? 1: 0);
     for (i = 0; i < a->len && i < b->len; i++)
 	if (a->str[i] != b->str[i])
 	    return a->str[i] - b->str[i];

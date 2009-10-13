@@ -137,6 +137,7 @@ L</new>、L</config> の両メソッドには以下の対を指定できる。
 行に含みうる最大の文字数。行末の空白文字と改行の文字列を除く。
 文字数は一般に行の長さを表さないことに注意。
 初期値は C<998>。
+C<0> にはできない。
 
 =item ColumnsMin => NUMBER
 
@@ -278,7 +279,6 @@ METHOD には以下のものを指定できる。
 =item C<"NONBREAKURI">
 
 URI を分割しない。
-現在、HTTP(S) と (S)FTP(S) の URI に対応している。
 
 =item C<"BREAKURI">
 
