@@ -86,13 +86,10 @@ typedef struct {
      */
     unsigned long int refcount;	/* reference count */
     int state;			/* state */
-    unichar_t *bufstr;		/* buffered line */
-    size_t bufstrsiz;
-    unichar_t *bufspc;		/* spaces trailing to buffered line */
-    size_t bufspcsiz;
+    unistr_t bufstr;		/* buffered line */
+    unistr_t bufspc;		/* spaces trailing to buffered line */
     double bufcols;		/* caliculated columns of buffered line */
-    unichar_t *unread;		/* unread input */
-    size_t unreadsiz;
+    unistr_t unread;		/* unread input */
 
     /*
      * public members
@@ -102,8 +99,7 @@ typedef struct {
     double colmin;
     mapent_t *map;
     size_t mapsiz;
-    unichar_t *newline;
-    size_t newlinesiz;
+    unistr_t newline;
     unsigned int options;
     void *format_data;
     void *sizing_data;
@@ -179,8 +175,8 @@ extern propval_t linebreak_lbrule(propval_t, propval_t);
 extern double linebreak_strsize(linebreak_t *, double, gcstring_t *,
                                 gcstring_t *, gcstring_t *, size_t);
 extern unistr_t *linebreak_break(linebreak_t *, unistr_t *);
-extern gcstring_t *linebreak_break_fast(linebreak_t *, gcstring_t *);
-extern gcstring_t *linebreak_break_partial(linebreak_t *, gcstring_t *);
+extern unistr_t *linebreak_break_fast(linebreak_t *, unistr_t *);
+extern unistr_t *linebreak_break_partial(linebreak_t *, unistr_t *);
 extern const char *linebreak_unicode_version;
 extern const char *linebreak_southeastasian_supported;
 extern void linebreak_southeastasian_flagbreak(gcstring_t *);

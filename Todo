@@ -4,11 +4,11 @@
 	  contexts (SA), at least on Thai and Khmer scripts.
 	- For Thai, libthai package will be useful. - DONE by 1.000_01.
 	- Some implementations can be found for Khmer.
-	- Burmese, Lao, Tai Le, New Tai Lue and Tai Tham - No plan.
+	- Burmese, Lao, Tai Le, New Tai Lue, Tai Tham and Tai Viet - No plan.
 
 2009-05-17  Hatuka*nezumi - IKEDA Soji <hatuka(at)nezumi.nu>
 
-	* Full XS version for speed.
+	* Full XS version for speed. - almost DONE by 1.003_12.
 
 2009-05-11  Hatuka*nezumi - IKEDA Soji <hatuka(at)nezumi.nu>
 
@@ -26,7 +26,8 @@
 	- Punctuations may protrude into the right -- bottom, in vertical
 	  line -- margin.
 	- It is usually applied to IDEOGRAPHIC FULL STOP and
-	  IDEOGRAPHIC COMMA.  It is rarely applied to FULL STOP and COMMA.
+	  IDEOGRAPHIC COMMA.  It is less frequently applied to FULL STOP and
+	  COMMA.
 	- ``Half-''hunging, regarding ideographic punctuations as narrow
 	  only at end of line, might be either allowed or inhibited by
 	  typesetting rules, whether (full-)hunging was allowed or not.

@@ -16,11 +16,6 @@
 #include "ppport.h"
 #include "linebreak.h"
 
-/* by CPAN test #5515619 */
-#ifndef UTF8_MAXBYTES
-#define UTF8_MAXBYTES (13)
-#endif
-
 /***
  *** Utilities.
  ***/
@@ -138,7 +133,7 @@ SV *unistrtoSV(unistr_t *unistr, size_t uniidx, size_t unilen)
     while (uniptr < unistr->str + uniidx + unilen &&
 	   uniptr < unistr->str + unistr->len) {
         if ((newbuf = realloc(buf,
-                              sizeof(U8) * (utf8len + UTF8_MAXBYTES + 1)))
+                              sizeof(U8) * (utf8len + UTF8_MAXLEN + 1)))
             == NULL) {
             croak("unistrtoSV: Can't allocate memory");
         }
@@ -256,7 +251,7 @@ void refcount(SV *sv, int datatype, int d)
  * Call preprocess (user breaking) function
  */
 static
-gcstring_t *user_func(linebreak_t *lbobj, gcstring_t *str)
+gcstring_t *user_func(linebreak_t *lbobj, unistr_t *str)
 {
     SV *sv;
     int count, i;
@@ -269,9 +264,7 @@ gcstring_t *user_func(linebreak_t *lbobj, gcstring_t *str)
     /* FIXME:sync refcount between C & Perl */
     XPUSHs(sv_2mortal(CtoPerl("Unicode::LineBreak", linebreak_copy(lbobj))));
     XPUSHs((SV *)lbobj->user_data); /* shouldn't be mortal. */
-    gcstr = gcstring_copy(str);
-    XPUSHs(sv_2mortal(unistrtoSV((unistr_t *)gcstr, 0, gcstr->len)));
-    gcstring_destroy(gcstr);
+    XPUSHs(sv_2mortal(unistrtoSV(str, 0, str->len)));
     PUTBACK;
     count = call_pv("Unicode::LineBreak::preprocess", G_ARRAY | G_EVAL);
 
@@ -515,11 +508,11 @@ _config(self, ...)
 	    else if (strcasecmp(key, "LegacyCM") == 0)
 		RETVAL = newSVuv(lbobj->options & LINEBREAK_OPTION_LEGACY_CM);
 	    else if (strcasecmp(key, "Newline") == 0) {
-		unistr_t unistr = {lbobj->newline, lbobj->newlinesiz};
-		if (lbobj->newline == NULL || lbobj->newlinesiz == 0)
+		unistr_t unistr = {lbobj->newline.str, lbobj->newline.len};
+		if (lbobj->newline.str == NULL || lbobj->newline.len == 0)
 		    RETVAL = unistrtoSV(&unistr, 0, 0);
 		else
-		    RETVAL = unistrtoSV(&unistr, 0, lbobj->newlinesiz);
+		    RETVAL = unistrtoSV(&unistr, 0, lbobj->newline.len);
 	    } else {
 		warn("_config: Getting unknown option %s", key);
 		XSRETURN_UNDEF;
@@ -612,21 +605,21 @@ _config(self, ...)
 		else
 		    lbobj->options &= ~LINEBREAK_OPTION_LEGACY_CM;
 	    } else if (strcasecmp(key, "Newline") == 0) {
-		if (lbobj->newline) free(lbobj->newline);
+		if (lbobj->newline.str) free(lbobj->newline.str);
 		if (!sv_isobject(val)) {
 		    unistr_t unistr = {0, 0};
 		    SVtounistr(&unistr, val);
-		    lbobj->newline = unistr.str;
-		    lbobj->newlinesiz = unistr.len;
+		    lbobj->newline.str = unistr.str;
+		    lbobj->newline.len = unistr.len;
 		} else if (sv_derived_from(val, "Unicode::GCString")) {
 	            gcstring_t *gcstr = PerltoC(gcstring_t *, val);
-		    if ((lbobj->newline =
+		    if ((lbobj->newline.str =
 			malloc(sizeof(unichar_t) * gcstr->len)) == NULL)
 			croak("_config: Can't allocate memory");
 		    else {
-			memcpy(lbobj->newline, gcstr->str,
+			memcpy(lbobj->newline.str, gcstr->str,
 			       sizeof(unichar_t) * gcstr->len);
-			lbobj->newlinesiz = gcstr->len;
+			lbobj->newline.len = gcstr->len;
 		    }
 		} else
 		    croak("Unknown object %s", HvNAME(SvSTASH(SvRV(val))));
@@ -860,7 +853,7 @@ break_partial(self, input)
     PROTOTYPE: $$
     INIT:
 	linebreak_t *lbobj;
-	gcstring_t  *gcstr, *ret;
+	unistr_t unistr = {0, 0}, *str, *ret;
     CODE:
 	lbobj = SVtolinebreak(self);
 	if (!SvOK(input))
@@ -869,23 +862,29 @@ break_partial(self, input)
 	    if (!sv_isobject(input) && !SvUTF8(input)) {
 		char *s;
 		size_t len, i;
+
 		len = SvCUR(input);
 		s = SvPV(input, len);
 		for (i = 0; i < len; i++)
 		    if (127 < (unsigned char)s[i])
 			croak("Unicode string must be given.");
-	    }
-	    gcstr = SVtogcstring(input, lbobj);
-	    ret = linebreak_break_partial(lbobj, gcstr);
+		SVtounistr(&unistr, input);
+		str = &unistr;
+	    } else
+		str = (unistr_t *)SVtogcstring(input, lbobj);
+	    ret = linebreak_break_partial(lbobj, str);
 	    if (!sv_isobject(input))
-		gcstring_destroy(gcstr);
+		if (str->str)
+		    free(str->str);
 	}
 
 	if (ret == NULL)
 	    croak("%s", strerror(errno));
 
-	RETVAL = unistrtoSV((unistr_t *)ret, 0, ret->len);
-	gcstring_destroy(ret);
+	RETVAL = unistrtoSV(ret, 0, ret->len);
+	if (ret->str)
+	    free(ret->str);
+	free(ret);
     OUTPUT:
 	RETVAL
 

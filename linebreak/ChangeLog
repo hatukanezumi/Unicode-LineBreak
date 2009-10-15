@@ -2,5 +2,8 @@
 	* Fix: linebreak_break_partial(): Memory leak saving status.
 	* Fix: linebreak_break_partial(): Fix state transition.
 	* Fix: gcstring_cmp(): Case of comparison with zero length string.
-	* New: linebreak_break().
+	* New: linebreak_break() and linebreak_break_fast().  Latter consumes
+	  heap size proportional to length of input.  lenebreak_break() is
+	  highly recommended.
+	* Chg: linebreak_break*() get unistr_t * input than return unistr_t *.
 	* break.c: Cleanup codes.

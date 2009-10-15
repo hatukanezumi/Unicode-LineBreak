@@ -127,6 +127,7 @@ my %URGENT_BREAKING_FUNCS = (
     my $spc = shift;
     my $str = shift;
     return () unless length $spc or length $str;
+    $str = $str->as_string if ref $str; # prevent utf8_mg_pos_cache_update panic
 
     my $max = $self->config('ColumnsMax') || 0;
     my $sizing = $self->{SizingMethod};

@@ -56,7 +56,7 @@ WriteMakefile(
 	    'MIME::Charset'	=> '1.006.2',
 	    'Test::More'	=> '0.45',
 	},
-	'MYEXTLIB' => "$csubdir/.libs/libinebreak\$(LIB_EXT)",
+	'MYEXTLIB' => "$csubdir/.libs/liblinebreak\$(LIB_EXT)",
 	# Un-comment this if you add C files to link with later:
 	# 'OBJECT'	=> '$(O_FILES)', # link all the C files too
 	@opts,

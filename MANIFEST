@@ -72,6 +72,7 @@ t/07sea.t
 t/08partial.t
 t/09uri.t
 t/10gcstring.t
+t/11format.t
 t/lb.pl
 t/lf.pl
 t/pod.t
@@ -89,6 +90,7 @@ testin/el.out
 testin/fr.ea.out
 testin/fr.fixed.out
 testin/fr.flowed.out
+testin/fr.format.out
 testin/fr.in
 testin/fr.out
 testin/fr.plain.out
@@ -99,6 +101,7 @@ testin/ja-k.ns.out
 testin/ja-k.out
 testin/ja.fixed.out
 testin/ja.flowed.out
+testin/ja.format.out
 testin/ja.in
 testin/ja.out
 testin/ja.plain.out

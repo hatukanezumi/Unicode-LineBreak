@@ -18,17 +18,21 @@
 #include "linebreak.h"
 
 static
-gcstring_t *_preprocess(linebreak_t *lbobj, gcstring_t *str)
+gcstring_t *_preprocess(linebreak_t *lbobj, unistr_t *str)
 {
-    gcstring_t *result;
+    gcstring_t *t, *result;
 
     if (str == NULL)
 	return NULL;
     else if (lbobj->user_data == NULL || lbobj->user_func == NULL ||
-	     (result = (*(lbobj->user_func))(lbobj, str)) == NULL)
-	return gcstring_copy(str);
-    else
-	return result;
+	     (result = (*(lbobj->user_func))(lbobj, str)) == NULL) {
+	t = gcstring_new(str, lbobj);
+	result = gcstring_copy(t);
+	t->str = NULL;
+	t->len = 0;
+	gcstring_destroy(t);
+    }
+    return result;
 }
 
 static
@@ -71,39 +75,55 @@ gcstring_t *_urgent_break(linebreak_t *lbobj, double cols,
     return result;
 }
 
-gcstring_t *linebreak_break_partial(linebreak_t *lbobj, gcstring_t *input)
+#define unistr_append(us, appe)						\
+    if (appe != NULL && appe->len != 0) {				\
+	if (((us)->str =						\
+	     realloc((us)->str,						\
+		     sizeof(unichar_t) * ((us)->len + appe->len))) == NULL) \
+	    return NULL;						\
+	memcpy((us)->str + (us)->len, appe->str,			\
+	       sizeof(unichar_t) * appe->len);				\
+	(us)->len += appe->len;						\
+    }
+
+#define unistrp_destroy(ustr)			\
+    if (ustr) {					\
+	if (ustr->str) free(ustr->str);		\
+	free(ustr);				\
+    }
+
+unistr_t *linebreak_break_partial(linebreak_t *lbobj, unistr_t *input)
 {
-    int eot = (input == NULL);
-    gcstring_t *str, *s;
+    gcstring_t *s;
     unistr_t unistr;
     size_t i;
 
+    int eot = (input == NULL);
     int state;
-    gcstring_t *bufStr, *bufSpc, *result;
+    gcstring_t *str, *bufStr, *bufSpc;
     double bufCols;
-    size_t bBeg = 0, bLen = 0, bCM = 0, bSpc = 0, aCM = 0, urgEnd = 0;
+    size_t bBeg, bLen, bCM, bSpc, aCM, urgEnd;
+    unistr_t *result;
 
     /***
      *** Unread and additional input.
      ***/
 
-    unistr.str = lbobj->unread;
-    unistr.len = lbobj->unreadsiz;
-    if ((str = gcstring_new(&unistr, lbobj)) == NULL)
-	return NULL;
-    lbobj->unread = NULL;
-    lbobj->unreadsiz = 0;
-    if (gcstring_append(str, input) == NULL)
-	return NULL;
+    unistr.str = lbobj->unread.str;
+    unistr.len = lbobj->unread.len;
+    lbobj->unread.str = NULL;
+    lbobj->unread.len = 0;
+    unistr_append(&unistr, input);
 
     /***
      *** Preprocessing.
      ***/
 
     /* perform user breaking */
-    s = _preprocess(lbobj, str);
-    gcstring_destroy(str);
-    if ((str = s) == NULL)
+    str = _preprocess(lbobj, &unistr);
+    if (unistr.str)
+	free(unistr.str);
+    if (str == NULL)
 	return NULL;
 
     /* Legacy-CM: Treat SP CM+ as if it were ID.  cf. [UAX #14] 9.1. */
@@ -140,17 +160,26 @@ gcstring_t *linebreak_break_partial(linebreak_t *lbobj, gcstring_t *input)
      */
     state = lbobj->state;
 
-    unistr.str = lbobj->bufstr;
-    unistr.len = lbobj->bufstrsiz;
+    unistr.str = lbobj->bufstr.str;
+    unistr.len = lbobj->bufstr.len;
     bufStr = gcstring_new(&unistr, lbobj);
-    lbobj->bufstr = NULL;
-    lbobj->bufstrsiz = 0;
+    lbobj->bufstr.str = NULL;
+    lbobj->bufstr.len = 0;
+    if (bufStr == NULL) {
+	gcstring_destroy(str);
+	return NULL;
+    }
 
-    unistr.str = lbobj->bufspc;
-    unistr.len = lbobj->bufspcsiz;
+    unistr.str = lbobj->bufspc.str;
+    unistr.len = lbobj->bufspc.len;
     bufSpc = gcstring_new(&unistr, lbobj);
-    lbobj->bufspc = NULL;
-    lbobj->bufspcsiz = 0;
+    lbobj->bufspc.str = NULL;
+    lbobj->bufspc.len = 0;
+    if (bufSpc == NULL) {
+	gcstring_destroy(str);
+	gcstring_destroy(bufStr);
+	return NULL;
+    }    
 
     bufCols = lbobj->bufcols;
 
@@ -169,11 +198,17 @@ gcstring_t *linebreak_break_partial(linebreak_t *lbobj, gcstring_t *input)
      *                                 point
      * `read' positions shall never be read more.
      */
+    bBeg = bLen = bCM = bSpc = aCM = urgEnd = 0;
 
     /* Result. */
-    unistr.str = NULL;
-    unistr.len = 0;
-    result = gcstring_new(&unistr, lbobj);
+    if ((result = malloc(sizeof(unistr_t))) == NULL) {
+	gcstring_destroy(str);
+	gcstring_destroy(bufStr);
+	gcstring_destroy(bufSpc);
+	return NULL;
+    }
+    result->str = NULL;
+    result->len = 0;
 
     while (1) {
 	/***
@@ -367,14 +402,14 @@ gcstring_t *linebreak_break_partial(linebreak_t *lbobj, gcstring_t *input)
 	 ***/
 	if (!eot && str->gclen <= bBeg + bLen + bSpc) {
 	    /* Save status then output partial result. */
-	    lbobj->bufstr = bufStr->str;
-	    lbobj->bufstrsiz = bufStr->len;
+	    lbobj->bufstr.str = bufStr->str;
+	    lbobj->bufstr.len = bufStr->len;
 	    bufStr->str = NULL;
 	    bufStr->len = 0;
 	    gcstring_destroy(bufStr);
 
-	    lbobj->bufspc = bufSpc->str;
-	    lbobj->bufspcsiz = bufSpc->len;
+	    lbobj->bufspc.str = bufSpc->str;
+	    lbobj->bufspc.len = bufSpc->len;
 	    bufSpc->str = NULL;
 	    bufSpc->len = 0;
 	    gcstring_destroy(bufSpc);
@@ -382,8 +417,8 @@ gcstring_t *linebreak_break_partial(linebreak_t *lbobj, gcstring_t *input)
             lbobj->bufcols = bufCols;
 
 	    s = gcstring_substr(str, bBeg, str->gclen - bBeg, NULL);
-            lbobj->unread = s->str;
-            lbobj->unreadsiz = s->len;
+            lbobj->unread.str = s->str;
+            lbobj->unread.len = s->len;
 	    s->str = NULL;
 	    s->len = 0;
 	    gcstring_destroy(s);
@@ -494,10 +529,10 @@ gcstring_t *linebreak_break_partial(linebreak_t *lbobj, gcstring_t *input)
 	     **/
 	    if (bufStr->len || bufSpc->len) {
 		s = _format(lbobj, LINEBREAK_STATE_LINE, bufStr);
-		gcstring_append(result, s);
+		unistr_append(result, s);
 		gcstring_destroy(s);
 		s = _format(lbobj, LINEBREAK_STATE_EOL, bufSpc);
-		gcstring_append(result, s);
+		unistr_append(result, s);
 		gcstring_destroy(s);
 
 		fmt = _format(lbobj, LINEBREAK_STATE_SOL, beforeFrg);
@@ -505,7 +540,8 @@ gcstring_t *linebreak_break_partial(linebreak_t *lbobj, gcstring_t *input)
 		    gcstring_destroy(beforeFrg);
 		    beforeFrg = fmt;
 		    newcols = _sizing(lbobj, 0, NULL, NULL, beforeFrg, 0);
-		}
+		} else 
+		    gcstring_destroy(fmt);
 	    }
 	    gcstring_shrink(bufStr, 0);
 	    gcstring_append(bufStr, beforeFrg);
@@ -542,11 +578,10 @@ gcstring_t *linebreak_break_partial(linebreak_t *lbobj, gcstring_t *input)
         if (action == MANDATORY) {
             /* Process mandatory break. */
 	    s = _format(lbobj, LINEBREAK_STATE_LINE, bufStr);
-	    gcstring_append(result, s);
+	    unistr_append(result, s);
 	    gcstring_destroy(s);
-
 	    s = _format(lbobj, LINEBREAK_STATE_EOP, bufSpc);
-	    gcstring_append(result, s);
+	    unistr_append(result, s);
 	    gcstring_destroy(s);
 
 	    /* eop done then sop must be carried out. */
@@ -571,10 +606,10 @@ gcstring_t *linebreak_break_partial(linebreak_t *lbobj, gcstring_t *input)
      *** Process end of text.
      ***/
     s = _format(lbobj, LINEBREAK_STATE_LINE, bufStr);
-    gcstring_append(result, s);
+    unistr_append(result, s);
     gcstring_destroy(s);
     s = _format(lbobj, LINEBREAK_STATE_EOT, bufSpc);
-    gcstring_append(result, s);
+    unistr_append(result, s);
     gcstring_destroy(s);
 
     /* Reset status then return the rest of result. */
@@ -582,17 +617,23 @@ gcstring_t *linebreak_break_partial(linebreak_t *lbobj, gcstring_t *input)
     return result;
 }
 
-gcstring_t *linebreak_break_fast(linebreak_t *lbobj, gcstring_t *input)
+unistr_t *linebreak_break_fast(linebreak_t *lbobj, unistr_t *input)
 {
-    gcstring_t *ret, *t;
+    unistr_t *ret, *t;
 
-    if (input == NULL || input->len == 0)
-	return gcstring_new(NULL, lbobj);
+    if (input == NULL || input->len == 0) {
+	ret = malloc(sizeof(unistr_t));
+	if (ret) {
+	    ret->str = NULL;
+	    ret->len = 0;
+	}
+	return ret;
+    }
 
     ret = linebreak_break_partial(lbobj, input);
     t = linebreak_break_partial(lbobj, NULL);
-    gcstring_append(ret, t);
-    gcstring_destroy(t);
+    unistr_append(ret, t);
+    unistrp_destroy(t);
 
     return ret;
 }
@@ -600,8 +641,7 @@ gcstring_t *linebreak_break_fast(linebreak_t *lbobj, gcstring_t *input)
 unistr_t *linebreak_break(linebreak_t *lbobj, unistr_t *input)
 {
     unichar_t *str;
-    unistr_t unistr = {0, 0}, *ret;
-    gcstring_t *s, *t;
+    unistr_t unistr = {0, 0}, *t, *ret;
     size_t i;
 
     if ((ret = malloc(sizeof(unistr_t))) == NULL)
@@ -614,35 +654,21 @@ unistr_t *linebreak_break(linebreak_t *lbobj, unistr_t *input)
     if ((str = malloc(sizeof(unichar_t) * 1000)) == NULL)
 	return NULL;
     for (i = 0; 1000 < input->len - i; i += 1000) {
-	memcpy(str, input->str + i, sizeof(unichar_t) * 1000);
-	unistr.str = str;
+	unistr.str = input->str + i;
 	unistr.len = 1000;
-	s = gcstring_new(&unistr, lbobj);
-	t = linebreak_break_partial(lbobj, s);
-	s->str = NULL;
-	gcstring_destroy(s);
-	ret->str = realloc(ret->str, sizeof(unichar_t) * (ret->len + t->len));
-	memcpy(ret->str + ret->len, t->str, sizeof(unichar_t) * t->len);
-	ret->len += t->len;
-	gcstring_destroy(t);
+	t = linebreak_break_partial(lbobj, &unistr);
+	unistr_append(ret, t);
+	unistrp_destroy(t);
     }
-    memcpy(str, input->str + i, sizeof(unichar_t) * (input->len - i));
-    unistr.str = str;
+    unistr.str = input->str + i;
     unistr.len = input->len - i;
-    s = gcstring_new(&unistr, lbobj);
-    t = linebreak_break_partial(lbobj, s);
-    s->str = NULL;
-    gcstring_destroy(s);
-    ret->str = realloc(ret->str, sizeof(unichar_t) * (ret->len + t->len));
-    memcpy(ret->str + ret->len, t->str, sizeof(unichar_t) * t->len);
-    ret->len += t->len;
-    gcstring_destroy(t);
+    t = linebreak_break_partial(lbobj, &unistr);
+    unistr_append(ret, t);
+    unistrp_destroy(t);
 
     t = linebreak_break_partial(lbobj, NULL);
-    ret->str = realloc(ret->str, sizeof(unichar_t) * (ret->len + t->len));
-    memcpy(ret->str + ret->len, t->str, sizeof(unichar_t) * t->len);
-    ret->len += t->len;
-    gcstring_destroy(t);
+    unistr_append(ret, t);
+    unistrp_destroy(t);
 
     free(str);
     return ret;
