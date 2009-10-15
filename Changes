@@ -1,4 +1,4 @@
-1.003_12  Xxx Oct XX 2009
+1.003.520  Thu Oct 15 2009
 
 	* NOTE: For changes on linebreak library see linebreak/ChangeLog.
 	* Fix: Makefile.PL: fix for dmake+MSWin32 (hopefully).
