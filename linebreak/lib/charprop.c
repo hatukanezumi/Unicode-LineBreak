@@ -55,9 +55,44 @@ void linebreak_charprop(linebreak_t *obj, unichar_t c,
 	    else if (cur->end < c)
 		top = cur + 1;
 	    else {
-		if (lbcptr) lbc = cur->lbc;
-		if (eawptr) eaw = cur->eaw;
-		if (gbcptr) gbc = cur->gbc;
+		lbc = cur->lbc;
+		eaw = cur->eaw;
+		gbc = cur->gbc;
+		/* Emulate unknown Grapheme_Cluster_Break property. */
+		if (lbc != PROP_UNKNOWN && gbc == PROP_UNKNOWN) {
+		    switch (lbc) {
+		    case LB_CR:
+			gbc = GB_CR;
+			break;
+		    case LB_LF:
+			gbc = GB_LF;
+			break;
+		    case LB_BK: case LB_NL: case LB_WJ: case LB_ZW:
+			gbc = GB_Control;
+			break;
+		    case LB_CM:
+			gbc = GB_Extend;
+			break;
+		    case LB_H2:
+			gbc = GB_LV;
+			break;
+		    case LB_H3:
+			gbc = GB_LVT;
+			break;
+		    case LB_JL:
+			gbc = GB_L;
+			break;
+		    case LB_JV:
+			gbc = GB_V;
+			break;
+		    case LB_JT:
+			gbc = GB_T;
+			break;
+		    default:
+			gbc = GB_Other;
+			break;
+		    }
+		}
 		break;
 	    }
 	}

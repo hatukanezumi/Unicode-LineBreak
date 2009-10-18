@@ -72,10 +72,13 @@ gcstring_t *_urgent_break(linebreak_t *lbobj, double cols,
 
 #define unistr_append(us, appe)						\
     if (appe != NULL && appe->len != 0) {				\
-	if (((us)->str =						\
-	     realloc((us)->str,						\
-		     sizeof(unichar_t) * ((us)->len + appe->len))) == NULL) \
+	unichar_t *_u;							\
+	if ((_u = realloc((us)->str,					\
+			  sizeof(unichar_t) * ((us)->len + appe->len))) \
+	    == NULL)							\
 	    return NULL;						\
+	else								\
+	    (us)->str = _u;						\
 	memcpy((us)->str + (us)->len, appe->str,			\
 	       sizeof(unichar_t) * appe->len);				\
 	(us)->len += appe->len;						\
@@ -638,6 +641,8 @@ unistr_t *linebreak_break_fast(linebreak_t *lbobj, unistr_t *input)
     return ret;
 }
 
+#define PARTIAL_LENGTH (1000)
+
 unistr_t *linebreak_break(linebreak_t *lbobj, unistr_t *input)
 {
     unistr_t unistr = {NULL, 0}, *t, *ret;
@@ -650,9 +655,9 @@ unistr_t *linebreak_break(linebreak_t *lbobj, unistr_t *input)
     if (input == NULL || input->str == NULL || input->len == 0)
 	return ret;
 
-    for (i = 0; 1000 < input->len - i; i += 1000) {
+    unistr.len = PARTIAL_LENGTH;
+    for (i = 0; PARTIAL_LENGTH < input->len - i; i += PARTIAL_LENGTH) {
 	unistr.str = input->str + i;
-	unistr.len = 1000;
 	if ((t = linebreak_break_partial(lbobj, &unistr)) == NULL) {
 	    unistrp_destroy(ret);
 	    return NULL;
@@ -660,8 +665,8 @@ unistr_t *linebreak_break(linebreak_t *lbobj, unistr_t *input)
 	unistr_append(ret, t);
 	unistrp_destroy(t);
     }
-    unistr.str = input->str + i;
     unistr.len = input->len - i;
+    unistr.str = input->str + i;
     if ((t = linebreak_break_partial(lbobj, &unistr)) == NULL) {
 	unistrp_destroy(ret);
 	return NULL;

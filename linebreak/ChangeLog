@@ -1,6 +1,7 @@
 1.4  Sun Oct 18 2009
-	* Fix: break.c: Cannot use custom functions when user data is NULL.
-	* Fix: gcstring_new(): Cannot tailor LB_SP character.
+	* Fix: break.c: Custom function won't be used when user data is NULL.
+	* Imp: linebreak_charprop(): Complement GCB property for characters
+	  with tailored LB property.
 	* Fix: gcstring_new(): Too large memory allocation.
 	* New: gcstring_newcopy().
 
@@ -11,5 +12,5 @@
 	* New: linebreak_break() and linebreak_break_fast().  Latter consumes
 	  heap size proportional to length of input.  lenebreak_break() is
 	  highly recommended.
-	* Chg: linebreak_break*() get unistr_t * input than return unistr_t *.
+	* Chg: linebreak_break*() get unistr_t * input then return unistr_t *.
 	* break.c: Cleanup codes.
