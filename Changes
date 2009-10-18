@@ -1,3 +1,11 @@
+1.004.520  Sun Oct 18 2009
+
+	* Imp: XS'ized built-in Format & UrgentBreak functions. 5-10% faster.
+	* Doc: Added an example of SizingMethod option.
+	* Doc: Added notes for utf8_mg_pos_cache_update panic.
+	* Added tests for Format & UrgentBreak options.
+	* Requires linebreak 1.4.x.
+
 1.003.520  Thu Oct 15 2009
 
 	* NOTE: For changes on linebreak library see linebreak/ChangeLog.

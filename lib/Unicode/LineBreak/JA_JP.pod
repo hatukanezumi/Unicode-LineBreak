@@ -353,6 +353,10 @@ SELF はオブジェクトのインスタンス、EVENT はサブルーチンが
 サブルーチンは、テキストの断片を修正して返さなければならない。なにも修正しなかったことを示すには、C<undef> を返せばよい。
 なお、C<"sot">、C<"sop">、C<"sol"> の文脈での修正はその後の分割位置の決定に影響するが、ほかの文脈での修正は影響しない。
 
+B<注意>:
+リリース 1.003 以降は、文字列の引数は Unicode::GCString オブジェクトである。
+L<Unicode::GCString::JA_JP/CAVEAT> 参照。
+
 たとえば次のコードは、行末の空白を取り除いて行折りをする。
 
     sub fmt {
@@ -362,7 +366,7 @@ SELF はオブジェクトのインスタンス、EVENT はサブルーチンが
         return undef;
     }
     my $lb = Unicode::LineBreak->new(Format => \&fmt);
-    print $lb->break($text);
+    $output = $lb->break($text);
 
 =head2 ユーザ定義の行分割動作
 
@@ -375,13 +379,17 @@ SELF はオブジェクトのインスタンス、LEN は先立つ行の長さ�
 
 サブルーチンは、文字列 STR を分割した結果の配列を返さなければならない。
 
+B<注意>:
+リリース 1.003 以降は、文字列の引数は Unicode::GCString オブジェクトである。
+L<Unicode::GCString::JA_JP/CAVEAT> 参照。
+
 たとえば次のコードは、若干の化学物質 (チチンのような) の名称にハイフンを挿入し、行折りできるようにする。
 
     sub hyphenize {
 	return map {$_ =~ s/yl$/yl-/; $_} split /(\w+?yl(?=\w))/, $_[4];
     }
     my $lb = Unicode::LineBreak->new(UrgentBreaking => \&hyphenize);
-    print $lb->break("Methionylthreonylthreonylglutaminylarginyl...");
+    $output = $lb->break("Methionylthreonylthreonylglutaminylarginyl...");
 
 L</UserBreaking> オプションの要素に [REGEX, SUBREF] の配列参照を指定する場合、サブルーチンは 2 つの引数を取らなければならない。
 
@@ -402,7 +410,7 @@ SELF はオブジェクトのインスタンス、STR は REGEX にマッチす�
         	       (?<=[=&]) (?=.)}x, $str;
     }
     my $lb = Unicode::LineBreak->new(UserBreaking => [$url, \&breakurl]);
-    print $lb->break($string);
+    $output = $lb->break($string);
 
 =head2 文字列長の算出
 
@@ -417,9 +425,28 @@ SELF はオブジェクトのインスタンス、LEN は先行する文字列�
 ひとつめの形式では、サブルーチンは C<PRE.SPC.STR> の桁数を算出して返さなければならない。
 桁数は整数でなくてもよい。桁数の単位は随意に選べるが、L</ColumnsMin> オプションおよび L</ColumnsMax> オプションのそれと一致させなければならない。
 
+たとえば次のコードは、行に 8 桁ごとのタブストップがあるものとして処理する。
+
+    sub tabbedsizing {
+        my ($self, $cols, $pre, $spc, $str, $max) = @_;
+	return undef if $max;
+
+        while ($spc =~ s/^( *)(\t+)//) {
+            $cols += length($1);
+            $cols += length($2) * 8 - $cols % 8;
+        }
+        $cols += length($spc);
+        return $cols + $self->strsize(0, '', '', $str);
+    };
+    my $lb = Unicode::LineBreak->new(TailorLB => [ord("\t") => LB_SP],
+                                     SizingMethod => \&tabbedsizing);
+    $output = $lb->break($string);
+
 ふたつめの形式では、サブルーチンは STR の部分文字列の I<Unicode 文字の数>の最大値を返さなければならない。部分文字列 SUBSTR は PRE.SPC.SUBSTR の桁数が MAX を超えないように取る。この形式は L</UrgentBreaking> オプションを C<"FORCE"> に設定した場合に使う。後の形式を実装したくなければ、C<undef> を返さなければならない。
 
-初期値では、文字列長の算出には strsize() を使っている。
+B<注意>:
+リリース 1.003 以降は、文字列の引数は Unicode::GCString オブジェクトである。
+L<Unicode::GCString::JA_JP/CAVEAT> 参照。
 
 =head2 文字の特性の手直し
 

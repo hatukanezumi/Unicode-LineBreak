@@ -386,6 +386,10 @@ C<undef> to express that no modification occurred.
 Note that modification in the context of C<"sot">, C<"sop"> or C<"sol"> may
 affect decision of successive breaking positions while in the others won't.
 
+B<Note>:
+As of release 1.003, string arguments are Unicode::GCString object.
+See L<Unicode::GCString/CAVEAT>.
+
 For example, following code folds lines removing trailing spaces:
 
     sub fmt {
@@ -395,7 +399,7 @@ For example, following code folds lines removing trailing spaces:
         return undef;
     }
     my $lb = Unicode::LineBreak->new(Format => \&fmt);
-    print $lb->break($text);
+    $output = $lb->break($text);
 
 =head2 User-Defined Breaking Behaviors
 
@@ -413,13 +417,17 @@ Unicode string to be broken.
 
 Subroutine should return an array of broken string STR.
 
+B<Note>:
+As of release 1.003, string arguments are Unicode::GCString object.
+See L<Unicode::GCString/CAVEAT>.
+
 For example, following code inserts hyphen to the name of several chemical substances (such as Titin) so that it may be folded:
 
     sub hyphenize {
         return map {$_ =~ s/yl$/yl-/; $_} split /(\w+?yl(?=\w))/, $_[4];
     }
     my $lb = Unicode::LineBreak->new(UrgentBreaking => \&hyphenize);
-    print $lb->break("Methionylthreonylthreonylglutaminylarginyl...");
+    $output = $lb->break("Methionylthreonylthreonylglutaminylarginyl...");
 
 If you specify [REGEX, SUBREF] array reference as an item of
 L</UserBreaking> option,
@@ -443,7 +451,7 @@ For example, following code break HTTP URLs using [CMOS] rule.
                        (?<=[=&]) (?=.)}x, $str;
     }
     my $lb = Unicode::LineBreak->new(UserBreaking => [$url, \&breakurl]);
-    print $lb->break($string);
+    $output = $lb->break($string);
 
 =head2 Calculating String Size
 
@@ -461,13 +469,32 @@ Unicode string to be processed.
 By the first format, subroutine should return calculated number of columns of C<PRE.SPC.STR>.
 The number of columns may not be an integer: Unit of the number may be freely chosen, however, it should be same as those of L</ColumnsMin> and L</ColumnsMax> option.
 
+For example, following code process lines with tab stops by each eight columns.
+
+    sub tabbedsizing {
+        my ($self, $cols, $pre, $spc, $str, $max) = @_;
+        return undef if $max;
+    
+        while ($spc =~ s/^( *)(\t+)//) {
+            $cols += length($1);
+            $cols += length($2) * 8 - $cols % 8;
+        }
+        $cols += length($spc);
+        return $cols + $self->strsize(0, '', '', $str);    
+    };
+    my $lb = Unicode::LineBreak->new(TailorLB => [ord("\t") => LB_SP],
+                                     SizingMethod => \&tabbedsizing);
+    $output = $lb->break($string);
+
 By the second format, subroutine should return maximum
 I<number of Unicode characters> that substring of STR contains
 by which number of columns PRE.SPC.SUBSTR contains may not exceed MAX.
 This format will be used when L</UrgentBreaking> option is set to C<"FORCE">.
 If you don't wish to implement latter format, C<undef> should be returned.
 
-By default, strsize() is used to calculate string sizes.
+B<Note>:
+As of release 1.003, string arguments are Unicode::GCString object.
+See L<Unicode::GCString/CAVEAT>.
 
 =head2 Tailoring Character Properties
 

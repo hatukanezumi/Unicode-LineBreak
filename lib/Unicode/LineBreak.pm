@@ -76,85 +76,6 @@ my $EASTASIAN_LANGUAGES = qr{
     ^ZH\b | ^CHI
 }ix;
 
-# Following table describes built-in behavior by L</Format> options.
-#
-#       | "DEFAULT"       | "NEWLINE"         | "TRIM"
-# ------+-----------------+-------------------+-------------------
-# "sot" | 
-# "sop" |                   not modify
-# "sol" |
-# ""    |
-# "eol" | append newline  | replace by newline| replace by newline
-# "eop" | not modify      | replace by newline| remove SPACEs
-# "eot" | not modify      | replace by newline| remove SPACEs
-# ----------------------------------------------------------------
-my %FORMAT_FUNCS = (
-    'DEFAULT' => sub {
-	return $_[2].$_[0]->config('Newline') if $_[1] eq 'eol';
-	undef;
-    },
-    'NEWLINE' => sub {
-	return $_[0]->config('Newline') if $_[1] =~ /^eo/;
-	undef;
-    },
-    'TRIM' => sub {
-	my $self = shift;
-	my $event = shift;
-	my $str = shift;
-	if ($event eq 'eol') {
-	    return $self->config('Newline');
-	} elsif ($event =~ /^eo/) {
-	    $str = $str->substr(1)
-		while $str->length and $str->lbclass(0) == LB_SP;
-	    return $str;
-	}
-	undef;
-    },
-);
-
-# Built-in behavior by L</SizingMethod> options.
-my %SIZING_FUNCS = (
-    'DEFAULT' => undef,
-);
-
-# Built-in urgent breaking brehaviors specified by C<UrgentBreaking>.
-my %URGENT_BREAKING_FUNCS = (
-    'CROAK' => sub { croak "Excessive line was found" },
-    'FORCE' => sub {
-    my $self = shift;
-    my $len = shift;
-    my $pre = shift;
-    my $spc = shift;
-    my $str = shift;
-    return () unless length $spc or length $str;
-    $str = $str->as_string if ref $str; # prevent utf8_mg_pos_cache_update panic
-
-    my $max = $self->config('ColumnsMax') || 0;
-    my $sizing = $self->{SizingMethod};
-    unless (ref $sizing eq 'CODE') {
-	if ($sizing) {
-	    $sizing = $SIZING_FUNCS{$sizing};
-	}
- 	$sizing ||= \&strsize;
-    }
-    my @result = ();
-
-    while (1) {
-        my $idx = &{$sizing}($self, $len, $pre, $spc, $str, $max);
-        if (0 < $idx) {
-	    push @result, substr($str, 0, $idx);
-	    $str = substr($str, $idx);
-	    last unless length $str;
-        } elsif (!$len and $idx <= 0) {
-	    push @result, $str;
-	    last;
-	}
-	($len, $pre, $spc) = (0, '', '');
-    }
-    @result; },
-    'NONBREAK' => undef,
-);
-
 # Built-in custom breaking behaviors specified by C<UserBreaking>.
 my $URIre = qr{
 	       \b
@@ -241,32 +162,15 @@ sub config ($@) {
     ## Utility options.
     # Format method.
     if (defined $copts{Format}) {
-	if (ref $copts{Format} eq 'CODE') {
-	    $config{Format} = $copts{Format};
-	} else {
-	    $config{Format} =
-		$FORMAT_FUNCS{uc $copts{Format}} ||
-		$FORMAT_FUNCS{'DEFAULT'};
-	}
+	$config{Format} = $copts{Format};
     }
     # Sizing method
     if (defined $copts{SizingMethod}) {
-	if (ref $copts{SizingMethod} eq 'CODE') {
-	    $config{SizingMethod} = $copts{SizingMethod};
-	} else {
-	    $config{SizingMethod} =
-		$SIZING_FUNCS{uc $copts{SizingMethod}} ||
-		$SIZING_FUNCS{'DEFAULT'};
-	}
+	$config{SizingMethod} = $copts{SizingMethod};
     }
     # Urgent break
     if (defined $copts{UrgentBreaking}) {
-	if (ref $copts{UrgentBreaking} eq 'CODE') {
-	    $config{UrgentBreaking} = $copts{UrgentBreaking};
-	} else {
-	    $config{UrgentBreaking} =
-		$URGENT_BREAKING_FUNCS{uc $copts{UrgentBreaking}} || undef;
-	}
+	$config{UrgentBreaking} = $copts{UrgentBreaking};
     }
     # Custom break
     if (defined $copts{UserBreaking}) {

@@ -160,6 +160,25 @@ OFFSET を指定した場合は、次の位置をそれにする。
 
 =back
 
+=head1 CAVEAT
+
+Perl の 8.10.1 版あたりでは、Unicode::GCString オブジェクトから Unicode 文字列への暗黙の変換が C<"utf8_mg_pos"> キャッシュを混乱させることがある。
+
+たとえば、つぎのように
+
+    $sub = substr($gcstring, $i, $j);
+
+するかわりに、つぎのように
+
+    $sub = substr("$gcstring", $i, $j);
+
+または、つぎのように
+
+    $string = $gcstring->as_string;
+    $sub = substr($string, $i, $j);
+
+するとよい。
+
 =head1 VERSION
 
 $VERSION 変数を参照してほしい。

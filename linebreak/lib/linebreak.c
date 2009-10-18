@@ -23,12 +23,38 @@ extern void linebreak_charprop(linebreak_t *, unichar_t,
                                propval_t *, propval_t *, propval_t *,
                                propval_t *);
 
+static const linebreak_t initlbobj = {
+    1UL,			/* refcount */
+    LINEBREAK_STATE_NONE,	/* state */
+    {(unichar_t *)NULL, 0},	/* bufstr */
+    {(unichar_t *)NULL, 0},	/* bufspc */
+    0.0,			/* bufcols */
+    {(unichar_t *)NULL, 0},	/* unread */
+    0,				/* charmax */
+    998.0,			/* colmax */
+    0.0,			/* colmin */
+    (mapent_t *)NULL,		/* map */
+    0,				/* mapsiz */
+    {(unichar_t *)NULL, 0},	/* newline */
+    0,				/* options */
+    NULL,			/* format_data */
+    NULL,			/* sizing_data */
+    NULL,			/* urgent_data */
+    NULL,			/* user_data */
+    NULL,			/* stash */
+    (gcstring_t *(*)())NULL,	/* format_func */
+    (double (*)())NULL,		/* sizing_func */
+    (gcstring_t *(*)())NULL,	/* urgent_func */
+    (gcstring_t *(*)())NULL,	/* user_func */
+    (void (*)())NULL		/* ref_func */
+};
+
 linebreak_t *linebreak_new()
 {
     linebreak_t *obj;
     if ((obj = malloc(sizeof(linebreak_t)))== NULL)
 	return NULL;
-    memset(obj, 0, sizeof(linebreak_t));
+    memcpy(obj, &initlbobj, sizeof(linebreak_t));
     obj->refcount = 1UL;
     return obj;
 }

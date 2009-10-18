@@ -1,3 +1,7 @@
+2009-10-17  Hatuka*nezumi - IKEDA Soji <hatuka(at)nezumi.nu>
+
+	* Text::Wrap compatible functions.
+
 2009-05-29  Hatuka*nezumi - IKEDA Soji <hatuka(at)nezumi.nu>
 
 	* Perform appropriate line breaking for South East Asian complex
@@ -8,7 +12,7 @@
 
 2009-05-17  Hatuka*nezumi - IKEDA Soji <hatuka(at)nezumi.nu>
 
-	* Full XS version for speed. - almost DONE by 1.003_12.
+	* Full XS version for speed. - DONE by 1.004, except functions using regexp.
 
 2009-05-11  Hatuka*nezumi - IKEDA Soji <hatuka(at)nezumi.nu>
 

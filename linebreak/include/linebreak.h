@@ -148,6 +148,7 @@ typedef struct {
  *** Public functions, global variables and macros.
  ***/
 extern gcstring_t *gcstring_new(unistr_t *, linebreak_t *);
+extern gcstring_t *gcstring_newcopy(unistr_t *, linebreak_t *);
 extern gcstring_t *gcstring_copy(gcstring_t *);
 extern void gcstring_destroy(gcstring_t *);
 extern gcstring_t *gcstring_append(gcstring_t *, gcstring_t *);

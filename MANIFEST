@@ -92,6 +92,7 @@ testin/fr.fixed.out
 testin/fr.flowed.out
 testin/fr.format.out
 testin/fr.in
+testin/fr.newline.out
 testin/fr.out
 testin/fr.plain.out
 testin/ja-a.in
@@ -107,6 +108,7 @@ testin/ja.out
 testin/ja.plain.out
 testin/ko.al.out
 testin/ko.in
+testin/ko.newline.out
 testin/ko.out
 testin/ru.in
 testin/ru.out

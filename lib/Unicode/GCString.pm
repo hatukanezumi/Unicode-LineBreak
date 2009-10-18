@@ -214,6 +214,24 @@ Returns next position of grapheme cluster string.
 
 =back
 
+=head1 CAVEAT
+
+On Perl around 8.10.1, implicit conversion from Unicode::GCString object to
+Unicode string sometimes let C<"utf8_mg_pos"> cache be confused.
+
+For example, instead of doing
+
+    $sub = substr($gcstring, $i, $j);
+
+do
+
+    $sub = substr("$gcstring", $i, $j);
+
+or do
+
+    $string = $gcstring->as_string;
+    $sub = substr($string, $i, $j);
+
 =head1 VERSION
 
 Consult $VERSION variable.

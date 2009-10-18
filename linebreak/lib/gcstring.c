@@ -47,34 +47,34 @@ void _gcinfo(linebreak_t *obj, unistr_t *str, size_t pos,
     ggbc = gbc;
     gscr = scr;
 
-    switch (gbc) {
+    if (lbc == LB_SP) /* Special case. */
+	;
+    else switch (gbc) {
     case GB_LF: /* GB5 */
-	break;
+	break; /* switch (gbc) */
 
     case GB_CR: /* GB3, GB4, GB5 */
 	if (pos < str->len) {
-	    linebreak_charprop(obj, str->str[pos], NULL, NULL, &gbc, NULL);
+	    linebreak_charprop(obj, str->str[pos], NULL, &eaw, &gbc, NULL);
 	    if (gbc == GB_LF) {
 		pos++;
 		glen++;
+		gcol += eaw2col(eaw);
 	    }
 	}
-	break;
+	break; /* switch (gbc) */
 
     case GB_Control: /* GB4 */
-	break;
+	break; /* switch (gbc) */
 
     default:
-	if (glbc == LB_SP) /* Special case */
-	    break;
-
 	pcol = 0;
 	ecol = 0;
 	while (pos < str->len) { /* GB2 */
 	    linebreak_charprop(obj, str->str[pos], &lbc, &eaw, &ngbc, &scr);
 	    /* GB5 */
 	    if (ngbc == GB_Control || ngbc == GB_CR || ngbc == GB_LF)
-		break;
+		break; /* while (pos < str->len) */
 	    /* GB6 - GB8 */
 	    /*
 	     * Assume hangul syllable block is always wide, while most of
@@ -96,7 +96,7 @@ void _gcinfo(linebreak_t *obj, unistr_t *str, size_t pos,
 		ecol += eaw2col(eaw);
 		pos++;
 		glen++;
-		continue;
+		continue; /* while (pos < str->len) */
 	    }
 	    /* GB9b */
 	    else if (gbc == GB_Prepend) {
@@ -108,15 +108,15 @@ void _gcinfo(linebreak_t *obj, unistr_t *str, size_t pos,
 	    }
 	    /* GB10 */
 	    else
-		break;
+		break; /* while (pos < str->len) */
 
 	    pos++;
 	    glen++;
 	    gbc = ngbc;
 	} /* while (pos < str->len) */
 	gcol += pcol + ecol;
-	break;
-    }
+	break; /* switch (gbc) */
+    } /* switch (gbc) */
 
     if (glbc == LB_SA) {
 #ifdef USE_LIBTHAI
@@ -146,12 +146,19 @@ gcstring_t *gcstring_new(unistr_t *unistr, linebreak_t *lbobj)
 
     if ((gcstr = malloc(sizeof(gcstring_t))) == NULL)
 	return NULL;
-    memset(gcstr, 0, sizeof(gcstring_t));
-
-    if (lbobj == NULL)
-	gcstr->lbobj = linebreak_new();
-    else
+    gcstr->str = NULL;
+    gcstr->len = 0;
+    gcstr->gcstr = NULL;
+    gcstr->gclen = 0;
+    gcstr->pos = 0;
+    if (lbobj == NULL) {
+	if ((gcstr->lbobj = linebreak_new()) == NULL) {
+	    free(gcstr);
+	    return NULL;
+	}
+    } else
 	gcstr->lbobj = linebreak_incref(lbobj);
+
     if (unistr == NULL || unistr->str == NULL || unistr->len == 0)
 	return gcstr;
     gcstr->str = unistr->str;
@@ -159,7 +166,8 @@ gcstring_t *gcstring_new(unistr_t *unistr, linebreak_t *lbobj)
 
     for (pos = 0; pos < len; pos += glen) {
 	if ((gcstr->gcstr =
-	     realloc(gcstr->gcstr, sizeof(gcchar_t) * (pos + 1))) == NULL)
+	     realloc(gcstr->gcstr, sizeof(gcchar_t) * (gcstr->gclen + 1)))
+	    == NULL)
 	    return NULL;
 	_gcinfo(gcstr->lbobj, unistr, pos, &glen, &gcol, &glbc);
 	gc.idx = pos;
@@ -171,6 +179,29 @@ gcstring_t *gcstring_new(unistr_t *unistr, linebreak_t *lbobj)
     }
 
     return gcstr;
+}
+
+gcstring_t *gcstring_newcopy(unistr_t *str, linebreak_t *lbobj)
+{
+    unistr_t unistr = {NULL, 0};
+
+    if (str->str && str->len) {
+	if ((unistr.str = malloc(sizeof(unichar_t) * str->len)) == NULL)
+	    return NULL;
+	memcpy(unistr.str, str->str, sizeof(unichar_t) * str->len);
+	unistr.len = str->len;
+    }
+    return gcstring_new(&unistr, lbobj);
+}
+
+void gcstring_destroy(gcstring_t *gcstr)
+{
+    if (gcstr == NULL)
+	return;
+    if (gcstr->str) free(gcstr->str);
+    if (gcstr->gcstr) free(gcstr->gcstr);
+    if (gcstr->lbobj) linebreak_destroy(gcstr->lbobj);
+    free(gcstr);
 }
 
 gcstring_t *gcstring_copy(gcstring_t *gcstr)
@@ -203,28 +234,21 @@ gcstring_t *gcstring_copy(gcstring_t *gcstr)
 	memcpy(newgcstr, gcstr->gcstr, sizeof(gcchar_t) * gcstr->gclen);
     }
     new->gcstr = newgcstr;
-    if (gcstr->lbobj != NULL)
+    if (gcstr->lbobj == NULL) {
+	if ((new->lbobj = linebreak_new()) == NULL) {
+	    gcstring_destroy(new);
+	    return NULL;
+	}
+    } else
 	new->lbobj = linebreak_incref(gcstr->lbobj);
-    else
-	new->lbobj = linebreak_new();
     new->pos = 0;
 
     return new;
 }
 
-void gcstring_destroy(gcstring_t *gcstr)
-{
-    if (gcstr == NULL)
-	return;
-    if (gcstr->str) free(gcstr->str);
-    if (gcstr->gcstr) free(gcstr->gcstr);
-    if (gcstr->lbobj) linebreak_destroy(gcstr->lbobj);
-    free(gcstr);
-}
-
 gcstring_t *gcstring_append(gcstring_t *gcstr, gcstring_t *appe)
 {
-    unistr_t ustr = {0, 0};
+    unistr_t ustr = {NULL, 0};
 
     if (gcstr == NULL)
 	return (errno = EINVAL), NULL;
