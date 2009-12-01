@@ -1,6 +1,7 @@
 2009-10-17  Hatuka*nezumi - IKEDA Soji <hatuka(at)nezumi.nu>
 
 	* Text::Wrap compatible functions.
+	  - Unsatisfactorily DONE for wrap() by 1.005.
 
 2009-05-29  Hatuka*nezumi - IKEDA Soji <hatuka(at)nezumi.nu>
 

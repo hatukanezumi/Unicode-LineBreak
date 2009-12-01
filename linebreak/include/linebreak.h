@@ -1,5 +1,5 @@
 /*
- * common.h - common definitions
+ * linebreak.h - common definitions for linebreak library
  * 
  * Copyright (C) 2009 by Hatuka*nezumi - IKEDA Soji.  All rights reserved.
  *
@@ -17,7 +17,9 @@
 
 #ifndef _LINEBREAK_LINEBREAK_H_
 
+#ifdef HAVE_CONFIG_H
 #include "config.h"
+#endif
 #include <errno.h>
 #include <stddef.h>
 #include <stdlib.h>
@@ -31,7 +33,9 @@
  ***/
 
 /* Primitive types */
+/** Unicode character */
 typedef unsigned int unichar_t;
+/** Character property */
 typedef unsigned char propval_t;
 typedef enum {
     LINEBREAK_STATE_NONE = 0,
@@ -45,71 +49,124 @@ typedef enum {
 #define LINEBREAK_STATE_SOL_FORMAT (-LINEBREAK_STATE_SOL)
 
 
-/* Unicode string */
+/** Unicode string */
 typedef struct {
+    /** Sequence of Unicode character.
+     * Note that NUL character (U+0000) may be contained.
+     * NULL may specify zero-length string. */
     unichar_t *str;
+    /** Length of Unicode character sequence. */
     size_t len;
 } unistr_t;
 
-/* Grapheme cluster */
+/** Grapheme cluster */
 typedef struct {
-    size_t idx; size_t len;
+    /** Offset of Unicode string. */
+    size_t idx;
+    /** Length of Unicode string. */
+    size_t len;
+    /** Caliculated number of columns. */
     size_t col;
+    /** Line breaking class of grapheme base. */
     propval_t lbc;
+    /** User-defined flag. */
     unsigned char flag;
 } gcchar_t;
 
-/* Property map entry */
+/** Property map entry */
 typedef struct {
+    /** Beginning of UCS range. */
     unichar_t beg;
+    /** End of UCS range. */
     unichar_t end;
+    /** UAX #14 line breaking class. */
     propval_t lbc;
+    /** UAX #11 East_Asian_Width property value. */
     propval_t eaw;
+    /** UAX #29 Grapheme_Cluster_Break property value. */
     propval_t gbc;
+    /** Script property value. */
     propval_t scr;
 } mapent_t;
 
-/* GCString object */
+/** Grapheme cluster string. */
 typedef struct {
+    /** Sequence of Unicode characters.
+     * Note that NUL character (U+0000) may be contained.
+     * NULL may specify zero-length string. */
     unichar_t *str;
+    /** Number of Unicode characters. */
     size_t len;
+    /** Sequence of grapheme clusters. */
     gcchar_t *gcstr;
+    /** Number of grapheme clusters.
+	NULL may specify zero-length string. */
     size_t gclen;
+    /** Next position. */
     size_t pos;
-    void *lbobj; /* linebreak_t * */
+    /** linebreak object. */
+    void *lbobj;
 } gcstring_t;
 
-/* LineBreak object */
+/** LineBreak object */
 typedef struct {
-    /*
+    /***
      * private members
      */
-    unsigned long int refcount;	/* reference count */
-    int state;			/* state */
-    unistr_t bufstr;		/* buffered line */
-    unistr_t bufspc;		/* spaces trailing to buffered line */
-    double bufcols;		/* caliculated columns of buffered line */
-    unistr_t unread;		/* unread input */
+    /** reference count */
+    unsigned long int refcount;
+    /** state */
+    int state;
+    /** buffered line */
+    unistr_t bufstr;
+    /** spaces trailing to buffered line */
+    unistr_t bufspc;
+    /** caliculated columns of buffered line */
+    double bufcols;
+    /** unread input */
+    unistr_t unread;
 
-    /*
+    /***
      * public members
      */
+    /** Maximum number of Unicode characters each line may contain. */
     size_t charmax;
+    /** Maximum number of columns. */
     double colmax;
+    /** Minimum number of columns. */
     double colmin;
+    /** User-tailored property map. */
     mapent_t *map;
     size_t mapsiz;
+    /** Newline sequence. */
     unistr_t newline;
+    /** Options.  See Defines. */
     unsigned int options;
     void *format_data;
     void *sizing_data;
     void *urgent_data;
     void *user_data;
+    /** User-defined private data. */
     void *stash;
+    /** Format function.
+     *
+     */
     gcstring_t *(*format_func)();
+    /** Sizing function.
+     *
+     */
     double (*sizing_func)();
+    /** Urgent breaking function.
+     *
+     */
     gcstring_t *(*urgent_func)();
+    /** Preprocessing function.
+     *
+     */
     gcstring_t *(*user_func)();
+    /** Reference Count function.
+     *
+     */
     void (*ref_func)();
 } linebreak_t;
 

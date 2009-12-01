@@ -120,7 +120,7 @@ Returns number of grapheme clusters contained in grapheme cluster string.
 =item C<">OBJECTC<">
 
 I<Instance method>.
-Convert grapheme cluster string to Unicode string.
+Convert grapheme cluster string to Unicode string explicitly.
 
 =item cmp (STRING)
 
@@ -216,7 +216,7 @@ Returns next position of grapheme cluster string.
 
 =head1 CAVEAT
 
-On Perl around 8.10.1, implicit conversion from Unicode::GCString object to
+On Perl around 5.10.1, implicit conversion from Unicode::GCString object to
 Unicode string sometimes let C<"utf8_mg_pos"> cache be confused.
 
 For example, instead of doing

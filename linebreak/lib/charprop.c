@@ -24,10 +24,6 @@ extern size_t linebreak_hashsiz;
 
 #define HASH_MODULUS (1U << 13)
 
-/*
- * linebreak_charprop (obj, c, *lbcptr, *eawptr, *gbcptr, *scrptr)
- * Examine hash table search.
- */
 static mapent_t
 PROPENT_HAN =        {0, 0, LB_ID, EA_W, GB_Other, SC_Han},
 PROPENT_HANGUL_LV =  {0, 0, LB_H2, EA_W, GB_LV, SC_Hangul},
@@ -35,6 +31,24 @@ PROPENT_HANGUL_LVT = {0, 0, LB_H3, EA_W, GB_LVT, SC_Hangul},
 PROPENT_PRIVATE =    {0, 0, LB_AL, EA_A, GB_Other, SC_Unknown}, /* XX */
 PROPENT_UNKNOWN =    {0, 0, LB_AL, EA_N, GB_Other, SC_Unknown}; /* XX/SG */
 
+/** Search for character properties.
+ * 
+ * Configuration parameters of linebreak object:
+ *
+ * * map, mapsiz: custom property map overriding built-in map.
+ *
+ * * options: if LINEBREAK_OPTION_EASTASIAN_CONTEXT bit is set,
+ *   LB_AI and EA_A are resolved to LB_ID and EA_F. Otherwise, LB_AL and EA_N,
+ *   respectively.
+ *
+ * @param[in] obj linebreak object.
+ * @param[in] c Unicode character.
+ * @param[out] lbcptr UAX #14 line breaking class.
+ * @param[out] eawptr UAX #11 East_Asian_Width property value.
+ * @param[out] gbcptr UAX #29 Grapheme_Cluster_Break property value.
+ * @param[out] scrptr Script (limited to several scripts).
+ * @return none.
+ */
 void linebreak_charprop(linebreak_t *obj, unichar_t c,
 			propval_t *lbcptr, propval_t *eawptr,
 			propval_t *gbcptr, propval_t *scrptr)
@@ -44,7 +58,7 @@ void linebreak_charprop(linebreak_t *obj, unichar_t c,
     propval_t lbc = PROP_UNKNOWN, eaw = PROP_UNKNOWN, gbc = PROP_UNKNOWN,
 	scr = PROP_UNKNOWN;
 
-    /* First, search custom map. */
+    /* First, search custom map using binary search. */
     if (obj->map && obj->mapsiz) {
 	top = obj->map;
 	bot = obj->map + obj->mapsiz - 1;
@@ -58,7 +72,7 @@ void linebreak_charprop(linebreak_t *obj, unichar_t c,
 		lbc = cur->lbc;
 		eaw = cur->eaw;
 		gbc = cur->gbc;
-		/* Emulate unknown Grapheme_Cluster_Break property. */
+		/* Complement unknown Grapheme_Cluster_Break property. */
 		if (lbc != PROP_UNKNOWN && gbc == PROP_UNKNOWN) {
 		    switch (lbc) {
 		    case LB_CR:
@@ -98,7 +112,7 @@ void linebreak_charprop(linebreak_t *obj, unichar_t c,
 	}
     }
 
-    /* Otherwise, search built-in map. */
+    /* Otherwise, search built-in map using hash table. */
     if ((lbcptr && lbc == PROP_UNKNOWN) ||
 	(eawptr && eaw == PROP_UNKNOWN) ||
 	(gbcptr && gbc == PROP_UNKNOWN)) {

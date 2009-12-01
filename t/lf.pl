@@ -26,5 +26,28 @@ sub do5tests {
     }
 }    
 
+sub dowraptest {
+    my $in = shift;
+    my $out = shift;
+
+    open IN, "<testin/$in.in" or die "open: $!";
+    my $instring = join '', <IN>;
+    close IN;
+    my $lf = Text::LineFold->new(@_);
+    my $folded = $lf->fold("\t", ' ' x 4, $instring);
+
+    my $outstring = '';
+    if (open OUT, "<testin/$out.wrap.out") {
+        $outstring = join '', <OUT>;
+        close OUT;
+    } else {
+        open XXX, ">testin/$out.wrap.xxx";
+        print XXX $folded;
+        close XXX;
+    }
+
+    is($folded, $outstring);
+}
+
 1;
 

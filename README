@@ -13,6 +13,9 @@ Perl 5.8.0 or later is required.
 Optionally, libthai package is needed to support Thai word segmentation:
     http://linux.thai.net/projects/libthai
 
+Additionally, pkg-config 0.9.0 or later will be required for libthai and/or
+shared linebreak library.
+
 Install
 =======
 
@@ -23,9 +26,9 @@ $ make
 $ make test
 # make install
 
-If you wish to disable libthai feature, do:
+If you wish to disable libthai feature explicitly, do:
 
-$ perl Makefile.PL nolibthai
+$ perl Makefile.PL --disable-libthai
 $ make
 $ make test
 # make install

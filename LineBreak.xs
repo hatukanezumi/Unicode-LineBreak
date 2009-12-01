@@ -14,7 +14,11 @@
 #include "perl.h"
 #include "XSUB.h"
 #include "ppport.h"
+#define PERL_MODULE_VERSION VERSION
+#undef VERSION
 #include "linebreak.h"
+#undef VERSION
+#define VERSION PERL_MODULE_VERSION
 
 /***
  *** Utilities.

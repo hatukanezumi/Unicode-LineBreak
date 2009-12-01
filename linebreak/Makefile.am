@@ -14,6 +14,9 @@ liblinebreak_la_LDFLAGS = -version-info 1:0:1 @LIBTHAI_LIBS@
 include_HEADERS = include/linebreak.h include/linebreak_constants.h
 nodist_include_HEADERS = 
 
+pkgconfigdir = $(libdir)/pkgconfig
+pkgconfig_DATA = liblinebreak.pc
+
 pkgdata_DATA = 
 pkgdatasubdir = 
 pkgdatasub_DATA = 

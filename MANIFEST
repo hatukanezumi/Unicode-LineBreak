@@ -35,7 +35,7 @@ linebreak/config.guess
 linebreak/config.h.in
 linebreak/config.sub
 linebreak/configure
-linebreak/configure.in
+linebreak/configure.ac
 linebreak/COPYING
 linebreak/depcomp
 linebreak/include/linebreak.h
@@ -49,6 +49,7 @@ linebreak/lib/charprop.c
 linebreak/lib/gcstring.c
 linebreak/lib/linebreak.c
 linebreak/lib/southeastasian.c
+linebreak/liblinebreak.pc.in
 linebreak/ltmain.sh
 linebreak/Makefile.am
 linebreak/Makefile.in
@@ -73,6 +74,7 @@ t/08partial.t
 t/09uri.t
 t/10gcstring.t
 t/11format.t
+t/12fold2.t
 t/lb.pl
 t/lf.pl
 t/pod.t
@@ -95,6 +97,7 @@ testin/fr.in
 testin/fr.newline.out
 testin/fr.out
 testin/fr.plain.out
+testin/fr.wrap.out
 testin/ja-a.in
 testin/ja-a.out
 testin/ja-k.in
@@ -106,6 +109,7 @@ testin/ja.format.out
 testin/ja.in
 testin/ja.out
 testin/ja.plain.out
+testin/ja.wrap.out
 testin/ko.al.out
 testin/ko.in
 testin/ko.newline.out

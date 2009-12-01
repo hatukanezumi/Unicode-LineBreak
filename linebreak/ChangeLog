@@ -1,3 +1,10 @@
+1.4.p1  Thu Oct 29 2009
+	* southeastasian.c: Added assert() to check broken libthai.
+	* Fix: break.c: NULL arguments for _sizing() and _urgent_break() may
+	  cause segfault in user-defined functions.
+	* Supports pkg-config.
+	* Added documentations.
+
 1.4  Sun Oct 18 2009
 	* Fix: break.c: Custom function won't be used when user data is NULL.
 	* Imp: linebreak_charprop(): Complement GCB property for characters

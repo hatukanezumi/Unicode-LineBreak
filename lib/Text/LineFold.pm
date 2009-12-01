@@ -52,6 +52,7 @@ our $Config = {
     Charset => 'UTF-8',
     Language => 'XX',
     OutputCharset => undef,
+    TabSize => 8,
 };
 
 ### Privates
@@ -174,6 +175,12 @@ It may be string or instance of L<MIME::Charset> object.
 If a special value C<"_UNICODE_"> is specified, result will be Unicode string.
 Default is the value of Charset option.
 
+=item TabSize => NUMBER
+
+Column width of tab stops.
+When 0 is specified, horizontal tab characters are ignored.
+Default is 8.
+
 =item CharactersMax
 
 =item ColumnsMin
@@ -185,8 +192,6 @@ Default is the value of Charset option.
 =item LegacyCM
 
 =item Newline
-
-=item SizingMethod
 
 =item TailorEA
 
@@ -206,7 +211,7 @@ See L<Unicode::LineBreak/Options>.
 
 sub config {
     my $self = shift;
-    my @opts = qw{Charset Language OutputCharset};
+    my @opts = qw{Charset Language OutputCharset TabSize};
     my %opts = map { (uc $_ => $_) } @opts;
 
     # Get config.
@@ -252,16 +257,55 @@ sub config {
 			       Context =>
 			       context(Charset => $self->{Charset},
 				       Language => $self->{Language}));
+
+    ## Set sizing method.
+    ## Note: Example in Unicode::LineBreak POD treats $spcstr as Perl string.
+    ## Following code is more efficient.
+    Unicode::LineBreak::config($self, SizingMethod => sub {
+	my ($self, $cols, $pre, $spc, $str, $max) = @_;
+	return undef if $max;
+
+	my $tabsize = $self->{TabSize};
+	my $spcstr = $spc.$str;
+	$spcstr->pos(0);
+	while (!$spcstr->eos and $spcstr->lbclass($spcstr->pos) == LB_SP) {
+	    my $c = $spcstr->next;
+	    if ($c eq "\t") {
+		$cols += $tabsize - $cols % $tabsize if $tabsize;
+	    } else {
+		$cols += $c->columns;
+	    }
+	}
+	return $cols + $spcstr->substr($spcstr->pos)->columns;
+    });
+
+    ## Classify horizontal tab as line breaking class SP.
+    my @tailor_lb = @{Unicode::LineBreak::config($self, 'TailorLB')};
+    Unicode::LineBreak::config($self,
+			       TailorLB => [@tailor_lb, ord("\t") => LB_SP]);
+    ## Tab size
+    if (defined $self->{TabSize}) {
+	croak "Invalid TabSize option" unless $self->{TabSize} =~ /^\d+$/;
+	$self->{TabSize} += 0;
+    } else {
+	$self->{TabSize} = $Config->{TabSize};
+    }
 }
 
 =over 4
 
-=item $self->fold (STRING, METHOD)
+=item $self->fold (STRING, [METHOD])
+
+=item $self->fold (INITIAL_TAB, SUBSEQUENT_TAB, STRING, ...)
 
 I<Instance method>.
 fold() folds lines of string STRING and returns it.
+Surplus SPACEs and horizontal tabs at end of line are removed,
+newline sequences are replaced by that specified by Newline option
+and newline is appended at end of text if it does not exist.
+Horizontal tabs are treated as tab stops according to TabSize option.
 
-Following options may be specified for METHOD argument.
+By the first style, following options may be specified for METHOD argument.
 
 =over 4
 
@@ -280,9 +324,10 @@ Default method.
 
 =back
 
-By any options, surplus SPACEs at end of line are removed,
-newline sequences are replaced by that specified by Newline option
-and newline is appended at end of text if it does not exist.
+Second style is similar to L<Text::Wrap/wrap()>.
+All lines are folded.
+INITIAL_TAB is inserted at beginning of paragraphs and SUBSEQUENT_TAB
+at beginning of other broken lines.
 
 =back
 
@@ -294,14 +339,67 @@ my $special_break = qr/([\x{000B}\x{000C}\x{0085}\x{2028}\x{2029}])/os;
 sub fold {
     my $self = shift;
     my $str = shift;
-    return '' unless defined $str and length $str;
     my $method = uc(shift || '');
 
-    ## Get format method.
-    $self->SUPER::config(Format => $FORMAT_FUNCS{$method} ||
-				   $FORMAT_FUNCS{'PLAIN'});
-    ## Decode string.
-    $str = $self->{_charset}->decode($str) unless is_utf8($str);
+    if (scalar @_) {
+	my $initial_tab = $str;
+	$initial_tab = $self->{_charset}->decode($initial_tab)
+	    unless is_utf8($initial_tab);
+	my $subsequent_tab = $method;
+	$subsequent_tab = $self->{_charset}->decode($subsequent_tab)
+	    unless is_utf8($subsequent_tab);
+	my @str = @_;
+
+	## Decode and concat strings.
+	$str = shift @str;
+	$str = $self->{_charset}->decode($str) unless is_utf8($str);
+	foreach my $s (@str) {
+	    next unless defined $s and length $s;
+
+	    $s = $self->{_charset}->decode($s) unless is_utf8($s);
+	    unless (length $str) {
+		$str = $s;
+	    } elsif ($str =~ /\s$/ or $s =~ /^\s/) {
+		$str .= $s;
+	    } else {
+		my ($b_cls, $a_cls);
+		my $i = length $str;
+		do {
+		    $i--;
+		    $b_cls = $self->lbclass(substr($str, $i));
+		} while ($b_cls == LB_CM and 0 < $i);
+		$b_cls = LB_AL if $b_cls == LB_CM or $b_cls == LB_SP;
+		$a_cls = $self->lbclass($s);
+		$a_cls = LB_AL if $a_cls == LB_CM;
+
+		if ($self->lbrule($b_cls, $a_cls) == INDIRECT) {
+		    $str .= ' '.$s;
+		} else {
+		    $str .= $s;
+		}
+	    }
+	}
+
+	## Set options.
+	$self->SUPER::config(Format => sub {
+	    my $self = shift;
+	    my $event = shift;
+	    my $str = shift;
+	    if ($event =~ /^eo/) { return "\n"; }
+	    if ($event =~ /^so[tp]/) { return $initial_tab.$str; }
+	    if ($event eq 'sol') { return $subsequent_tab.$str; }
+	    undef;
+	});
+    } else {
+	return '' unless defined $str and length $str;
+
+	## Decode string.
+	$str = $self->{_charset}->decode($str) unless is_utf8($str);
+
+	## Set format method.
+	$self->SUPER::config(Format => $FORMAT_FUNCS{$method} ||
+			     $FORMAT_FUNCS{'PLAIN'});
+    }
 
     ## Do folding.
     my $result = '';

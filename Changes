@@ -1,3 +1,16 @@
+1.005.520  Mon Nov 30 2009
+
+	* Imp: Text::LineFold::fold(): Second calling style to ease transition
+	  from Text::Wrap::wrap().
+	* Chg: Text::LineFold::fold() considers tab stops: Added new option
+	  TabSize.
+	* Doc: Fixed example of SizingMethod option to count spaces at
+	  beginning of lines.
+	* Doc: Some typos.
+	* Makefile.PL: More fix for dmake+MSWin32.
+	* Makefile.PL: Support for separate linebreak library (incompleted).
+	* Added test #12.
+	
 1.004.520  Sun Oct 18 2009
 
 	* Imp: XS'ized built-in Format & UrgentBreak functions. 5-10% faster.

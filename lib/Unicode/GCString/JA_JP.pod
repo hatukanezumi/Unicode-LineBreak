@@ -67,7 +67,7 @@ I<インスタンスメソッド>。
 =item C<">OBJECTC<">
 
 I<インスタンスメソッド>。
-書記素クラスタ文字列をUnicode文字列に変換する。
+書記素クラスタ文字列を明示的にUnicode文字列に変換する。
 
 =item cmp (STRING)
 
@@ -162,7 +162,7 @@ OFFSET を指定した場合は、次の位置をそれにする。
 
 =head1 CAVEAT
 
-Perl の 8.10.1 版あたりでは、Unicode::GCString オブジェクトから Unicode 文字列への暗黙の変換が C<"utf8_mg_pos"> キャッシュを混乱させることがある。
+Perl の 5.10.1 版あたりでは、Unicode::GCString オブジェクトから Unicode 文字列への暗黙の変換が C<"utf8_mg_pos"> キャッシュを混乱させることがある。
 
 たとえば、つぎのように
 

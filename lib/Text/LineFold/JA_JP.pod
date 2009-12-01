@@ -57,6 +57,12 @@ fold()/unfold() の結果を符号化するキャラクタセット。
 特殊値 C<"_UNICODE_"> を指定すると、結果は Unicode 文字列となる。
 初期値は Charset オプションの値。
 
+=item TabSize => NUMBER
+
+タブストップの桁数。
+0 を指定すると、水平タブ文字を無視する。
+初期値は 8。
+
 =item CharactersMax
 
 =item ColumnsMin
@@ -68,8 +74,6 @@ fold()/unfold() の結果を符号化するキャラクタセット。
 =item LegacyCM
 
 =item Newline
-
-=item SizingMethod
 
 =item TailorEA
 
@@ -83,12 +87,18 @@ L<Unicode::LineBreak::JA_JP/オプション> を参照。
 
 =back
 
-=item $self->fold (STRING, METHOD)
+=item $self->fold (STRING, [METHOD])
+
+=item $self->fold (INITIAL_TAB, SUBSEQUENT_TAB, STRING, ...)
 
 I<インスタンスメソッド>。
 文字列 STRING を行折りする。
+行末の余分な空白文字や水平タブ文字を除去し、
+改行の文字列を Newline オプションで指定したものに置き換え、
+テキスト末尾に改行がなければ追加する。
+水平タブ文字は TabSize オプションによる幅のタブストップと見なす。
 
-METHOD 引数には以下のオプションを指定できる。
+ひとつめの形式では、METHOD 引数に以下のオプションを指定できる。
 
 =over 4
 
@@ -107,9 +117,8 @@ RFC 3676 で定義される C<"Format=Flowed; DelSp=Yes"> 形式。
 
 =back
 
-どのオプションでも、行末の余分な空白文字を除去し、
-改行の文字列を Newline オプションで指定したものに置き換え、
-テキスト末尾に改行がなければ追加する。
+ふたつめの形式は、L<Text::Wrap/wrap()> に似ている。
+すべての行を行折りする。段落の先頭には INITIAL_TAB を、ほかの行の先頭には SUBSEQUENT_TAB を挿入する。
 
 =item $self->unfold (STRING, METHOD)
 

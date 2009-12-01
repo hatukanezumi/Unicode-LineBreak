@@ -23,7 +23,8 @@ extern void linebreak_charprop(linebreak_t *, unichar_t,
                                propval_t *, propval_t *, propval_t *,
                                propval_t *);
 
-static const linebreak_t initlbobj = {
+static
+const linebreak_t initlbobj = {
     1UL,			/* refcount */
     LINEBREAK_STATE_NONE,	/* state */
     {(unichar_t *)NULL, 0},	/* bufstr */
@@ -49,6 +50,12 @@ static const linebreak_t initlbobj = {
     (void (*)())NULL		/* ref_func */
 };
 
+/** Constructor
+ *
+ * Creates new linebreak object.
+ * Reference count of it will be set to 1.
+ * @return New linebreak object.
+ */
 linebreak_t *linebreak_new()
 {
     linebreak_t *obj;
@@ -59,12 +66,28 @@ linebreak_t *linebreak_new()
     return obj;
 }
 
+/** Increase Reference Count
+ *
+ * Increse reference count of linebreak object.
+ * @param[in] obj linebreak object.
+ * @return linebreak object.
+ */
 linebreak_t *linebreak_incref(linebreak_t *obj)
 {
     obj->refcount += 1UL;
     return obj;
 }
 
+/** Copy Constructor
+ *
+ * Create deep copy of linebreak object.
+ * Reference count of new object will be set to 1.
+ * If ref_func member of object is not NULL, it will be executed to increase
+ * reference count of user_data, format_data, sizing_data, urgent_data and
+ * stash members.
+ * @param[in] obj linebreak object.
+ * @return New linebreak object.
+ */
 linebreak_t *linebreak_copy(linebreak_t *obj)
 {
     linebreak_t *newobj;
@@ -152,6 +175,16 @@ linebreak_t *linebreak_copy(linebreak_t *obj)
     return newobj;
 }
 
+/** Decrease Reference Count; Destructor
+ *
+ * Decrement reference count of linebreak object.
+ * When reference count becomes zero, free memories allocated for
+ * object and then, if ref_func member of object was not NULL,
+ * it will be executed to decrease reference count of user_data, format_data,
+ * sizing_data, urgent_data and stash members.
+ * @param[in] obj linebreak object.
+ * @return none.
+ */
 void linebreak_destroy(linebreak_t *obj)
 {
     if (obj == NULL)
@@ -177,6 +210,13 @@ void linebreak_destroy(linebreak_t *obj)
     free(obj);
 }
 
+/** Reset State
+ *
+ * Reset internal state of linebreak object.
+ * Internal state is set by linebreak_break_partial() function.
+ * @param[in] lbobj linebreak object.
+ * @return none.
+ */
 void linebreak_reset(linebreak_t *lbobj)
 {
     if (lbobj == NULL)
@@ -200,6 +240,14 @@ void linebreak_reset(linebreak_t *lbobj)
     lbobj->state = LINEBREAK_STATE_NONE;
 }
 
+/** Reset State
+ *
+ * Reset internal state of linebreak object.
+ * Internal state is set by linebreak_break_partial() function.
+ * @param[in] a_idx line breaking class.
+ * @param[in] b_idx line breaking class.
+ * @return line breaking action: MANDATORY, DIRECT, INDIRECT, PROHIBITED.
+ */
 propval_t linebreak_lbrule(propval_t b_idx, propval_t a_idx)
 {
     propval_t result = PROP_UNKNOWN;
@@ -214,6 +262,14 @@ propval_t linebreak_lbrule(propval_t b_idx, propval_t a_idx)
     return result;
 }
 
+/** Get Line Breaking Class
+ *
+ * Get UAX #14 line breaking class of Unicode character.
+ * Classes XX and SG will be resolved to AL.
+ * @param[in] obj linebreak object.
+ * @param[in] c Unicode character.
+ * @return line breaking class property value.
+ */
 propval_t linebreak_lbclass(linebreak_t *obj, unichar_t c)
 {
     propval_t lbc, gbc, scr;
@@ -228,6 +284,14 @@ propval_t linebreak_lbclass(linebreak_t *obj, unichar_t c)
     return lbc;
 }
 
+/** Get East_Asian_Width Property
+ *
+ * Get UAX #11 East_Asian_Width property value of Unicode character.
+ * Class A will be resolved to appropriate property F or N.
+ * @param[in] obj linebreak object.
+ * @param[in] c Unicode character.
+ * @return East_Asian_Width property value.
+ */
 propval_t linebreak_eawidth(linebreak_t *obj, unichar_t c)
 {
     propval_t eaw;
@@ -236,6 +300,18 @@ propval_t linebreak_eawidth(linebreak_t *obj, unichar_t c)
     return eaw;
 }
 
+/** Sizing
+ * @param[in] obj linebreak object.
+ * @param[in] len Number of columns of preceding grapheme cluster string.
+ * @param[in] pre Preceding grapheme cluster string.
+ * @param[in] spc Trailing spaces of preceding string.
+ * @param[in] str Appended grapheme cluster string.
+ * @param[in] max Maximum size.
+ * @return If max is zero, returns number of columns of pre+spc+str.
+ * If max is positive, returns maximum number of characters of substr,
+ * where substr is substring of str by that number of columns of
+ * pre+spc+substr will not exceed max.
+ */
 double linebreak_strsize(linebreak_t *obj, double len, gcstring_t *pre,
 			 gcstring_t *spc, gcstring_t *str, size_t max)
 {

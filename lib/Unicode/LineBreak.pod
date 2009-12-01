@@ -469,23 +469,6 @@ Unicode string to be processed.
 By the first format, subroutine should return calculated number of columns of C<PRE.SPC.STR>.
 The number of columns may not be an integer: Unit of the number may be freely chosen, however, it should be same as those of L</ColumnsMin> and L</ColumnsMax> option.
 
-For example, following code process lines with tab stops by each eight columns.
-
-    sub tabbedsizing {
-        my ($self, $cols, $pre, $spc, $str, $max) = @_;
-        return undef if $max;
-    
-        while ($spc =~ s/^( *)(\t+)//) {
-            $cols += length($1);
-            $cols += length($2) * 8 - $cols % 8;
-        }
-        $cols += length($spc);
-        return $cols + $self->strsize(0, '', '', $str);    
-    };
-    my $lb = Unicode::LineBreak->new(TailorLB => [ord("\t") => LB_SP],
-                                     SizingMethod => \&tabbedsizing);
-    $output = $lb->break($string);
-
 By the second format, subroutine should return maximum
 I<number of Unicode characters> that substring of STR contains
 by which number of columns PRE.SPC.SUBSTR contains may not exceed MAX.
@@ -495,6 +478,24 @@ If you don't wish to implement latter format, C<undef> should be returned.
 B<Note>:
 As of release 1.003, string arguments are Unicode::GCString object.
 See L<Unicode::GCString/CAVEAT>.
+
+For example, following code processes lines with tab stops by each eight columns.
+
+    sub tabbedsizing {
+        my ($self, $cols, $pre, $spc, $str, $max) = @_;
+        return undef if $max;
+    
+	my $spcstr = $spc.$str;
+        while ($spcstr =~ s/^( *)(\t+)//) {
+            $cols += length($1);
+            $cols += length($2) * 8 - $cols % 8;
+        }
+        $cols += $self->strsize(0, '', '', $spcstr);
+        return $cols;
+    };
+    my $lb = Unicode::LineBreak->new(TailorLB => [ord("\t") => LB_SP],
+                                     SizingMethod => \&tabbedsizing);
+    $output = $lb->break($string);
 
 =head2 Tailoring Character Properties
 
@@ -706,14 +707,14 @@ East_Asian_Width property values assigned by [UAX #11].
 
 =item [CMOS]
 
-I<The Chicago Manual of Style>, 15th edition,
+I<The Chicago Manual of Style>, 15th edition.
 Chicago University Press, 2003.
 
 =item [JIS X 4051]
 
 JIS X 4051:2004
-I<日本語文書の組版方法> (I<Formatting Rules for Japanese Documents>),
-published by Japanese Standards Association, 2004.
+I<日本語文書の組版方法> (I<Formatting Rules for Japanese Documents>).
+Japanese Standards Association, 2004.
 
 =item [UAX #11]
 

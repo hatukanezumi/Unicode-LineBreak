@@ -15,12 +15,15 @@
  * $id$
  */
 
+#include <assert.h>
 #include "linebreak.h"
 #ifdef USE_LIBTHAI
 #    include "thai/thwchar.h"
 #    include "thai/thwbrk.h"
 #endif /* USE_LIBTHAI */
 
+/** Flag to determin whether South East Asian word segmentation is supported.
+ */
 const char *linebreak_southeastasian_supported =
 #ifdef USE_LIBTHAI
     "Thai:" USE_LIBTHAI " "
@@ -33,7 +36,7 @@ void linebreak_southeastasian_flagbreak(gcstring_t *gcstr)
 {
 #ifdef USE_LIBTHAI
     wchar_t *buf;
-    size_t i, j;
+    size_t i, j, k;
     int brk;
 
     if (gcstr == NULL || gcstr->gclen == 0)
@@ -44,15 +47,26 @@ void linebreak_southeastasian_flagbreak(gcstring_t *gcstr)
     for (i = 0; i < gcstr->len; i++)
 	buf[i] = gcstr->str[i];
     buf[i] = (wchar_t)0;
+    k = i;
 
     /* Flag breaking points. */
-    for (i = 0, j = 0; buf[j] && th_wbrk(buf + j, &brk, 1); j += brk)
-	for (; i < gcstr->gclen && gcstr->gcstr[i].idx <= j + brk; i++)
+    for (i = 0, j = 0; buf[j] && th_wbrk(buf + j, &brk, 1); j += brk) {
+	/* check if external module is broken. */
+	assert(0 <= brk);
+	assert(brk != 0);
+	assert(brk < k);
+
+	for (; i < gcstr->gclen && gcstr->gcstr[i].idx <= j + brk; i++) {
+	    /* check if external module break temp buffer. */
+	    assert(buf[i] == gcstr->str[i]);
+
 	    if (gcstr->gcstr[i].lbc == LB_SA && !gcstr->gcstr[i].flag)
 		gcstr->gcstr[i].flag = 
 		    (gcstr->gcstr[i].idx == j + brk)?
 		    LINEBREAK_FLAG_BREAK_BEFORE:
 		    LINEBREAK_FLAG_PROHIBIT_BEFORE;
+	}
+    }
     for (; i < gcstr->gclen && gcstr->gcstr[i].lbc == LB_SA; i++)
 	if (!gcstr->gcstr[i].flag)
 	    gcstr->gcstr[i].flag = LINEBREAK_FLAG_PROHIBIT_BEFORE;
