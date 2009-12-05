@@ -1,3 +1,10 @@
+1.006.520  Sat Dec 05 2009
+
+	* Fix: Update VERSION for Text::LineFold.
+	* Fix: Text::LineFold: non-Unicode was not allowed for Newline option.
+	* More change for dmake+MSWin32.
+	* Doc: Small fixes.
+
 1.005.520  Mon Nov 30 2009
 
 	* Imp: Text::LineFold::fold(): Second calling style to ease transition

@@ -24,8 +24,8 @@ sub postamble {
 \$(MYEXTLIB): $csubdir/Makefile
 \tcd $csubdir && \$(MAKE)
 $csubdir/Makefile: $csubdir/configure
-\tcd $csubdir && chmod u+x configure && \\
-\t./configure --disable-shared --enable-static $args \\
+\tcd $csubdir && \\
+\tsh configure --disable-shared --enable-static $args \\
 \tCFLAGS='\$(CCFLAGS) \$(OPTIMIZE) \$(CCCDLFLAGS)'
 $csubdir/configure: $csubdir/configure.ac
 \tcd $csubdir && ./autogen.sh

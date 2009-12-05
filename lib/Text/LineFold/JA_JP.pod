@@ -11,7 +11,11 @@ Text::LineFold::JA_JP - プレインテキストの行折り
     use Text::LineFold;
     $lf = Text::LineFold->new();
     
+    # 行折りする
     $folded = $lf->fold($string, 'PLAIN');
+    $indented = $lf->fold(' ' x 8, ' ' x 4, $string);
+
+    # 行折りを戻す
     $unfolded = $lf->unfold($string, 'FIXED');
 
 =head1 DESCRIPTION
@@ -41,7 +45,7 @@ I<インスタンスメソッド>。
 =item Charset => CHARSET
 
 入力文字列を符号化しているキャラクタセット。
-文字列または L<MIME::Charset> オブジェクトのインスタンス。
+文字列または L<MIME::Charset|MIME::Charset::JA_JP> オブジェクトのインスタンス。
 初期値は C<"UTF-8">。
 
 =item Language => LANGUAGE
@@ -50,10 +54,15 @@ Charset オプションとともに、言語/地域の文脈を決めるのに�
 初期値は C<"XX">。
 L<Unicode::LineBreak::JA_JP/Context> オプションも参照。
 
+=item Newline => STRING
+
+改行の文字列。
+初期値は C<"\n">。
+
 =item OutputCharset => CHARSET
 
 fold()/unfold() の結果を符号化するキャラクタセット。
-文字列または L<MIME::Charset> オブジェクトのインスタンス。
+文字列または L<MIME::Charset|MIME::Charset::JA_JP> オブジェクトのインスタンス。
 特殊値 C<"_UNICODE_"> を指定すると、結果は Unicode 文字列となる。
 初期値は Charset オプションの値。
 
@@ -72,8 +81,6 @@ fold()/unfold() の結果を符号化するキャラクタセット。
 =item HangulAsAL
 
 =item LegacyCM
-
-=item Newline
 
 =item TailorEA
 
@@ -113,7 +120,7 @@ RFC 3676 で定義される C<"Format=Flowed; DelSp=Yes"> 形式。
 
 =item C<"PLAIN">
 
-初期の方法。
+初期の方法。すべての行を行折りする。
 
 =back
 

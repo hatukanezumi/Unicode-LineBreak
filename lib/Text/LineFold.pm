@@ -14,7 +14,11 @@ Text::LineFold - Line Folding for Plain Text
     use Text::LineFold;
     $lf = Text::LineFold->new();
     
+    # Fold lines
     $folded = $lf->fold($string, 'PLAIN');
+    $indented = $lf->fold(' ' x 8, ' ' x 4, $string);
+
+    # Unfold lines
     $unfolded = $lf->unfold($string, 'FIXED');
 
 =head1 DESCRIPTION
@@ -44,7 +48,7 @@ use Unicode::LineBreak qw(:all);
 ### Globals
 
 ### The package version, both in 1.23 style *and* usable by MakeMaker:
-our $VERSION = '0.007';
+our $VERSION = '0.008';
 
 ### Public Configuration Attributes
 our $Config = {
@@ -168,6 +172,11 @@ context.
 Default is C<"XX">.
 See also L<Unicode::LineBreak/Context> option.
 
+=item Newline => STRING
+
+String to be used for newline sequence.
+Default is C<"\n">.
+
 =item OutputCharset => CHARSET
 
 Character set that is used to encode result of fold()/unfold().
@@ -191,8 +200,6 @@ Default is 8.
 
 =item LegacyCM
 
-=item Newline
-
 =item TailorEA
 
 =item TailorLB
@@ -213,6 +220,7 @@ sub config {
     my $self = shift;
     my @opts = qw{Charset Language OutputCharset TabSize};
     my %opts = map { (uc $_ => $_) } @opts;
+    my $newline = undef;
 
     # Get config.
     if (scalar @_ == 1) {
@@ -229,6 +237,8 @@ sub config {
         my $v = $params{$k};
 	if ($opts{uc $k}) {
 	    $self->{$opts{uc $k}} = $v;
+	} elsif (uc $k eq uc 'Newline') {
+	    $newline = $v;
 	} else {
 	    push @o, $k => $v;
 	}
@@ -253,22 +263,21 @@ sub config {
     $self->{Language} = uc($self->{Language} || $Config->{Language});
 
     ## Context
-    Unicode::LineBreak::config($self,
-			       Context =>
-			       context(Charset => $self->{Charset},
-				       Language => $self->{Language}));
+    $self->SUPER::config(Context =>
+			 context(Charset => $self->{Charset},
+				 Language => $self->{Language}));
 
     ## Set sizing method.
     ## Note: Example in Unicode::LineBreak POD treats $spcstr as Perl string.
     ## Following code is more efficient.
-    Unicode::LineBreak::config($self, SizingMethod => sub {
+    $self->SUPER::config(SizingMethod => sub {
 	my ($self, $cols, $pre, $spc, $str, $max) = @_;
 	return undef if $max;
 
 	my $tabsize = $self->{TabSize};
 	my $spcstr = $spc.$str;
 	$spcstr->pos(0);
-	while (!$spcstr->eos and $spcstr->lbclass($spcstr->pos) == LB_SP) {
+	while (!$spcstr->eos and $spcstr->lbclass == LB_SP) {
 	    my $c = $spcstr->next;
 	    if ($c eq "\t") {
 		$cols += $tabsize - $cols % $tabsize if $tabsize;
@@ -280,15 +289,21 @@ sub config {
     });
 
     ## Classify horizontal tab as line breaking class SP.
-    my @tailor_lb = @{Unicode::LineBreak::config($self, 'TailorLB')};
-    Unicode::LineBreak::config($self,
-			       TailorLB => [@tailor_lb, ord("\t") => LB_SP]);
+    my @tailor_lb = @{$self->SUPER::config('TailorLB')};
+    $self->SUPER::config(TailorLB => [@tailor_lb, ord("\t") => LB_SP]);
     ## Tab size
     if (defined $self->{TabSize}) {
 	croak "Invalid TabSize option" unless $self->{TabSize} =~ /^\d+$/;
 	$self->{TabSize} += 0;
     } else {
 	$self->{TabSize} = $Config->{TabSize};
+    }
+
+    ## Newline
+    if (defined $newline) {
+	$newline = $self->{_charset}->decode($newline)
+	    unless is_utf8($newline);
+	$self->SUPER::config(Newline => $newline);
     }
 }
 
@@ -320,7 +335,7 @@ C<"Format=Flowed; DelSp=Yes"> formatting defined by RFC 3676.
 
 =item C<"PLAIN">
 
-Default method.
+Default method.  All lines are folded.
 
 =back
 
@@ -338,14 +353,13 @@ my $special_break = qr/([\x{000B}\x{000C}\x{0085}\x{2028}\x{2029}])/os;
 
 sub fold {
     my $self = shift;
-    my $str = shift;
-    my $method = uc(shift || '');
+    my $str;
 
-    if (scalar @_) {
-	my $initial_tab = $str;
+    if (2 < scalar @_) {
+	my $initial_tab = shift || '';
 	$initial_tab = $self->{_charset}->decode($initial_tab)
 	    unless is_utf8($initial_tab);
-	my $subsequent_tab = $method;
+	my $subsequent_tab = shift || '';
 	$subsequent_tab = $self->{_charset}->decode($subsequent_tab)
 	    unless is_utf8($subsequent_tab);
 	my @str = @_;
@@ -362,25 +376,12 @@ sub fold {
 	    } elsif ($str =~ /\s$/ or $s =~ /^\s/) {
 		$str .= $s;
 	    } else {
-		my ($b_cls, $a_cls);
-		my $i = length $str;
-		do {
-		    $i--;
-		    $b_cls = $self->lbclass(substr($str, $i));
-		} while ($b_cls == LB_CM and 0 < $i);
-		$b_cls = LB_AL if $b_cls == LB_CM or $b_cls == LB_SP;
-		$a_cls = $self->lbclass($s);
-		$a_cls = LB_AL if $a_cls == LB_CM;
-
-		if ($self->lbrule($b_cls, $a_cls) == INDIRECT) {
-		    $str .= ' '.$s;
-		} else {
-		    $str .= $s;
-		}
+		$str .= ' ' if $self->_is_indirect($str, $s);
+		$str .= $s;
 	    }
 	}
 
-	## Set options.
+	## Set format method.
 	$self->SUPER::config(Format => sub {
 	    my $self = shift;
 	    my $event = shift;
@@ -391,6 +392,8 @@ sub fold {
 	    undef;
 	});
     } else {
+	$str = shift;
+	my $method = uc(shift || '');
 	return '' unless defined $str and length $str;
 
 	## Decode string.
@@ -494,19 +497,7 @@ sub unfold {
 		    } elsif (length $s) {
 			$result .= $s;
 		    } elsif (length $l) {
-			my ($b_cls, $a_cls);
-			my $i = length $l;
-			do {
-			    $i--;
-			    $b_cls = $self->lbclass(substr($l, $i));
-			} while ($b_cls == LB_CM and 0 < $i);
-			$b_cls = LB_AL if $b_cls == LB_CM or $b_cls == LB_SP;
-			$a_cls = $self->lbclass($n);
-			$a_cls = LB_AL if $a_cls == LB_CM;
-
-			if ($self->lbrule($b_cls, $a_cls) == INDIRECT) {
-			    $result .= ' ';
-			}
+			$result .= ' ' if $self->_is_indirect($l, $n);
 		    }
 		} elsif ($s =~ /\G(.+)\n/cg) {
 		    $result .= $1.$self->config('Newline');
@@ -592,5 +583,22 @@ This program is free software; you can redistribute it and/or modify it
 under the same terms as Perl itself.
 
 =cut
+
+sub _is_indirect {
+    my $self = shift;
+    my $b = shift;
+    my $a = shift;
+    my ($b_cls, $a_cls);
+    my $i = length $b;
+    do {
+	$i--;
+	$b_cls = $self->lbclass(substr($b, $i));
+    } while ($b_cls == LB_CM and 0 < $i);
+    $b_cls = LB_AL if $b_cls == LB_CM or $b_cls == LB_SP;
+    $a_cls = $self->lbclass($a);
+    $a_cls = LB_AL if $a_cls == LB_CM;
+    
+    return $self->lbrule($b_cls, $a_cls) == INDIRECT;
+}
 
 1;
