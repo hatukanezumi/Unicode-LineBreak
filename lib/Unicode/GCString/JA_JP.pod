@@ -145,6 +145,14 @@ I<Undocumented>.
 
 =end comment
 
+=begin comment
+
+=item lbclass_ext ([OFFSET])
+
+I<Undocumented>.
+
+=end comment
+
 =item next
 
 =item C<E<lt>>OBJECTC<E<gt>>

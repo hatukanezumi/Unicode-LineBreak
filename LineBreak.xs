@@ -237,7 +237,7 @@ gcstring_t *gctogcstring(gcstring_t *gcstr, gcchar_t *gc)
 }
 
 /***
- *** Callbacs for linebreak library.
+ *** Callbacks for linebreak library.
  ***/
 
 /*
@@ -1405,13 +1405,41 @@ lbclass(self, ...)
 	if (!sv_isobject(self))
 	    XSRETURN_UNDEF;
 	gcstr = SVtogcstring(self, NULL);    
-	if (1 < items)
+	if (1 < items) {
 	    i = SvIV(ST(1));
-	else
+	    if (i < 0)
+		i += gcstr->gclen;
+	} else
 	    i = gcstr->pos;
 	if (i < 0 || gcstr == NULL || gcstr->gclen <= i)
 	    XSRETURN_UNDEF;
 	RETVAL = (propval_t)gcstr->gcstr[i].lbc;
+    OUTPUT:
+	RETVAL
+
+propval_t
+lbclass_ext(self, ...)
+	SV *self;
+    PROTOTYPE: $;$
+    INIT:
+	int i;
+	gcstring_t *gcstr;
+    CODE:
+	if (!sv_isobject(self))
+	    XSRETURN_UNDEF;
+	gcstr = SVtogcstring(self, NULL);    
+	if (1 < items) {
+	    i = SvIV(ST(1));
+	    if (i < 0)
+		i += gcstr->gclen;
+	} else
+	    i = gcstr->pos;
+	if (i < 0 || gcstr == NULL || gcstr->gclen <= i)
+	    XSRETURN_UNDEF;
+	if ((RETVAL = (propval_t)gcstr->gcstr[i].elbc) == PROP_UNKNOWN)
+	    RETVAL = (propval_t)gcstr->gcstr[i].lbc;
+	if (RETVAL == PROP_UNKNOWN)
+	    XSRETURN_UNDEF;
     OUTPUT:
 	RETVAL
 

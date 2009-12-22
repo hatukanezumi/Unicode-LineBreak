@@ -13,7 +13,6 @@ data/linebreak.h.in
 data/makefile
 data/Rules-5.1.0.txt
 data/Rules-5.2.0.txt
-data/rules2pl.pl
 GPL
 lib/Text/LineFold.pm
 lib/Text/LineFold/JA_JP.pod
@@ -75,6 +74,7 @@ t/09uri.t
 t/10gcstring.t
 t/11format.t
 t/12fold2.t
+t/13flowedsp.t
 t/lb.pl
 t/lf.pl
 t/pod.t
@@ -89,6 +89,8 @@ testin/ecclesiazusae.in
 testin/ecclesiazusae.out
 testin/el.in
 testin/el.out
+testin/flowedsp.in
+testin/flowedsp.out
 testin/fr.ea.out
 testin/fr.fixed.out
 testin/fr.flowed.out

@@ -7,7 +7,7 @@ use vars qw(@ISA);
 @ISA = qw(ExtUtils::MakeMaker);
 
 my $csubdir = 'linebreak';
-my $linebreak_atleast_version = '1.4';
+my $linebreak_atleast_version = '1.5';
 my $pkg_config = $ENV{'PKG_CONFIG'} || 'pkg-config';
 my @args = ();
 
@@ -26,7 +26,7 @@ sub postamble {
 $csubdir/Makefile: $csubdir/configure
 \tcd $csubdir && \\
 \tsh configure --disable-shared --enable-static $args \\
-\tCFLAGS='\$(CCFLAGS) \$(OPTIMIZE) \$(CCCDLFLAGS)'
+\tCC='\$(CC)' CFLAGS='\$(CCFLAGS) \$(OPTIMIZE) \$(CCCDLFLAGS)'
 $csubdir/configure: $csubdir/configure.ac
 \tcd $csubdir && ./autogen.sh
 EOF

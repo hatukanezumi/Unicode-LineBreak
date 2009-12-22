@@ -216,7 +216,7 @@ liblinebreak_la_SOURCES = lib/break.c lib/charprop.c lib/gcstring.c \
 			  lib/@UNICODE_VERSION@.c
 
 liblinebreak_la_CFLAGS = -I. -Iinclude @LIBTHAI_CFLAGS@
-liblinebreak_la_LDFLAGS = -version-info 1:0:1 @LIBTHAI_LIBS@
+liblinebreak_la_LDFLAGS = -version-info 1:1:0 @LIBTHAI_LIBS@
 #if !HAVE_STRERROR
 #liblinebreak_la_SOURCES += src/strerror.c
 #endif

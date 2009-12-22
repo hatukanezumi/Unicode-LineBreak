@@ -48,7 +48,7 @@ use Unicode::LineBreak qw(:all);
 ### Globals
 
 ### The package version, both in 1.23 style *and* usable by MakeMaker:
-our $VERSION = '0.008';
+our $VERSION = '1.000';
 
 ### Public Configuration Attributes
 our $Config = {
@@ -92,7 +92,7 @@ my %FORMAT_FUNCS = (
 	my $str = shift;
 	if ($action eq 'sol') {
 	    if ($self->{_}->{prefix}) {
-		return $self->{_}->{prefix}.' '.$str if $self->{_}->{prefix};
+		return $self->{_}->{prefix}.' '.$str;
 	    } elsif ($str =~ /^(?: |From |>)/) {
 		return ' '.$str;
 	    }
@@ -373,7 +373,8 @@ sub fold {
 	    $s = $self->{_charset}->decode($s) unless is_utf8($s);
 	    unless (length $str) {
 		$str = $s;
-	    } elsif ($str =~ /\s$/ or $s =~ /^\s/) {
+	    } elsif ($str =~ /(\s|$special_break)$/ or
+		     $s =~ /^(\s|$special_break)/) {
 		$str .= $s;
 	    } else {
 		$str .= ' ' if $self->_is_indirect($str, $s);
@@ -386,7 +387,7 @@ sub fold {
 	    my $self = shift;
 	    my $event = shift;
 	    my $str = shift;
-	    if ($event =~ /^eo/) { return "\n"; }
+	    if ($event =~ /^eo/) { return $self->config('Newline'); }
 	    if ($event =~ /^so[tp]/) { return $initial_tab.$str; }
 	    if ($event eq 'sol') { return $subsequent_tab.$str; }
 	    undef;
@@ -442,6 +443,10 @@ Treat empty line as paragraph separator.
 
 Unfold C<"Format=Flowed; DelSp=Yes"> formatting defined by RFC 3676.
 
+=item C<"FLOWEDSP">
+
+Unfold C<"Format=Flowed; DelSp=No"> formatting defined by RFC 3676.
+
 =begin comment
 
 =item C<"OBSFLOWED">
@@ -464,7 +469,8 @@ sub unfold {
 
     ## Get format method.
     my $method = uc(shift || 'FIXED');
-    $method = 'FIXED' unless $method =~ /^(?:FIXED|FLOWED|OBSFLOWED)$/;
+    $method = 'FIXED' unless $method =~ /^(?:FIXED|FLOWED|FLOWEDSP|OBSFLOWED)$/;
+    my $delsp = $method eq 'FLOWED';
 
     ## Decode string and canonizalize newline.
     $str = $self->{_charset}->decode($str) unless is_utf8($str);
@@ -489,10 +495,10 @@ sub unfold {
 		    $result .= $1.$self->config('Newline');
 		} elsif ($s =~ /\G(.+)\n(?=>)/cg) {
 		    $result .= $1.$self->config('Newline');
-		} elsif ($s =~ /\G(.+?)( *)\n(?=(.))/cg) {
+		} elsif ($s =~ /\G(.+?)( *)\n(?=(.+))/cg) {
 		    my ($l, $s, $n) = ($1, $2, $3);
 		    $result .= $l;
-		    if ($n eq ' ') {
+		    if ($n =~ /^ /) {
 			$result .= $self->config('Newline');
 		    } elsif (length $s) {
 			$result .= $s;
@@ -506,7 +512,8 @@ sub unfold {
 		    last;
 		}
 	    }
-	} elsif ($method eq 'FLOWED' or $method eq 'OBSFLOWED') {
+	} elsif ($method eq 'FLOWED' or $method eq 'FLOWEDSP' or
+		 $method eq 'OBSFLOWED') {
 	    my $prefix = undef;
 	    pos($s) = 0;
 	    while ($s !~ /\G\z/cg) {
@@ -525,6 +532,7 @@ sub unfold {
 			$prefix = undef;
 		    } else {
 			$prefix = $p;
+			$result .= $s unless $delsp;
 		    }
 		} elsif ($s =~ /\G ?(.*?)( ?)\n/cg) {
 		    my ($l, $s) = ($1, $2);
@@ -540,6 +548,7 @@ sub unfold {
 			$result .= $self->config('Newline');
 			$prefix = undef;
 		    } else {
+			$result .= $s unless $delsp;
 			$prefix = '';
 		    }
 		} elsif ($s =~ /\G ?(.*)/cg) {
@@ -556,6 +565,18 @@ sub unfold {
         return $self->{_charset}->encode($result);
     }
 }
+
+sub _is_indirect {
+    my $self = shift;
+    my $b = Unicode::GCString->new(shift, $self);
+    my $a = Unicode::GCString->new(shift, $self);
+    my ($b_cls, $a_cls) = ($b->lbclass_ext(-1), $a->lbclass(0));
+    $b_cls = LB_AL if $b_cls == LB_CM or $b_cls == LB_SA;
+    $a_cls = LB_AL if $a_cls == LB_CM or $a_cls == LB_SA;
+    
+    return $self->lbrule($b_cls, $a_cls) == INDIRECT;
+}
+
 
 =head1 BUGS
 
@@ -583,22 +604,5 @@ This program is free software; you can redistribute it and/or modify it
 under the same terms as Perl itself.
 
 =cut
-
-sub _is_indirect {
-    my $self = shift;
-    my $b = shift;
-    my $a = shift;
-    my ($b_cls, $a_cls);
-    my $i = length $b;
-    do {
-	$i--;
-	$b_cls = $self->lbclass(substr($b, $i));
-    } while ($b_cls == LB_CM and 0 < $i);
-    $b_cls = LB_AL if $b_cls == LB_CM or $b_cls == LB_SP;
-    $a_cls = $self->lbclass($a);
-    $a_cls = LB_AL if $a_cls == LB_CM;
-    
-    return $self->lbrule($b_cls, $a_cls) == INDIRECT;
-}
 
 1;

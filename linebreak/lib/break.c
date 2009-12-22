@@ -153,6 +153,7 @@ unistr_t *linebreak_break_partial(linebreak_t *lbobj, unistr_t *input)
 	    if (str->gcstr[i].lbc == LB_CM && str->gcstr[i - 1].lbc == LB_SP) {
 		str->gcstr[i - 1].len += str->gcstr[i].len;
 		str->gcstr[i - 1].lbc = LB_ID;
+		str->gcstr[i - 1].elbc = str->gcstr[i].elbc;
 		if (str->gclen - i - 1)
 		    memmove(str->gcstr + i, str->gcstr + i + 1,
 			    sizeof(gcchar_t) * (str->gclen - i - 1));
@@ -345,28 +346,44 @@ unistr_t *linebreak_break_partial(linebreak_t *lbobj, unistr_t *input)
 	    else {
 		propval_t blbc, albc;
 
-		#define lbclass_custom(xlbc, base)			\
-									\
-		xlbc = str->gcstr[base].lbc;				\
-		/* LB10: Treat any remaining CM+ as if it were AL. */	\
-		switch (xlbc) {						\
-		case LB_CM:						\
-		    xlbc = LB_AL;					\
-		    break;						\
-		/* LB27: Treat hangul syllable as if it were ID (or AL). */ \
-		case LB_H2:						\
-		case LB_H3:						\
-		case LB_JL:						\
-		case LB_JV:						\
-		case LB_JT:						\
-		    xlbc = (lbobj->options & LINEBREAK_OPTION_HANGUL_AS_AL)? \
-			LB_AL: LB_ID;					\
-		    break;						\
-		/* XX and SG won't appear. */				\
+		if ((blbc = str->gcstr[bBeg + bLen - bCM - 1].elbc) /* LB9 */
+		    == PROP_UNKNOWN)
+		    blbc = str->gcstr[bBeg + bLen - bCM - 1].lbc;
+		/* LB10: Treat any remaining CM+ as if it were AL. */
+		switch (blbc) {
+		case LB_CM:
+		    blbc = LB_AL;
+		    break;
+		/* LB27: Treat hangul syllable as if it were ID (or AL). */
+		case LB_H2:
+		case LB_H3:
+		case LB_JL:
+		case LB_JV:
+		case LB_JT:
+		    blbc = (lbobj->options & LINEBREAK_OPTION_HANGUL_AS_AL)?
+			LB_AL: LB_ID;
+		    break;
+		/* XX and SG won't appear. */
 		}
 
-		lbclass_custom(blbc, bBeg + bLen - bCM - 1); /* LB9 */
-		lbclass_custom(albc, bBeg + bLen + bSpc);
+		albc = str->gcstr[bBeg + bLen + bSpc].lbc;
+		/* LB10: Treat any remaining CM+ as if it were AL. */
+		switch (albc) {
+		case LB_CM:
+		    albc = LB_AL;
+		    break;
+		/* LB27: Treat hangul syllable as if it were ID (or AL). */
+		case LB_H2:
+		case LB_H3:
+		case LB_JL:
+		case LB_JV:
+		case LB_JT:
+		    albc = (lbobj->options & LINEBREAK_OPTION_HANGUL_AS_AL)?
+			LB_AL: LB_ID;
+		    break;
+		/* XX and SG won't appear. */
+		}
+
 		action = linebreak_lbrule(blbc, albc);
 	    }
 

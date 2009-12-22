@@ -1,6 +1,6 @@
 ## 
 
-MODULE_VERSION = 1.006
+MODULE_VERSION = 1.007
 BETA_VERSION =
 UNICODE_VERSIONS = 5.1.0 5.2.0
 CURRENT_UNICODE_VERSION = 5.2.0
@@ -22,7 +22,7 @@ CONSTANTS_PM = ../lib/Unicode/LineBreak/Constants.pm
 CONSTANTS_H = ../linebreak/include/linebreak_constants.h
 VERSION_PM = ../lib/Unicode/LineBreak/Version.pm
 META_YML = ../META.yml
-CONFIGURE_IN = ../linebreak/configure.in
+CONFIGURE_IN = ../linebreak/configure.ac
 
 all:
 	$(MAKE) $(CONSTANTS_PM) $(CONSTANTS_H)

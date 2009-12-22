@@ -580,7 +580,7 @@ as neutral (N).
 
 =back
 
-On the other hand, despite several characters were occasionally rendered as wide characters by number of implementations for East Asian character sets, they are give narrow (Na) East_Asian_Width property just because they have fullwidth (F) compatibility characters.
+On the other hand, despite several characters were occasionally rendered as wide characters by number of implementations for East Asian character sets, they are given narrow (Na) East_Asian_Width property just because they have fullwidth (F) compatibility characters.
 Specifying C<TailorEA> as below, those characters are treated as ambiguous
 --- wide on C<"EASTASIAN"> context.
 
@@ -606,29 +606,6 @@ Please report bugs or buggy behaviors to developer.
 
 CPAN Request Tracker:
 L<http://rt.cpan.org/Public/Dist/Display.html?Name=Unicode-LineBreak>.
-
-=over 4
-
-=item *
-
-Following characters behave as if they were CM.
-
-    UCS    |Name                                |LB |GCB
-    ------------------------------------------------------------
-    U+034F |COMB. GRAPHEME JOINER               |GL |Extend
-    U+035C |COMB. DOUBLE BREVE BELOW            |GL |Extend
-    U+035D |COMB. DOUBLE BREVE                  |GL |Extend
-    U+035E |COMB. DOUBLE MACRON                 |GL |Extend
-    U+035F |COMB. DOUBLE MACRON BELOW           |GL |Extend
-    U+0360 |COMB. DOUBLE TILDE                  |GL |Extend
-    U+0361 |COMB. DOUBLE INVERTED BREVE         |GL |Extend
-    U+0362 |COMB. DOUBLE RIGHTWARDS ARROW BELOW |GL |Extend
-    U+0F7F |TIBETAN SIGN RNAM BCAD (visarga)    |BA |SpacingMark
-    U+FF9E |HW. KATAKANA VOICED SOUND MARK      |NS |Extend
-    U+FF9F |HW. KATAKANA SEMI-VOICED SOUND MARK |NS |Extend
-    ------------------------------------------------------------
-
-=back
 
 =head1 VERSION
 

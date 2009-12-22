@@ -542,29 +542,6 @@ F<Unicode/LineBreak/Defaults.pm>。
 CPAN Request Tracker:
 L<http://rt.cpan.org/Public/Dist/Display.html?Name=Unicode-LineBreak>.
 
-=over 4
-
-=item *
-
-以下の文字が、行分割特性が CM であるかのようにふるまう。
-
-    UCS    |名前                                |LB |GCB
-    ------------------------------------------------------------
-    U+034F |COMB. GRAPHEME JOINER               |GL |Extend
-    U+035C |COMB. DOUBLE BREVE BELOW            |GL |Extend
-    U+035D |COMB. DOUBLE BREVE                  |GL |Extend
-    U+035E |COMB. DOUBLE MACRON                 |GL |Extend
-    U+035F |COMB. DOUBLE MACRON BELOW           |GL |Extend
-    U+0360 |COMB. DOUBLE TILDE                  |GL |Extend
-    U+0361 |COMB. DOUBLE INVERTED BREVE         |GL |Extend
-    U+0362 |COMB. DOUBLE RIGHTWARDS ARROW BELOW |GL |Extend
-    U+0F7F |チベット文字ナムチャド〔ヴィサルガ〕|BA |SpacingMark
-    U+FF9E |濁点 (代替名称)                     |NS |Extend
-    U+FF9F |半濁点 (代替名称)                   |NS |Extend
-    ------------------------------------------------------------
-
-=back
-
 =head1 VERSION
 
 L<Unicode::LineBreak::Version> を参照してほしい。

@@ -110,7 +110,7 @@ linebreak_t *linebreak_copy(linebreak_t *obj)
 	newobj->map = NULL;
     if (obj->newline.str && obj->newline.len) {
 	if ((newstr = malloc(sizeof(unichar_t) * obj->newline.len)) == NULL) {
-	    if (newobj->map) free(newobj->map);
+	    free(newobj->map);
 	    free(newobj);
 	    return NULL;
 	}
@@ -121,8 +121,8 @@ linebreak_t *linebreak_copy(linebreak_t *obj)
 	newobj->newline.str = NULL;
     if (obj->bufstr.str && obj->bufstr.len) {
 	if ((newstr = malloc(sizeof(unichar_t) * obj->bufstr.len)) == NULL) {
-	    if (newobj->map) free(newobj->map);
-	    if (newobj->newline.str) free(newobj->newline.str);
+	    free(newobj->map);
+	    free(newobj->newline.str);
 	    free(newobj);
 	    return NULL;
 	}
@@ -133,9 +133,9 @@ linebreak_t *linebreak_copy(linebreak_t *obj)
 	newobj->bufstr.str = NULL;
     if (obj->bufspc.str && obj->bufspc.len) {
 	if ((newstr = malloc(sizeof(unichar_t) * obj->bufspc.len)) == NULL) {
-	    if (newobj->map) free(newobj->map);
-	    if (newobj->newline.str) free(newobj->newline.str);
-	    if (newobj->bufstr.str) free(newobj->bufstr.str);
+	    free(newobj->map);
+	    free(newobj->newline.str);
+	    free(newobj->bufstr.str);
 	    free(newobj);
 	    return NULL;
 	}
@@ -146,10 +146,10 @@ linebreak_t *linebreak_copy(linebreak_t *obj)
 	newobj->bufspc.str = NULL;
     if (obj->unread.str && obj->unread.len) {
 	if ((newstr = malloc(sizeof(unichar_t) * obj->unread.len)) == NULL) {
-	    if (newobj->map) free(newobj->map);
-	    if (newobj->newline.str) free(newobj->newline.str);
-	    if (newobj->bufstr.str) free(newobj->bufstr.str);
-	    if (newobj->bufspc.str) free(newobj->bufspc.str);
+	    free(newobj->map);
+	    free(newobj->newline.str);
+	    free(newobj->bufstr.str);
+	    free(newobj->bufspc.str);
 	    free(newobj);
 	    return NULL;
 	}
@@ -191,10 +191,10 @@ void linebreak_destroy(linebreak_t *obj)
 	return;
     if ((obj->refcount -= 1UL))
 	return;
-    if (obj->map) free(obj->map);
-    if (obj->newline.str) free(obj->newline.str);
-    if (obj->bufstr.str) free(obj->bufstr.str);
-    if (obj->unread.str) free(obj->unread.str);
+    free(obj->map);
+    free(obj->newline.str);
+    free(obj->bufstr.str);
+    free(obj->unread.str);
     if (obj->ref_func) {
 	if (obj->stash)
 	    (*obj->ref_func)(obj->stash, LINEBREAK_REF_STASH, -1);
@@ -221,21 +221,15 @@ void linebreak_reset(linebreak_t *lbobj)
 {
     if (lbobj == NULL)
 	return;
-    if (lbobj->unread.str) {
-	free(lbobj->unread.str);
-	lbobj->unread.str = NULL;
-	lbobj->unread.len = 0;
-    }
-    if (lbobj->bufstr.str) {
-	free(lbobj->bufstr.str);
-	lbobj->bufstr.str = NULL;
-	lbobj->bufstr.len = 0;
-    }
-    if (lbobj->bufspc.str) {
-	free(lbobj->bufspc.str);
-	lbobj->bufspc.str = NULL;
-	lbobj->bufspc.len = 0;
-    }
+    free(lbobj->unread.str);
+    lbobj->unread.str = NULL;
+    lbobj->unread.len = 0;
+    free(lbobj->bufstr.str);
+    lbobj->bufstr.str = NULL;
+    lbobj->bufstr.len = 0;
+    free(lbobj->bufspc.str);
+    lbobj->bufspc.str = NULL;
+    lbobj->bufspc.len = 0;
     lbobj->bufcols = 0.0;
     lbobj->state = LINEBREAK_STATE_NONE;
 }

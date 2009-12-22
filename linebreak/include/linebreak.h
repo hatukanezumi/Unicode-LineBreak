@@ -69,6 +69,8 @@ typedef struct {
     size_t col;
     /** Line breaking class of grapheme base. */
     propval_t lbc;
+    /** Line breaking class of grapheme extender if it is not CM. */
+    propval_t elbc;
     /** User-defined flag. */
     unsigned char flag;
 } gcchar_t;

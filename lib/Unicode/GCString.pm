@@ -21,13 +21,12 @@ our %EXPORT_TAGS = ('all' => [@EXPORT_OK]);
 our @ISA = qw(Exporter);
 
 ### Other modules:
-use Carp qw(croak carp);
 use Unicode::LineBreak;
 
 ### Globals
 
 # The package version
-our $VERSION = '0.005';
+our $VERSION = '0.005.1';
 
 use overload 
     '@{}' => \&as_arrayref,
@@ -194,6 +193,14 @@ If OFFSET was not specified, returns next grapheme cluster.
 =begin comment
 
 =item lbclass ([OFFSET])
+
+I<Undocumented>.
+
+=end comment
+
+=begin comment
+
+=item lbclass_ext ([OFFSET])
 
 I<Undocumented>.
 

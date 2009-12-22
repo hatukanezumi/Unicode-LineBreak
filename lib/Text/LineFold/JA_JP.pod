@@ -145,6 +145,10 @@ C<"E<gt>"> で始まる行はつなぎ直さない。
 
 RFC 3676 で定義される C<"Format=Flowed; DelSp=Yes"> 形式をつなぎ直す。
 
+=item C<"FLOWEDSP">
+
+RFC 3676 で定義される C<"Format=Flowed; DelSp=No"> 形式をつなぎ直す。
+
 =begin comment
 
 =item C<"OBSFLOWED">

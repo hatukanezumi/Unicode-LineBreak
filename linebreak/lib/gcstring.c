@@ -25,16 +25,18 @@ extern void linebreak_charprop(linebreak_t *, unichar_t,
 
 static
 void _gcinfo(linebreak_t *obj, unistr_t *str, size_t pos,
-	     size_t *glenptr, size_t *gcolptr, propval_t *glbcptr)
+	     size_t *glenptr, size_t *gcolptr, propval_t *glbcptr,
+	     propval_t *elbcptr)
 {
-    propval_t glbc = PROP_UNKNOWN, ggbc, gscr;
+    propval_t glbc = PROP_UNKNOWN, elbc = PROP_UNKNOWN, ggbc, gscr;
     size_t glen, gcol, pcol, ecol;
     propval_t lbc, eaw, gbc, ngbc, scr;
 
     if (!str || !str->str || !str->len) {
-	if (glbcptr) *glbcptr = PROP_UNKNOWN;
-	if (glenptr) *glenptr = 0;
-	if (gcolptr) *gcolptr = 0;
+	*glenptr = 0;
+	*gcolptr = 0;
+	*glbcptr = PROP_UNKNOWN;
+	*elbcptr = PROP_UNKNOWN;
 	return;
     }
 
@@ -91,19 +93,22 @@ void _gcinfo(linebreak_t *obj, unistr_t *str, size_t pos,
 	    /* GB9, GB9a */
 	    /*
 	     * Some morbid sequences such as <L Extend V T> are allowed
-	       according to UAX #14.
+	       according to UAX #14 LB9.
 	     */
 	    else if (ngbc == GB_Extend || ngbc == GB_SpacingMark) {
 		ecol += eaw2col(eaw);
 		pos++;
 		glen++;
+		if (lbc != LB_CM && lbc != LB_SA)
+		    elbc = lbc; /* SA in g. c. extender is resolved to CM */
 		continue; /* while (pos < str->len) */
 	    }
 	    /* GB9b */
 	    else if (gbc == GB_Prepend) {
-		glbc = lbc;
-		ggbc = ngbc;
-		gscr = scr;
+		if (lbc == LB_SA)
+		    elbc = LB_AL; /* SA in g. c. base is resolved to AL */
+		else if (lbc != LB_CM)
+		    elbc = lbc;
 		pcol += gcol;
 		gcol = eaw2col(eaw);
 	    }
@@ -125,9 +130,10 @@ void _gcinfo(linebreak_t *obj, unistr_t *str, size_t pos,
 #endif
 	    glbc = (ggbc == GB_Extend || ggbc == GB_SpacingMark)? LB_CM: LB_AL;
     }
-    if (glenptr) *glenptr = glen;
-    if (gcolptr) *gcolptr = gcol;
-    if (glbcptr) *glbcptr = glbc;
+    *glenptr = glen;
+    *gcolptr = gcol;
+    *glbcptr = glbc;
+    *elbcptr = elbc;
 }
 
 /*
@@ -169,7 +175,7 @@ gcstring_t *gcstring_new(unistr_t *unistr, linebreak_t *lbobj)
 
     if (len) {
 	size_t pos, glen, gcol;
-	propval_t glbc;
+	propval_t glbc, elbc;
 	gcchar_t gc, *_g;
 
 	if ((gcstr->gcstr = malloc(sizeof(gcchar_t) * len)) == NULL) {
@@ -179,11 +185,12 @@ gcstring_t *gcstring_new(unistr_t *unistr, linebreak_t *lbobj)
 	}
 	gc.flag = 0;
 	for (pos = 0; pos < len; pos += glen) {
-	    _gcinfo(gcstr->lbobj, unistr, pos, &glen, &gcol, &glbc);
+	    _gcinfo(gcstr->lbobj, unistr, pos, &glen, &gcol, &glbc, &elbc);
 	    gc.idx = pos;
 	    gc.len = glen;
 	    gc.col = gcol;
 	    gc.lbc = glbc;
+	    gc.elbc = elbc;
 	    memcpy(gcstr->gcstr + gcstr->gclen, &gc, sizeof(gcchar_t));
 	    gcstr->gclen++;
 	}
@@ -343,6 +350,7 @@ gcstring_t *gcstring_append(gcstring_t *gcstr, gcstring_t *appe)
 	    gc->len = cstr->gcstr[i].len;
 	    gc->col = cstr->gcstr[i].col;
 	    gc->lbc = cstr->gcstr[i].lbc;
+	    gc->elbc = cstr->gcstr[i].elbc;
 	    if (aidx + alen == gc->idx) /* Restore flag if possible */
 		gc->flag = bflag;
 	}
@@ -353,6 +361,7 @@ gcstring_t *gcstring_append(gcstring_t *gcstr, gcstring_t *appe)
 	    gc->len = appe->gcstr[i].len;
 	    gc->col = appe->gcstr[i].col;
 	    gc->lbc = appe->gcstr[i].lbc;
+	    gc->elbc = appe->gcstr[i].elbc;
 	    gc->flag = appe->gcstr[i].flag;
 	}
 
