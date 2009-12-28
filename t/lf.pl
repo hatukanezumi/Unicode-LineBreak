@@ -36,9 +36,15 @@ sub do5tests {
     my %folded = ();
     foreach my $method (qw(PLAIN FIXED FLOWED)) {
 	$folded{$method} = $lf->fold($instring, $method);
-	open OUT, "<testin/$out.".(lc $method).".out" or die "open: $!";
-	my $outstring = join '', <OUT>;
-	close OUT;
+	my $outstring = '';
+	if (open OUT, "<testin/$out.".(lc $method).".out") {
+	    $outstring = join '', <OUT>;
+	    close OUT;
+	} else {
+	    open XXX, ">testin/$out.".(lc $method).".xxx";
+	    print XXX $folded{$method};
+	    close XXX;
+	}
 	is($folded{$method}, $outstring);
     }
     foreach my $method (qw(FIXED FLOWED)) {

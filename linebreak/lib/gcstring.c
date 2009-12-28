@@ -28,7 +28,7 @@ void _gcinfo(linebreak_t *obj, unistr_t *str, size_t pos,
 	     size_t *glenptr, size_t *gcolptr, propval_t *glbcptr,
 	     propval_t *elbcptr)
 {
-    propval_t glbc = PROP_UNKNOWN, elbc = PROP_UNKNOWN, ggbc, gscr;
+    propval_t glbc = PROP_UNKNOWN, elbc = PROP_UNKNOWN;
     size_t glen, gcol, pcol, ecol;
     propval_t lbc, eaw, gbc, ngbc, scr;
 
@@ -45,9 +45,16 @@ void _gcinfo(linebreak_t *obj, unistr_t *str, size_t pos,
     glen = 1;
     gcol = eaw2col(eaw);
 
-    glbc = lbc;
-    ggbc = gbc;
-    gscr = scr;
+    if (lbc != LB_SA)
+	glbc = lbc;
+#ifdef USE_LIBTHAI
+    else if (scr == SC_Thai)
+	glbc = lbc;
+#endif /* USE_LIBTHAI */
+    else if (gbc == GB_Extend || gbc == GB_SpacingMark)
+	glbc = LB_CM;
+    else
+	glbc = LB_AL;
 
     switch (gbc) {
     case GB_LF: /* GB5 */
@@ -99,16 +106,26 @@ void _gcinfo(linebreak_t *obj, unistr_t *str, size_t pos,
 		ecol += eaw2col(eaw);
 		pos++;
 		glen++;
-		if (lbc != LB_CM && lbc != LB_SA)
-		    elbc = lbc; /* SA in g. c. extender is resolved to CM */
+		if (lbc == LB_CM)
+		    ; /* CM in grapheme extender is ignored. */
+		else if (lbc != LB_SA)
+		    elbc = lbc;
+		/* SA in g. extender is resolved to CM so it is ignored. */
 		continue; /* while (pos < str->len) */
 	    }
 	    /* GB9b */
 	    else if (gbc == GB_Prepend) {
-		if (lbc == LB_SA)
-		    elbc = LB_AL; /* SA in g. c. base is resolved to AL */
-		else if (lbc != LB_CM)
+		/* Here, next char shall grapheme base (or additional prepend
+		 * character), since its GCB property is neither Control,
+		 * Extend nor SpacingMark. */
+		if (lbc != LB_SA)
 		    elbc = lbc;
+#ifdef USE_LIBTHAI
+		else if (scr == SC_Thai)
+		    elbc = lbc; /* SA char in g. base is not resolved... */
+#endif /* USE_LIBTHAI */
+		else
+		    elbc = LB_AL; /* ...or resolved to AL. */
 		pcol += gcol;
 		gcol = eaw2col(eaw);
 	    }
@@ -124,12 +141,6 @@ void _gcinfo(linebreak_t *obj, unistr_t *str, size_t pos,
 	break; /* switch (gbc) */
     } /* switch (gbc) */
 
-    if (glbc == LB_SA) {
-#ifdef USE_LIBTHAI
-	if (gscr != SC_Thai)
-#endif
-	    glbc = (ggbc == GB_Extend || ggbc == GB_SpacingMark)? LB_CM: LB_AL;
-    }
     *glenptr = glen;
     *gcolptr = gcol;
     *glbcptr = glbc;

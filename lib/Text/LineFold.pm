@@ -568,13 +568,11 @@ sub unfold {
 
 sub _is_indirect {
     my $self = shift;
-    my $b = Unicode::GCString->new(shift, $self);
-    my $a = Unicode::GCString->new(shift, $self);
-    my ($b_cls, $a_cls) = ($b->lbclass_ext(-1), $a->lbclass(0));
-    $b_cls = LB_AL if $b_cls == LB_CM or $b_cls == LB_SA;
-    $a_cls = LB_AL if $a_cls == LB_CM or $a_cls == LB_SA;
-    
-    return $self->lbrule($b_cls, $a_cls) == INDIRECT;
+    my $b = Unicode::GCString->new(shift, $self)->lbclass_ext(-1);
+    my $a = Unicode::GCString->new(shift, $self)->lbclass(0);
+    $b = LB_AL if $b == LB_CM or $b == LB_SA; # FIXME: SA vs. SA
+    $a = LB_AL if $a == LB_CM or $a == LB_SA;
+    return $self->lbrule($b, $a) == INDIRECT;
 }
 
 
