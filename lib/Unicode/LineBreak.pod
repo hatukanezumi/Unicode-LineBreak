@@ -364,7 +364,7 @@ it should accept three arguments:
 
     MODIFIED = &subroutine(SELF, EVENT, STR);
 
-SELF is an instance of LineBreak object,
+SELF is a Unicode::LineBreak object,
 EVENT is a string to determine the context that subroutine was called in,
 and STR is a fragment of Unicode string leading or trailing breaking position.
 
@@ -411,7 +411,7 @@ it should accept five arguments:
 
     BROKEN = &subroutine(SELF, LEN, PRE, SPC, STR);
 
-SELF is an instance of LineBreak object, LEN is size of preceding string,
+SELF is a Unicode::LineBreak object, LEN is size of preceding string,
 PRE is preceding Unicode string, SPC is additional SPACEs and STR is a
 Unicode string to be broken.
 
@@ -435,7 +435,7 @@ subroutine should accept two arguments:
 
     BROKEN = &subroutine(SELF, STR);
 
-SELF is an instance of LineBreak object and
+SELF is a Unicode::LineBreak object and
 STR is a Unicode string matched with REGEX.
 
 Subroutine should return an array of broken string STR.
@@ -462,7 +462,7 @@ it will be called with five or six arguments:
 
     CHARS = &subroutine(SELF, LEN, PRE, SPC, STR, MAX);
 
-SELF is an instance of LineBreak object, LEN is size of preceding string,
+SELF is a Unicode::LineBreak object, LEN is size of preceding string,
 PRE is preceding Unicode string, SPC is additional SPACEs and STR is a
 Unicode string to be processed.
 

@@ -1,10 +1,11 @@
-1.007.520  Tue Dec 22 2009
+1.007.520  Wed Dec 30 2009
 
 	* Fix: Text::LineFold: Newline option doesn't have effect for fold()
 	  second style.
 	* New: Text::LineFold::unfold: ``FLOWEDSP'' method for DelSp=No.
 	* Imp: Unicode::GCString: New undocumented method lbclass_ext().
-	* Imp: Unicode::GCString: lbclass() and lbclass_ext() allow negative arg.
+	* Imp: Unicode::GCString: lbclass() and lbclass_ext() allow negative
+	  arguments.
 	* Fix: non-CM characters in grapheme extender were ignored.
 	* Requires linebreak 1.5.
 	* removed unused data/rules2pl.pl.

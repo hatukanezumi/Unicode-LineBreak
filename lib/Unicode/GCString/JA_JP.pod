@@ -170,22 +170,28 @@ OFFSET を指定した場合は、次の位置をそれにする。
 
 =head1 CAVEAT
 
+=over 4
+
+=item *
+
 Perl の 5.10.1 版あたりでは、Unicode::GCString オブジェクトから Unicode 文字列への暗黙の変換が C<"utf8_mg_pos"> キャッシュを混乱させることがある。
 
 たとえば、つぎのように
 
     $sub = substr($gcstring, $i, $j);
 
-するかわりに、つぎのように
+するかわりに、つぎのようにするとよい。
 
     $sub = substr("$gcstring", $i, $j);
 
-または、つぎのように
+    $sub = substr($gcstring->as_string, $i, $j);
 
-    $string = $gcstring->as_string;
-    $sub = substr($string, $i, $j);
+=item *
 
-するとよい。
+このモジュールでは「初期の」書記素クラスタ境界判別アルゴリズムを実装している。
+手直し〔tailoring〕の機構にはまだ対応していない。
+
+=back
 
 =head1 VERSION
 

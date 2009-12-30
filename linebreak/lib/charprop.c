@@ -17,19 +17,17 @@
 
 #include "linebreak.h"
 
-extern mapent_t linebreak_map[];
-extern const unsigned short linebreak_hash[];
-extern const unsigned short linebreak_index[];
-extern size_t linebreak_hashsiz;
+extern const unsigned short linebreak_prop_index[];
+extern const propval_t linebreak_prop_array[];
 
-#define HASH_MODULUS (1U << 13)
+#define BLKLEN (5)
 
-static mapent_t
-PROPENT_HAN =        {0, 0, LB_ID, EA_W, GB_Other, SC_Han},
-PROPENT_HANGUL_LV =  {0, 0, LB_H2, EA_W, GB_LV, SC_Hangul},
-PROPENT_HANGUL_LVT = {0, 0, LB_H3, EA_W, GB_LVT, SC_Hangul},
-PROPENT_PRIVATE =    {0, 0, LB_AL, EA_A, GB_Other, SC_Unknown}, /* XX */
-PROPENT_UNKNOWN =    {0, 0, LB_AL, EA_N, GB_Other, SC_Unknown}; /* XX/SG */
+static propval_t
+PROPENT_HAN[] =        {LB_ID, EA_W, GB_Other, SC_Han},
+PROPENT_TAG[] =        {LB_CM, EA_Z, GB_Control, SC_Common},
+PROPENT_VSEL[] =       {LB_CM, EA_Z, GB_Extend, SC_Inherited},
+PROPENT_PRIVATE[] =    {LB_AL, EA_A, GB_Other, SC_Unknown}, /* XX */
+PROPENT_UNKNOWN[] =    {LB_AL, EA_N, GB_Other, SC_Unknown}; /* XX/SG */
 
 /** Search for character properties.
  * 
@@ -53,10 +51,9 @@ void linebreak_charprop(linebreak_t *obj, unichar_t c,
 			propval_t *lbcptr, propval_t *eawptr,
 			propval_t *gbcptr, propval_t *scrptr)
 {
-    size_t key, idx, end;
-    mapent_t *top, *bot, *cur, *ent;
+    mapent_t *top, *bot, *cur;
     propval_t lbc = PROP_UNKNOWN, eaw = PROP_UNKNOWN, gbc = PROP_UNKNOWN,
-	scr = PROP_UNKNOWN;
+	scr = PROP_UNKNOWN, *ent;
 
     /* First, search custom map using binary search. */
     if (obj->map && obj->mapsiz) {
@@ -116,50 +113,30 @@ void linebreak_charprop(linebreak_t *obj, unichar_t c,
     if ((lbcptr && lbc == PROP_UNKNOWN) ||
 	(eawptr && eaw == PROP_UNKNOWN) ||
 	(gbcptr && gbc == PROP_UNKNOWN)) {
-	ent = NULL;
-	key = c % HASH_MODULUS;
-	idx = linebreak_index[key];
-	if (idx < linebreak_hashsiz) {
-	    end = linebreak_index[key + 1];
-	    for ( ; idx < end; idx++) {
-		cur = linebreak_map + (size_t)(linebreak_hash[idx]);
-		if (c < cur->beg)
-		    break;
-		else if (c <= cur->end) {
-		    ent = cur;
-		    break;
-		}
-	    }
-	}
-	if (ent == NULL) {
-	    if ((0x3400 <= c && c <= 0x4DBF) ||
-		(0x4E00 <= c && c <= 0x9FFF) ||
-		(0xF900 <= c && c <= 0xFAFF) ||
-		(0x20000 <= c && c <= 0x2FFFD) ||
-		(0x30000 <= c && c <= 0x3FFFD)) {
-		ent = &PROPENT_HAN;
-	    } else if (0xAC00 <= c && c <= 0xD7A3) {
-		if (c % 28 == 16)
-		    ent = &PROPENT_HANGUL_LV;
-		else
-		    ent = &PROPENT_HANGUL_LVT;
-	    } else if ((0xE000 <= c && c <= 0xF8FF) ||
-		       (0xF0000 <= c && c <= 0xFFFFD) ||
-		       (0x100000 <= c && c <= 0x10FFFD)) {
-		ent = &PROPENT_PRIVATE;
-	    }
-	}
-	if (ent == NULL)
-	    ent = &PROPENT_UNKNOWN;
+	if (c < 0x20000) {
+	    ent = linebreak_prop_array + (linebreak_prop_index[c >> BLKLEN] +
+		  (c & ((1 << BLKLEN) - 1))) * 4;
+	} else if (c <= 0x2FFFD || (0x30000 <= c && c <= 0x3FFFD))
+	    ent = PROPENT_HAN;
+	else if (c == 0xE0001 || (0xE0020 <= c && c <= 0xE007E) ||
+	       c == 0xE007F)
+	    ent = PROPENT_TAG;
+	else if (0xE0100 <= c && c <= 0xE01EF)
+	    ent = PROPENT_VSEL;
+	else if ((0xF0000 <= c && c <= 0xFFFFD) ||
+		 (0x100000 <= c && c <= 0x10FFFD))
+	    ent = PROPENT_PRIVATE;
+	else
+	    ent = PROPENT_UNKNOWN;
 
 	if (lbcptr && lbc == PROP_UNKNOWN)
-	    lbc = ent->lbc;
+	    lbc = ent[0];
 	if (eawptr && eaw == PROP_UNKNOWN)
-	    eaw = ent->eaw;
+	    eaw = ent[1];
 	if (gbcptr && gbc == PROP_UNKNOWN)
-	    gbc = ent->gbc;
+	    gbc = ent[2];
 	if (scrptr)
-	    scr = ent->scr;
+	    scr = ent[3];
     }
 
     /* Resolve context-dependent property values. */
