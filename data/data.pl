@@ -204,33 +204,53 @@ foreach my $n (1, 0) {
 			$cat eq 'ea' and $p ne 'W' or
 			$cat eq 'gb' and $p ne 'Other' or
 			$cat eq 'sc' and $p ne 'Han') {
-			die sprintf 'U+%04X have %s proprty %s', $c, $cat, $p;
+			die sprintf 'U+%04X have %s property %s', $c, $cat, $p;
 		    } else {
 			next;
 		    }
 		}
 		# reduce private use areas.
-		if (0xE000 <= $c and $c <= 0xF8FF or
+		elsif (0xE000 <= $c and $c <= 0xF8FF or
 		    0xF0000 <= $c and $c <= 0xFFFFD or
 		    0x100000 <= $c and $c <= 0x10FFFD) {
 		    if ($cat eq 'lb' and $p ne 'XX' or
 			$cat eq 'ea' and $p ne 'A' or
 			$cat eq 'gb' and $p ne 'Other' or
 			$cat eq 'sc' and $p ne 'Unknown') {
-			die sprintf 'U+%04X have %s proprty %s', $c, $cat, $p;
+			die sprintf 'U+%04X have %s property %s', $c, $cat, $p;
 		    } else {
 			next;
 		    }
 		}
-		# reduce Hangul syllables.
-		if (0xAC00 <= $c and $c <= 0xD7A3) {
-		    if ($cat eq 'lb' and ($c % 28 == 16 and $p ne 'H2' or
-					  $c % 28 != 16 and $p ne 'H3') or
-			$cat eq 'ea' and $p ne 'W' or
-			$cat eq 'gb' and ($c % 28 == 16 and $p ne 'LV' or
-                                          $c % 28 != 16 and $p ne 'LVT') or
-			$cat eq 'sc' and $p ne 'Hangul') {
-			die sprintf 'U+%04X have %s proprty %s', $c, $cat, $p;
+		# check plane 14.
+		elsif ($c == 0xE0001 or 0xE0020 <= $c and $c <= 0xE007E or
+		    $c == 0xE007F) {
+		    if ($cat eq 'lb' and $p ne 'CM' or
+			$cat eq 'ea' and $p ne 'Z' or
+			$cat eq 'gb' and $p ne 'Control' or
+			$cat eq 'sc' and $p ne 'Common') {
+			die sprintf 'U+%04X have %s property %s', $c, $cat, $p;
+		    } else {
+			next;
+		    }
+		}
+		elsif (0xE0100 <= $c and $c <= 0xE01EF) {
+		    if ($cat eq 'lb' and $p ne 'CM' or
+			$cat eq 'ea' and $p ne 'Z' or
+			$cat eq 'gb' and $p ne 'Extend' or
+			$cat eq 'sc' and $p ne 'Inherited') {
+			die sprintf 'U+%04X have %s property %s', $c, $cat, $p;
+		    } else {
+			next;
+		    }
+		}
+		# check unallocated high planes.
+		elsif (0x20000 <= $c) {
+		    if ($cat eq 'lb' and $p ne 'XX' or
+			$cat eq 'ea' and $p ne 'N' or
+			$cat eq 'gb' and $p ne 'Other' or
+			$cat eq 'sc' and $p ne 'Unknown') {
+			die sprintf 'U+%04X have %s property %s', $c, $cat, $p;
 		    } else {
 			next;
 		    }
@@ -246,21 +266,18 @@ foreach my $n (1, 0) {
 } # foreach my $cat
 
 for (my $c = 0; $c <= $#PROPS; $c++) {
-    my $props = $PROPS[$c];
-    next unless $props;
+    next unless $PROPS[$c];
 
     # limit scripts to SA characters.
-    delete $props->{'sc'} if !$SA{$c};
-
-    my %props = (%{$props});
+    delete $PROPS[$c]->{'sc'} if !$SA{$c};
 
     # reduce trivial values.
-    delete $props{'lb'} if $props{'lb'} =~ /^(AL|SG|XX)$/;
-    delete $props{'ea'} if $props{'ea'} eq 'N';
-    delete $props{'gb'} if $props{'gb'} eq 'Other';
-    delete $props{'sc'} if $props{'sc'} eq 'Unknown';
+    delete $PROPS[$c]->{'lb'} if $PROPS[$c]->{'lb'} =~ /^(AL|SG|XX)$/;
+    #delete $PROPS[$c]->{'ea'} if $PROPS[$c]->{'ea'} eq 'N';
+    #delete $PROPS[$c]->{'gb'} if $PROPS[$c]->{'gb'} eq 'Other';
+    #delete $PROPS[$c]->{'sc'} if $PROPS[$c]->{'sc'} eq 'Unknown';
 
-    unless (scalar keys %props) {
+    unless (scalar keys %{$PROPS[$c]}) {
 	delete $PROPS[$c];
 	next;
     } else {
@@ -309,56 +326,56 @@ for (my $c = 0; $c <= $#PROPS; $c++) {
 }
 
 
-# Construct b-search table.
-my ($beg, $end);
-my ($c, $p);
-my @MAP = ();
-for ($c = 0; $c <= $#PROPS; $c++) {
-    unless ($PROPS[$c]) {
-	next;
-    } elsif (defined $end and $end + 1 == $c and &hasheq($p, $PROPS[$c])) {
-	$end = $c;
-    } else {
-	if (defined $beg and defined $end) {
-	    push @MAP, [$beg, $end, $p];
+# Construct compact array.
+use constant BLKLEN => 1 << 5;
+my @C_ARY = ();
+my @C_IDX = ();
+for (my $idx = 0; $idx < 0x20000; $idx += BLKLEN) {
+    my @BLK = ();
+    for (my $bi = 0; $bi < BLKLEN; $bi++) {
+	my $c = $idx + $bi;
+	my %blk = ();
+	# ranges reserved for CJK ideographs.
+	if (0x3400 <= $c and $c <= 0x4DBF or
+	    0x4E00 <= $c and $c <= 0x9FFF or
+	    0xF900 <= $c and $c <= 0xFAFF or
+	    0x20000 <= $c and $c <= 0x2FFFD or
+	    0x30000 <= $c and $c <= 0x3FFFD) {
+	    %blk = ('lb' => 'ID', 'ea' => 'W', 'sc' => 'Han');
+	# ranges reserved for private use.
+	} elsif (0xE000 <= $c and $c <= 0xF8FF or
+		 0xF0000 <= $c and $c <= 0xFFFFD or
+		 0x100000 <= $c and $c <= 0x10FFFD) {
+	    %blk = ('ea' => 'A');
+	} elsif ($PROPS[$c]) {
+	    foreach my $prop (@cat) {
+		$blk{$prop} = $PROPS[$c]->{$prop};
+	    }
 	}
-	$beg = $end = $c;
-	$p = $PROPS[$c];
-    }
-}
-push @MAP, [$beg, $end, $p];
+	$blk{'lb'} ||= 'AL';
+	$blk{'ea'} ||= 'N';
+	$blk{'gb'} ||= 'Other';
+	$blk{'sc'} ||= 'Unknown';
 
-#Construct hash table.
-my @HASH = ();
-my @INDEX = ();
-my $MODULUS = 1 << 13;
-for (my $idx = 0; $idx <= $#MAP; $idx++) {
-    my ($beg, $end, $p) = @{$MAP[$idx]};
-    for (my $c = $beg; $c <= $end; $c++) {
-	my $key = $c % $MODULUS;
-	$HASH[$key] ||= [];
-	unless (scalar @{$HASH[$key]} and
-		$HASH[$key]->[$#{$HASH[$key]}] == $idx) {
-	    push @{$HASH[$key]}, $idx;
+	$BLK[$bi] = \%blk;
+    }
+    my ($ci, $bi);
+    C_ARY: for ($ci = 0; $ci <= $#C_ARY; $ci++) {
+	for ($bi = 0; $bi < BLKLEN; $bi++) {
+	    last C_ARY if $#C_ARY < $ci + $bi;
+	    last unless &hasheq($BLK[$bi], $C_ARY[$ci + $bi]);
+	} 
+	last C_ARY if $bi == BLKLEN;
+    }
+    push @C_IDX, $ci;
+    if ($bi < BLKLEN) {
+	for ( ; $bi < BLKLEN; $bi++) {
+	    push @C_ARY, $BLK[$bi];
 	}
     }
+    #printf STDERR "U+%04X..U+%04X: %d..%d / %d      \r", $idx, $idx + (BLKLEN) - 1, $ci, $ci + (BLKLEN) - 1, scalar @C_ARY;
 }
-my $HASHLEN = 0;
-my $MAXBUCKETLEN = 0;
-for (my $idx = 0; $idx < $MODULUS; $idx++) {
-    my $len = scalar @{$HASH[$idx] || []};
-    if ($len) {
-	$INDEX[$idx] = $HASHLEN; # Index points start of bucket.
-	$HASHLEN += $len;
-    }
-    if ($MAXBUCKETLEN <= $len) {
-	#XXXprint STDERR join(' ',
-	#XXX		  map { sprintf '[%04X..%04X %s]', @{$MAP[$_]} }
-	#XXX		      @{$HASH[$idx] || []})."\n";
-	$MAXBUCKETLEN = $len;
-    }
-}
-$INDEX[$MODULUS] = $HASHLEN; # Sentinel.
+#print STDERR "\n";
 
 ### Output
 
@@ -399,78 +416,49 @@ for (my $i = 0; $i <= $#LBCLASSES; $i++) {
 print DATA_C "\n};\n\n";
 print DATA_C "size_t linebreak_rulessiz = ".scalar(@LBCLASSES).";\n\n";
 
-# Print b-search table
-$output = join ",\n", map {
-    my ($beg, $end, $p) = @{$_};
-    my $props = join ', ',
-    map {$p->{$_}? uc($_).'_'.$p->{$_}: 'PROP_UNKNOWN'} @cat;
-    sprintf "    {0x%04X, 0x%04X, %s}", $beg, $end, $props;
-} @MAP;
-print DATA_C "mapent_t linebreak_map[] = {\n$output\n};\n\n";
-
-# Print hash table index.
+# print compact array index.
 my $output = '';
 my $line = '';
-for (my $idx = 0; $idx < $MODULUS + 1; $idx++) {
-    my $hidx = $INDEX[$idx];
-    $hidx = $HASHLEN unless defined $hidx; # null index points out of table.
-    if (76 < 4 + length($line) + length(", $hidx")) {
+print DATA_C "unsigned short linebreak_prop_index[] = {\n";
+foreach my $ci (@C_IDX) {
+    if (76 < 4 + length($line) + length(", $ci")) {
 	$output .= ",\n" if length $output;
 	$output .= "    $line";
 	$line = '';
     }
     $line .= ", " if length $line;
-    $line .= $hidx;
+    $line .= "$ci";
 }
 $output .= ",\n" if length $output;
 $output .= "    $line";
+print DATA_C "$output\n};\n\n";
 
-print DATA_C <<"EOF";
-const unsigned short linebreak_index\[$MODULUS + 1\] = {
-$output
-};
-
-EOF
-
-# Print hash table.
-my $output = '';
-my $line = '';
-for (my $idx = 0; $idx < $MODULUS; $idx++) {
-    my @hidx = @{$HASH[$idx] || []};
-    if (scalar @hidx) {
-	foreach my $hidx (@hidx) {
-	    if (76 < 4 + length($line) + length(", $hidx")) {
-		$output .= ",\n" if length $output;
-		$output .= "    $line";
-		$line = '';
-	    }
-	    $line .= ", " if length $line;
-	    $line .= $hidx;
-	}
+# print compact array.
+$output = '';
+$line = '';
+print DATA_C "propval_t linebreak_prop_array[] = {\n";
+foreach my $b (@C_ARY) {
+    foreach my $prop (@cat) {
+	my $citem = uc($prop) . '_' . $b->{$prop};
+	if (76 < 4 + length($line) + length(", $citem")) {
+	    $output .= ",\n" if length $output;
+	    $output .= "    $line";
+ 	    $line = '';
+        }
+	$line .= ", " if length $line;
+	$line .= $citem;
     }
 }
 $output .= ",\n" if length $output;
 $output .= "    $line";
-
-print DATA_C <<"EOF";
-const unsigned short linebreak_hash\[$HASHLEN\] = {
-$output
-};
-
-size_t linebreak_hashsiz = $HASHLEN;
-
-EOF
+print DATA_C "$output\n};\n\n";
 
 ### Print postamble
 
 ### Statistics.
 my $idxld = scalar(grep {defined $_} @INDEX) - 1;
 printf STDERR "======== Version %s ========\n%d characters, %d entries\n",
-    $version, scalar(grep $_, @PROPS), scalar(@MAP);
-printf STDERR 'Index load: %d / %d = %0.1f%%'."\n",
-    $idxld, $MODULUS, 100.0 * $idxld / $MODULUS;
-printf STDERR 'Bucket size: total %d, max. %d, avg. %0.2f'."\n",
-    $HASHLEN, $MAXBUCKETLEN, $HASHLEN / $idxld;
+    $version, scalar(grep $_, @PROPS), scalar(@C_ARY);
 
 ############################################################################
 
