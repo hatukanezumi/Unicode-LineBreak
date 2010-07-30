@@ -113,13 +113,13 @@ void linebreak_charprop(linebreak_t *obj, unichar_t c,
     if ((lbcptr && lbc == PROP_UNKNOWN) ||
 	(eawptr && eaw == PROP_UNKNOWN) ||
 	(gbcptr && gbc == PROP_UNKNOWN)) {
-	if (c < 0x20000) {
+	if (c < 0x20000)
 	    ent = linebreak_prop_array + (linebreak_prop_index[c >> BLKLEN] +
 		  (c & ((1 << BLKLEN) - 1))) * 4;
-	} else if (c <= 0x2FFFD || (0x30000 <= c && c <= 0x3FFFD))
+	else if (c <= 0x2FFFD || (0x30000 <= c && c <= 0x3FFFD))
 	    ent = PROPENT_HAN;
 	else if (c == 0xE0001 || (0xE0020 <= c && c <= 0xE007E) ||
-	       c == 0xE007F)
+		 c == 0xE007F)
 	    ent = PROPENT_TAG;
 	else if (0xE0100 <= c && c <= 0xE01EF)
 	    ent = PROPENT_VSEL;

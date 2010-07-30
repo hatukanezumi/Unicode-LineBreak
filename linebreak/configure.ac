@@ -2,7 +2,7 @@
 
 AC_PREREQ(2.59)
 AC_INIT(linebreak, 1.5.520, hatuka@nezumi.nu)
-DEFAULT_UNICODE_VERSION="5.2.0"
+DEFAULT_UNICODE_VERSION="6.0.0beta"
 LPATH="$PATH:/usr/local/bin"
 
 AM_INIT_AUTOMAKE

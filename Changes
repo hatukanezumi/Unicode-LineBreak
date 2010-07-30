@@ -1,3 +1,8 @@
+1.008_01  Fri Jul 30 2010
+
+	* Update UCD 6.0.0beta of Jun 21.
+	* Small fixes on docs.
+
 1.007.520  Wed Dec 30 2009
 
 	* Fix: Text::LineFold: Newline option doesn't have effect for fold()

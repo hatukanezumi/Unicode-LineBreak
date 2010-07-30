@@ -162,7 +162,7 @@ Get or update configuration.  Following KEY => VALUE pairs may be specified.
 =item Charset => CHARSET
 
 Character set that is used to encode string.
-It may be string or instance of L<MIME::Charset> object.
+It may be string or L<MIME::Charset> object.
 Default is C<"UTF-8">.
 
 =item Language => LANGUAGE
@@ -180,7 +180,7 @@ Default is C<"\n">.
 =item OutputCharset => CHARSET
 
 Character set that is used to encode result of fold()/unfold().
-It may be string or instance of L<MIME::Charset> object.
+It may be string or L<MIME::Charset> object.
 If a special value C<"_UNICODE_"> is specified, result will be Unicode string.
 Default is the value of Charset option.
 

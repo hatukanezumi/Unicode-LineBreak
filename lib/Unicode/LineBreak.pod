@@ -617,7 +617,7 @@ L<http://hatuka.nezumi.nu/repos/Unicode-LineBreak/>.
 =head2 Conformance to Standards
 
 Character properties this module is based on are defined by
-Unicode Standards version 5.2.0.
+Unicode Standards version 6.0.0.
 
 This module is intended to implement UAX14-C2.
 
@@ -701,8 +701,8 @@ L<http://unicode.org/reports/tr11/>.
 
 =item [UAX #14]
 
-A. Freytag and A. Heninger (2008-2009).
-I<Unicode Standard Annex #14: Unicode Line Breaking Algorithm>, Revision 22-24.
+A. Freytag and A. Heninger (2008-2010).
+I<Unicode Standard Annex #14: Unicode Line Breaking Algorithm>, Revision 22-25.
 L<http://unicode.org/reports/tr14/>.
 
 =back
@@ -713,7 +713,7 @@ L<Text::LineFold>, L<Text::Wrap>.
 
 =head1 AUTHOR
 
-Copyright (C) 2009 Hatuka*nezumi - IKEDA Soji <hatuka(at)nezumi.nu>.
+Copyright (C) 2009, 2010 Hatuka*nezumi - IKEDA Soji <hatuka(at)nezumi.nu>.
 
 This program is free software; you can redistribute it and/or modify it 
 under the same terms as Perl itself.

@@ -45,7 +45,7 @@ I<インスタンスメソッド>。
 =item Charset => CHARSET
 
 入力文字列を符号化しているキャラクタセット。
-文字列または L<MIME::Charset|MIME::Charset::JA_JP> オブジェクトのインスタンス。
+文字列または L<MIME::Charset|MIME::Charset::JA_JP> オブジェクト。
 初期値は C<"UTF-8">。
 
 =item Language => LANGUAGE
@@ -62,7 +62,7 @@ L<Unicode::LineBreak::JA_JP/Context> オプションも参照。
 =item OutputCharset => CHARSET
 
 fold()/unfold() の結果を符号化するキャラクタセット。
-文字列または L<MIME::Charset|MIME::Charset::JA_JP> オブジェクトのインスタンス。
+文字列または L<MIME::Charset|MIME::Charset::JA_JP> オブジェクト。
 特殊値 C<"_UNICODE_"> を指定すると、結果は Unicode 文字列となる。
 初期値は Charset オプションの値。
 

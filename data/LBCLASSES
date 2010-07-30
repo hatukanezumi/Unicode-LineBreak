@@ -2,18 +2,22 @@
     'lb' => {
         '5.1.0' => [qw(BK CR LF NL SP OP CL QU GL NS EX SY IS PR PO NU AL ID IN HY BA BB B2 CB ZW CM WJ H2 H3 JL JV JT)],
         '5.2.0' => [qw(BK CR LF NL SP OP CL QU GL NS EX SY IS PR PO NU AL ID IN HY BA BB B2 CB ZW CM WJ H2 H3 JL JV JT CP)],
+        '6.0.0beta' => [qw(BK CR LF NL SP OP CL QU GL NS EX SY IS PR PO NU AL ID IN HY BA BB B2 CB ZW CM WJ H2 H3 JL JV JT CP)],
     },
     'ea' => {
         '5.1.0' => [qw(Z Na N A W H F)],
         '5.2.0' => [qw(Z Na N A W H F)],
+        '6.0.0beta' => [qw(Z Na N A W H F)],
     },
     'gb' => {
         '5.1.0' => [qw(CR LF Control Extend Prepend SpacingMark L V T LV LVT Other)],
         '5.2.0' => [qw(CR LF Control Extend Prepend SpacingMark L V T LV LVT Other)],
+        '6.0.0beta' => [qw(CR LF Control Extend Prepend SpacingMark L V T LV LVT Other)],
     },
     'sc' => {
         '5.1.0' => [qw(Common Inherited Unknown Han Hangul Thai Lao Myanmar Khmer Tai_Le New_Tai_Lue)],
         '5.2.0' => [qw(Common Inherited Unknown Han Hangul Thai Lao Myanmar Khmer Tai_Le New_Tai_Lue Tai_Tham Tai_Viet)],
+        '6.0.0beta' => [qw(Common Inherited Unknown Han Hangul Thai Lao Myanmar Khmer Tai_Le New_Tai_Lue Tai_Tham Tai_Viet)],
     },
 );
 

@@ -1,9 +1,9 @@
 1.5	Wed Dec 30 2009
 	* gcstring_t: added new member elbc to describe non-CM LBC at
-	  after-side of graphame cluster.
+	  after-side of grapheme cluster.
 	* Chg: On <Prepend X>, set LBC of prepend character to lbc member
 	  and LBC of X to elbc member.
-	* Use compact array instead of hash.
+	* Use compact array instead of hash table.
 	* update config.sub/config.guess to support Dragonfly etc.
 	* patched config.sub/config.guess to support MidnightBSD.
 
@@ -26,7 +26,7 @@
 	* Fix: linebreak_break_partial(): Fix state transition.
 	* Fix: gcstring_cmp(): Case of comparison with zero length string.
 	* New: linebreak_break() and linebreak_break_fast().  Latter consumes
-	  heap size proportional to length of input.  lenebreak_break() is
+	  heap size proportional to length of input.  linebreak_break() is
 	  highly recommended.
 	* Chg: linebreak_break*() get unistr_t * input then return unistr_t *.
 	* break.c: Cleanup codes.

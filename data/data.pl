@@ -33,7 +33,7 @@ my %ACTIONS = ('!' => MANDATORY,
                '÷' => DIRECT_ALLOWED,
     );
 
-open RULES, "<", "Rules-$version.txt" || die;
+open RULES, "<", "Rules-$version.txt" or die $!;
 
 my @rules = ();
 while (<RULES>) {
@@ -175,7 +175,7 @@ my @data = ("$data-$version.txt");
 push @data, "$data-$version.custom" if -e "$data-$version.custom";
 foreach my $n (1, 0) {
     next unless $data[$n];
-    open DATA, '<', $data[$n] || die $!;
+    open DATA, '<', $data[$n] or die $!;
     while (<DATA>) {
 	chomp $_;
 	s/\s*\#.*//;
@@ -223,8 +223,7 @@ foreach my $n (1, 0) {
 		    }
 		}
 		# check plane 14.
-		elsif ($c == 0xE0001 or 0xE0020 <= $c and $c <= 0xE007E or
-		    $c == 0xE007F) {
+		elsif ($c == 0xE0001 or 0xE0020 <= $c and $c <= 0xE007F) {
 		    if ($cat eq 'lb' and $p ne 'CM' or
 			$cat eq 'ea' and $p ne 'Z' or
 			$cat eq 'gb' and $p ne 'Control' or
@@ -379,7 +378,7 @@ for (my $idx = 0; $idx < 0x20000; $idx += BLKLEN) {
 
 ### Output
 
-open DATA_C, '>', "../linebreak/lib/$version.c";
+open DATA_C, '>', "../linebreak/lib/$version.c" or die $!;
 
 # Print postamble.
 print DATA_C <<"EOF";
@@ -439,7 +438,13 @@ $line = '';
 print DATA_C "propval_t linebreak_prop_array[] = {\n";
 foreach my $b (@C_ARY) {
     foreach my $prop (@cat) {
-	my $citem = uc($prop) . '_' . $b->{$prop};
+	my $citem;
+	unless ($b->{$prop}) {
+	    die "$prop property unknown\n" unless $prop eq 'sc';
+	    $citem = 'PROP_UNKNOWN';
+	} else {
+	    $citem = uc($prop) . '_' . $b->{$prop};
+	}
 	if (76 < 4 + length($line) + length(", $citem")) {
 	    $output .= ",\n" if length $output;
 	    $output .= "    $line";
@@ -457,8 +462,10 @@ print DATA_C "$output\n};\n\n";
 
 ### Statistics.
 my $idxld = scalar(grep {defined $_} @INDEX) - 1;
-printf STDERR "======== Version %s ========\n%d characters, %d entries\n",
-    $version, scalar(grep $_, @PROPS), scalar(@C_ARY);
+printf STDERR "======== Version %s ========\n%d characters (in BMP and SMP), %d entries\n",
+    $version, scalar(grep $_, @PROPS) +
+    0x4DBF - 0x3400 + 1 + 0x9FFF - 0x4E00 + 1 + 0xFAFF - 0xF900 + 1 +
+    0xF8FF - 0xE000 + 1, scalar(@C_ARY);
 
 ############################################################################
 

@@ -21,17 +21,17 @@ Install
 
 To build and install Unicode-LineBreak package, do:
 
-$ perl Makefile.PL
-$ make
-$ make test
-# make install
+  $ perl Makefile.PL
+  $ make
+  $ make test
+  # make install
 
 If you wish to disable libthai feature explicitly, do:
 
-$ perl Makefile.PL --disable-libthai
-$ make
-$ make test
-# make install
+  $ perl Makefile.PL --disable-libthai
+  $ make
+  $ make test
+  # make install
 
 Documentations
 ==============
