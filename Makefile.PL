@@ -3,13 +3,27 @@ use strict;
 
 package MY;
 use ExtUtils::MakeMaker;
-use vars qw(@ISA);
-@ISA = qw(ExtUtils::MakeMaker);
 
 my $csubdir = 'linebreak';
 my $linebreak_atleast_version = '1.5';
 my $pkg_config = $ENV{'PKG_CONFIG'} || 'pkg-config';
 my @args = ();
+my $enable_libthai = 'yes';
+my $bundled_linebreak = 'no';
+my $libthai;
+
+sub top_targets {
+    my $inherited = shift->SUPER::top_targets(@_);
+    if ($libthai and $enable_libthai eq 'yes') {
+	$inherited =~ s{^(all ::.*?)\n.*?$}{<<EOF}em;
+$1
+\t\$(NOECHO) \$(MAKE) test TEST_FILES=t/07sea.t >/dev/null || \\
+\t( \$(ECHO) "Your libthai is broken.  Rebuild it then try again."; \\
+\texit 1 )
+EOF
+    }
+    $inherited;
+}
 
 sub clean_subdirs {
     return <<EOF;
@@ -32,8 +46,6 @@ $csubdir/configure: $csubdir/configure.ac
 EOF
 }
 
-my $enable_libthai = 'yes';
-my $bundled_linebreak = 'no';
 foreach my $arg (@ARGV) {
     if ($arg =~ /^--(help|version)(=|\z)/) {
 	chdir $csubdir;
@@ -51,7 +63,7 @@ foreach my $arg (@ARGV) {
     }
 }
 my @opts = ();
-my $libthai = `$pkg_config --modversion libthai`;
+$libthai = `$pkg_config --modversion libthai`;
 chomp $libthai;
 if ($libthai and $enable_libthai eq 'yes') {
     print "Use libthai $libthai\n";

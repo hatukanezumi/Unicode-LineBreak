@@ -1,6 +1,7 @@
-1.008_01  Fri Jul 30 2010
+1.008_01  Tue Aug 10 2010
 
-	* Update UCD 6.0.0beta of Jun 21.
+	* Update UCD to 6.0.0beta at Jun 21.
+	* Check if libthai is broken on compile time.
 	* Small fixes on docs.
 
 1.007.520  Wed Dec 30 2009
