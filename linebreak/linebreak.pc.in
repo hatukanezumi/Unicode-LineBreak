@@ -3,9 +3,9 @@ exec_prefix=@exec_prefix@
 libdir=@libdir@
 includedir=@includedir@
 
-Name: liblinebreak
+Name: linebreak
 Description: Unicode Line Breaking library
 Version: @VERSION@
-Libs: -L${libdir} -llinebreak
+Libs: -L${libdir} -linebreak
 Cflags: -I${includedir}
 

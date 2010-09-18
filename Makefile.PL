@@ -5,7 +5,7 @@ package MY;
 use ExtUtils::MakeMaker;
 
 my $csubdir = 'linebreak';
-my $linebreak_atleast_version = '1.5';
+my $linebreak_atleast_version = '1.8';
 my $pkg_config = $ENV{'PKG_CONFIG'} || 'pkg-config';
 my @args = ();
 my $enable_libthai = 'yes';
@@ -42,7 +42,7 @@ $csubdir/Makefile: $csubdir/configure
 \tsh configure --disable-shared --enable-static $args \\
 \tCC='\$(CC)' CFLAGS='\$(CCFLAGS) \$(OPTIMIZE) \$(CCCDLFLAGS)'
 $csubdir/configure: $csubdir/configure.ac
-\tcd $csubdir && ./autogen.sh
+\tcd $csubdir && autoreconf
 EOF
 }
 
@@ -73,15 +73,15 @@ if ($libthai and $enable_libthai eq 'yes') {
     push @args, '--disable-libthai';
 }
 if (system("$pkg_config --atleast-version=$linebreak_atleast_version ".
-	    "liblinebreak") % 256) {
+	    "libinebreak") % 256) {
     $bundled_linebreak = 'yes';
 }
 if ($bundled_linebreak = 'yes') {
-    push @opts, ('MYEXTLIB' => "$csubdir/.libs/liblinebreak\$(LIB_EXT)");
+    push @opts, ('MYEXTLIB' => "$csubdir/.libs/libinebreak\$(LIB_EXT)");
     push @opts, ('INC' => "-I$csubdir/include -I$csubdir");
 } else {
-    push @opts, ('LIBS' => `$pkg_config --libs liblinebreak`);
-    push @opts, ('INC' => `$pkg_config --cflags liblinebreak`); 
+    push @opts, ('LIBS' => `$pkg_config --libs libinebreak`);
+    push @opts, ('INC' => `$pkg_config --cflags libinebreak`); 
 }
 
 WriteMakefile(

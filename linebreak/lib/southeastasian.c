@@ -16,7 +16,7 @@
  */
 
 #include <assert.h>
-#include "linebreak.h"
+#include "linebreak_defs.h"
 #ifdef USE_LIBTHAI
 #    include "thai/thwchar.h"
 #    include "thai/thwbrk.h"

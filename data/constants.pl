@@ -167,7 +167,7 @@ s/([^\n]*<<<[^\n]*)(.*)(\n[^\n]*>>>[^\n]*)/$1\n$CONSTANTS_PM$3/s;
 print CONSTANTS_PM $_;
 close CONSTANTS_PM;
 
-open IN, '<', 'linebreak.h.in' || die $!; $_ = join '', <IN>; close IN;
+open IN, '<', 'linebreak_constants.h.in' || die $!; $_ = join '', <IN>; close IN;
 s/([^\n]*<<<[^\n]*)(.*)(\n[^\n]*>>>[^\n]*)/$1\n$LINEBREAK_H$3/s;
 print LINEBREAK_H $_;
 close LINEBREAK_H;

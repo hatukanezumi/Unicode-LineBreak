@@ -15,7 +15,7 @@
  * $id$
  */
 
-#include "linebreak.h"
+#include "linebreak_defs.h"
 
 extern void linebreak_charprop(linebreak_t *, unichar_t,
 			       propval_t *, propval_t *, propval_t *,

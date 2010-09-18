@@ -1,7 +1,7 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ(2.59)
-AC_INIT(linebreak, 1.5.520, hatuka@nezumi.nu)
+AC_INIT(linebreak, 1.8.600, hatuka@nezumi.nu)
 DEFAULT_UNICODE_VERSION="6.0.0beta"
 LPATH="$PATH:/usr/local/bin"
 
@@ -66,5 +66,5 @@ AC_CHECK_FILE([lib/$UNICODE_VERSION.c],
   AC_MSG_ERROR(unknown Unicode version $UNICODE_VERSION))
 AC_SUBST(UNICODE_VERSION)
 
-AC_CONFIG_FILES(Makefile liblinebreak.pc)
+AC_CONFIG_FILES(Makefile linebreak.pc linebreak.spec)
 AC_OUTPUT

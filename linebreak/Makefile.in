@@ -40,10 +40,10 @@ build_triplet = @build@
 host_triplet = @host@
 DIST_COMMON = README $(am__configure_deps) $(include_HEADERS) \
 	$(srcdir)/Makefile.am $(srcdir)/Makefile.in \
-	$(srcdir)/config.h.in $(srcdir)/liblinebreak.pc.in \
-	$(top_srcdir)/configure AUTHORS COPYING ChangeLog INSTALL NEWS \
-	compile config.guess config.sub depcomp install-sh ltmain.sh \
-	missing
+	$(srcdir)/config.h.in $(srcdir)/linebreak.pc.in \
+	$(srcdir)/linebreak.spec.in $(top_srcdir)/configure AUTHORS \
+	COPYING ChangeLog INSTALL NEWS compile config.guess config.sub \
+	depcomp install-sh ltmain.sh missing
 subdir = .
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/configure.ac
@@ -53,7 +53,7 @@ am__CONFIG_DISTCLEAN_FILES = config.status config.cache config.log \
  configure.lineno configure.status.lineno
 mkinstalldirs = $(install_sh) -d
 CONFIG_HEADER = config.h
-CONFIG_CLEAN_FILES = liblinebreak.pc
+CONFIG_CLEAN_FILES = linebreak.pc linebreak.spec
 am__vpath_adj_setup = srcdirstrip=`echo "$(srcdir)" | sed 's|.|.|g'`;
 am__vpath_adj = case $$p in \
     $(srcdir)/*) f=`echo "$$p" | sed "s|^$$srcdirstrip/||"`;; \
@@ -61,16 +61,15 @@ am__vpath_adj = case $$p in \
   esac;
 am__strip_dir = `echo $$p | sed -e 's|^.*/||'`;
 am__installdirs = "$(DESTDIR)$(libdir)" "$(DESTDIR)$(pkgconfigdir)" \
-	"$(DESTDIR)$(pkgdatadir)" "$(DESTDIR)$(pkgdatasubdir)" \
 	"$(DESTDIR)$(includedir)" "$(DESTDIR)$(includedir)"
 libLTLIBRARIES_INSTALL = $(INSTALL)
 LTLIBRARIES = $(lib_LTLIBRARIES)
-liblinebreak_la_LIBADD =
-am_liblinebreak_la_OBJECTS = liblinebreak_la-break.lo \
-	liblinebreak_la-charprop.lo liblinebreak_la-gcstring.lo \
-	liblinebreak_la-linebreak.lo liblinebreak_la-southeastasian.lo \
-	liblinebreak_la-@UNICODE_VERSION@.lo
-liblinebreak_la_OBJECTS = $(am_liblinebreak_la_OBJECTS)
+libinebreak_la_LIBADD =
+am_libinebreak_la_OBJECTS = libinebreak_la-break.lo \
+	libinebreak_la-charprop.lo libinebreak_la-gcstring.lo \
+	libinebreak_la-linebreak.lo libinebreak_la-southeastasian.lo \
+	libinebreak_la-@UNICODE_VERSION@.lo
+libinebreak_la_OBJECTS = $(am_libinebreak_la_OBJECTS)
 DEFAULT_INCLUDES = -I. -I$(srcdir) -I.
 depcomp = $(SHELL) $(top_srcdir)/depcomp
 am__depfiles_maybe = depfiles
@@ -82,12 +81,10 @@ LTCOMPILE = $(LIBTOOL) --tag=CC --mode=compile $(CC) $(DEFS) \
 CCLD = $(CC)
 LINK = $(LIBTOOL) --tag=CC --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
 	$(AM_LDFLAGS) $(LDFLAGS) -o $@
-SOURCES = $(liblinebreak_la_SOURCES)
-DIST_SOURCES = $(liblinebreak_la_SOURCES)
+SOURCES = $(libinebreak_la_SOURCES)
+DIST_SOURCES = $(libinebreak_la_SOURCES)
 pkgconfigDATA_INSTALL = $(INSTALL_DATA)
-pkgdataDATA_INSTALL = $(INSTALL_DATA)
-pkgdatasubDATA_INSTALL = $(INSTALL_DATA)
-DATA = $(pkgconfig_DATA) $(pkgdata_DATA) $(pkgdatasub_DATA)
+DATA = $(pkgconfig_DATA)
 includeHEADERS_INSTALL = $(INSTALL_HEADER)
 nodist_includeHEADERS_INSTALL = $(INSTALL_HEADER)
 HEADERS = $(include_HEADERS) $(nodist_include_HEADERS)
@@ -210,27 +207,23 @@ sbindir = @sbindir@
 sharedstatedir = @sharedstatedir@
 sysconfdir = @sysconfdir@
 target_alias = @target_alias@
-lib_LTLIBRARIES = liblinebreak.la
-liblinebreak_la_SOURCES = lib/break.c lib/charprop.c lib/gcstring.c \
+lib_LTLIBRARIES = libinebreak.la
+libinebreak_la_SOURCES = lib/break.c lib/charprop.c lib/gcstring.c \
 			  lib/linebreak.c lib/southeastasian.c \
 			  lib/@UNICODE_VERSION@.c
 
-liblinebreak_la_CFLAGS = -I. -Iinclude @LIBTHAI_CFLAGS@
-liblinebreak_la_LDFLAGS = -version-info 1:1:0 @LIBTHAI_LIBS@
+libinebreak_la_CFLAGS = -I. -Iinclude @LIBTHAI_CFLAGS@
+libinebreak_la_LDFLAGS = -version-info 1:1:0 @LIBTHAI_LIBS@
 #if !HAVE_STRERROR
-#liblinebreak_la_SOURCES += src/strerror.c
+#libinebreak_la_SOURCES += src/strerror.c
 #endif
 #if !HAVE_STRCASECMP
-#liblinebreak_la_SOURCES += src/strcasecmp.c
+#libinebreak_la_SOURCES += src/strcasecmp.c
 #endif
-include_HEADERS = include/linebreak.h include/linebreak_constants.h
+include_HEADERS = include/linebreak_defs.h include/linebreak_constants.h
 nodist_include_HEADERS = 
 pkgconfigdir = $(libdir)/pkgconfig
-pkgconfig_DATA = liblinebreak.pc
-pkgdata_DATA = 
-pkgdatasubdir = 
-pkgdatasub_DATA = 
-EXTRA_DIST = 
+pkgconfig_DATA = linebreak.pc
 all: config.h
 	$(MAKE) $(AM_MAKEFLAGS) all-am
 
@@ -286,7 +279,9 @@ $(srcdir)/config.h.in:  $(am__configure_deps)
 
 distclean-hdr:
 	-rm -f config.h stamp-h1
-liblinebreak.pc: $(top_builddir)/config.status $(srcdir)/liblinebreak.pc.in
+linebreak.pc: $(top_builddir)/config.status $(srcdir)/linebreak.pc.in
+	cd $(top_builddir) && $(SHELL) ./config.status $@
+linebreak.spec: $(top_builddir)/config.status $(srcdir)/linebreak.spec.in
 	cd $(top_builddir) && $(SHELL) ./config.status $@
 install-libLTLIBRARIES: $(lib_LTLIBRARIES)
 	@$(NORMAL_INSTALL)
@@ -315,8 +310,8 @@ clean-libLTLIBRARIES:
 	  echo "rm -f \"$${dir}/so_locations\""; \
 	  rm -f "$${dir}/so_locations"; \
 	done
-liblinebreak.la: $(liblinebreak_la_OBJECTS) $(liblinebreak_la_DEPENDENCIES) 
-	$(LINK) -rpath $(libdir) $(liblinebreak_la_LDFLAGS) $(liblinebreak_la_OBJECTS) $(liblinebreak_la_LIBADD) $(LIBS)
+libinebreak.la: $(libinebreak_la_OBJECTS) $(libinebreak_la_DEPENDENCIES) 
+	$(LINK) -rpath $(libdir) $(libinebreak_la_LDFLAGS) $(libinebreak_la_OBJECTS) $(libinebreak_la_LIBADD) $(LIBS)
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
@@ -324,12 +319,12 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/liblinebreak_la-@UNICODE_VERSION@.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/liblinebreak_la-break.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/liblinebreak_la-charprop.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/liblinebreak_la-gcstring.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/liblinebreak_la-linebreak.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/liblinebreak_la-southeastasian.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libinebreak_la-@UNICODE_VERSION@.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libinebreak_la-break.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libinebreak_la-charprop.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libinebreak_la-gcstring.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libinebreak_la-linebreak.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libinebreak_la-southeastasian.Plo@am__quote@
 
 .c.o:
 @am__fastdepCC_TRUE@	if $(COMPILE) -MT $@ -MD -MP -MF "$(DEPDIR)/$*.Tpo" -c -o $@ $<; \
@@ -352,47 +347,47 @@ distclean-compile:
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(LTCOMPILE) -c -o $@ $<
 
-liblinebreak_la-break.lo: lib/break.c
-@am__fastdepCC_TRUE@	if $(LIBTOOL) --tag=CC --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(liblinebreak_la_CFLAGS) $(CFLAGS) -MT liblinebreak_la-break.lo -MD -MP -MF "$(DEPDIR)/liblinebreak_la-break.Tpo" -c -o liblinebreak_la-break.lo `test -f 'lib/break.c' || echo '$(srcdir)/'`lib/break.c; \
-@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/liblinebreak_la-break.Tpo" "$(DEPDIR)/liblinebreak_la-break.Plo"; else rm -f "$(DEPDIR)/liblinebreak_la-break.Tpo"; exit 1; fi
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='lib/break.c' object='liblinebreak_la-break.lo' libtool=yes @AMDEPBACKSLASH@
+libinebreak_la-break.lo: lib/break.c
+@am__fastdepCC_TRUE@	if $(LIBTOOL) --tag=CC --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libinebreak_la_CFLAGS) $(CFLAGS) -MT libinebreak_la-break.lo -MD -MP -MF "$(DEPDIR)/libinebreak_la-break.Tpo" -c -o libinebreak_la-break.lo `test -f 'lib/break.c' || echo '$(srcdir)/'`lib/break.c; \
+@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/libinebreak_la-break.Tpo" "$(DEPDIR)/libinebreak_la-break.Plo"; else rm -f "$(DEPDIR)/libinebreak_la-break.Tpo"; exit 1; fi
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='lib/break.c' object='libinebreak_la-break.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(liblinebreak_la_CFLAGS) $(CFLAGS) -c -o liblinebreak_la-break.lo `test -f 'lib/break.c' || echo '$(srcdir)/'`lib/break.c
+@am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libinebreak_la_CFLAGS) $(CFLAGS) -c -o libinebreak_la-break.lo `test -f 'lib/break.c' || echo '$(srcdir)/'`lib/break.c
 
-liblinebreak_la-charprop.lo: lib/charprop.c
-@am__fastdepCC_TRUE@	if $(LIBTOOL) --tag=CC --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(liblinebreak_la_CFLAGS) $(CFLAGS) -MT liblinebreak_la-charprop.lo -MD -MP -MF "$(DEPDIR)/liblinebreak_la-charprop.Tpo" -c -o liblinebreak_la-charprop.lo `test -f 'lib/charprop.c' || echo '$(srcdir)/'`lib/charprop.c; \
-@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/liblinebreak_la-charprop.Tpo" "$(DEPDIR)/liblinebreak_la-charprop.Plo"; else rm -f "$(DEPDIR)/liblinebreak_la-charprop.Tpo"; exit 1; fi
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='lib/charprop.c' object='liblinebreak_la-charprop.lo' libtool=yes @AMDEPBACKSLASH@
+libinebreak_la-charprop.lo: lib/charprop.c
+@am__fastdepCC_TRUE@	if $(LIBTOOL) --tag=CC --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libinebreak_la_CFLAGS) $(CFLAGS) -MT libinebreak_la-charprop.lo -MD -MP -MF "$(DEPDIR)/libinebreak_la-charprop.Tpo" -c -o libinebreak_la-charprop.lo `test -f 'lib/charprop.c' || echo '$(srcdir)/'`lib/charprop.c; \
+@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/libinebreak_la-charprop.Tpo" "$(DEPDIR)/libinebreak_la-charprop.Plo"; else rm -f "$(DEPDIR)/libinebreak_la-charprop.Tpo"; exit 1; fi
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='lib/charprop.c' object='libinebreak_la-charprop.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(liblinebreak_la_CFLAGS) $(CFLAGS) -c -o liblinebreak_la-charprop.lo `test -f 'lib/charprop.c' || echo '$(srcdir)/'`lib/charprop.c
+@am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libinebreak_la_CFLAGS) $(CFLAGS) -c -o libinebreak_la-charprop.lo `test -f 'lib/charprop.c' || echo '$(srcdir)/'`lib/charprop.c
 
-liblinebreak_la-gcstring.lo: lib/gcstring.c
-@am__fastdepCC_TRUE@	if $(LIBTOOL) --tag=CC --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(liblinebreak_la_CFLAGS) $(CFLAGS) -MT liblinebreak_la-gcstring.lo -MD -MP -MF "$(DEPDIR)/liblinebreak_la-gcstring.Tpo" -c -o liblinebreak_la-gcstring.lo `test -f 'lib/gcstring.c' || echo '$(srcdir)/'`lib/gcstring.c; \
-@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/liblinebreak_la-gcstring.Tpo" "$(DEPDIR)/liblinebreak_la-gcstring.Plo"; else rm -f "$(DEPDIR)/liblinebreak_la-gcstring.Tpo"; exit 1; fi
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='lib/gcstring.c' object='liblinebreak_la-gcstring.lo' libtool=yes @AMDEPBACKSLASH@
+libinebreak_la-gcstring.lo: lib/gcstring.c
+@am__fastdepCC_TRUE@	if $(LIBTOOL) --tag=CC --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libinebreak_la_CFLAGS) $(CFLAGS) -MT libinebreak_la-gcstring.lo -MD -MP -MF "$(DEPDIR)/libinebreak_la-gcstring.Tpo" -c -o libinebreak_la-gcstring.lo `test -f 'lib/gcstring.c' || echo '$(srcdir)/'`lib/gcstring.c; \
+@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/libinebreak_la-gcstring.Tpo" "$(DEPDIR)/libinebreak_la-gcstring.Plo"; else rm -f "$(DEPDIR)/libinebreak_la-gcstring.Tpo"; exit 1; fi
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='lib/gcstring.c' object='libinebreak_la-gcstring.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(liblinebreak_la_CFLAGS) $(CFLAGS) -c -o liblinebreak_la-gcstring.lo `test -f 'lib/gcstring.c' || echo '$(srcdir)/'`lib/gcstring.c
+@am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libinebreak_la_CFLAGS) $(CFLAGS) -c -o libinebreak_la-gcstring.lo `test -f 'lib/gcstring.c' || echo '$(srcdir)/'`lib/gcstring.c
 
-liblinebreak_la-linebreak.lo: lib/linebreak.c
-@am__fastdepCC_TRUE@	if $(LIBTOOL) --tag=CC --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(liblinebreak_la_CFLAGS) $(CFLAGS) -MT liblinebreak_la-linebreak.lo -MD -MP -MF "$(DEPDIR)/liblinebreak_la-linebreak.Tpo" -c -o liblinebreak_la-linebreak.lo `test -f 'lib/linebreak.c' || echo '$(srcdir)/'`lib/linebreak.c; \
-@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/liblinebreak_la-linebreak.Tpo" "$(DEPDIR)/liblinebreak_la-linebreak.Plo"; else rm -f "$(DEPDIR)/liblinebreak_la-linebreak.Tpo"; exit 1; fi
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='lib/linebreak.c' object='liblinebreak_la-linebreak.lo' libtool=yes @AMDEPBACKSLASH@
+libinebreak_la-linebreak.lo: lib/linebreak.c
+@am__fastdepCC_TRUE@	if $(LIBTOOL) --tag=CC --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libinebreak_la_CFLAGS) $(CFLAGS) -MT libinebreak_la-linebreak.lo -MD -MP -MF "$(DEPDIR)/libinebreak_la-linebreak.Tpo" -c -o libinebreak_la-linebreak.lo `test -f 'lib/linebreak.c' || echo '$(srcdir)/'`lib/linebreak.c; \
+@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/libinebreak_la-linebreak.Tpo" "$(DEPDIR)/libinebreak_la-linebreak.Plo"; else rm -f "$(DEPDIR)/libinebreak_la-linebreak.Tpo"; exit 1; fi
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='lib/linebreak.c' object='libinebreak_la-linebreak.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(liblinebreak_la_CFLAGS) $(CFLAGS) -c -o liblinebreak_la-linebreak.lo `test -f 'lib/linebreak.c' || echo '$(srcdir)/'`lib/linebreak.c
+@am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libinebreak_la_CFLAGS) $(CFLAGS) -c -o libinebreak_la-linebreak.lo `test -f 'lib/linebreak.c' || echo '$(srcdir)/'`lib/linebreak.c
 
-liblinebreak_la-southeastasian.lo: lib/southeastasian.c
-@am__fastdepCC_TRUE@	if $(LIBTOOL) --tag=CC --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(liblinebreak_la_CFLAGS) $(CFLAGS) -MT liblinebreak_la-southeastasian.lo -MD -MP -MF "$(DEPDIR)/liblinebreak_la-southeastasian.Tpo" -c -o liblinebreak_la-southeastasian.lo `test -f 'lib/southeastasian.c' || echo '$(srcdir)/'`lib/southeastasian.c; \
-@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/liblinebreak_la-southeastasian.Tpo" "$(DEPDIR)/liblinebreak_la-southeastasian.Plo"; else rm -f "$(DEPDIR)/liblinebreak_la-southeastasian.Tpo"; exit 1; fi
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='lib/southeastasian.c' object='liblinebreak_la-southeastasian.lo' libtool=yes @AMDEPBACKSLASH@
+libinebreak_la-southeastasian.lo: lib/southeastasian.c
+@am__fastdepCC_TRUE@	if $(LIBTOOL) --tag=CC --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libinebreak_la_CFLAGS) $(CFLAGS) -MT libinebreak_la-southeastasian.lo -MD -MP -MF "$(DEPDIR)/libinebreak_la-southeastasian.Tpo" -c -o libinebreak_la-southeastasian.lo `test -f 'lib/southeastasian.c' || echo '$(srcdir)/'`lib/southeastasian.c; \
+@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/libinebreak_la-southeastasian.Tpo" "$(DEPDIR)/libinebreak_la-southeastasian.Plo"; else rm -f "$(DEPDIR)/libinebreak_la-southeastasian.Tpo"; exit 1; fi
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='lib/southeastasian.c' object='libinebreak_la-southeastasian.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(liblinebreak_la_CFLAGS) $(CFLAGS) -c -o liblinebreak_la-southeastasian.lo `test -f 'lib/southeastasian.c' || echo '$(srcdir)/'`lib/southeastasian.c
+@am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libinebreak_la_CFLAGS) $(CFLAGS) -c -o libinebreak_la-southeastasian.lo `test -f 'lib/southeastasian.c' || echo '$(srcdir)/'`lib/southeastasian.c
 
-liblinebreak_la-@UNICODE_VERSION@.lo: lib/@UNICODE_VERSION@.c
-@am__fastdepCC_TRUE@	if $(LIBTOOL) --tag=CC --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(liblinebreak_la_CFLAGS) $(CFLAGS) -MT liblinebreak_la-@UNICODE_VERSION@.lo -MD -MP -MF "$(DEPDIR)/liblinebreak_la-@UNICODE_VERSION@.Tpo" -c -o liblinebreak_la-@UNICODE_VERSION@.lo `test -f 'lib/@UNICODE_VERSION@.c' || echo '$(srcdir)/'`lib/@UNICODE_VERSION@.c; \
-@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/liblinebreak_la-@UNICODE_VERSION@.Tpo" "$(DEPDIR)/liblinebreak_la-@UNICODE_VERSION@.Plo"; else rm -f "$(DEPDIR)/liblinebreak_la-@UNICODE_VERSION@.Tpo"; exit 1; fi
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='lib/@UNICODE_VERSION@.c' object='liblinebreak_la-@UNICODE_VERSION@.lo' libtool=yes @AMDEPBACKSLASH@
+libinebreak_la-@UNICODE_VERSION@.lo: lib/@UNICODE_VERSION@.c
+@am__fastdepCC_TRUE@	if $(LIBTOOL) --tag=CC --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libinebreak_la_CFLAGS) $(CFLAGS) -MT libinebreak_la-@UNICODE_VERSION@.lo -MD -MP -MF "$(DEPDIR)/libinebreak_la-@UNICODE_VERSION@.Tpo" -c -o libinebreak_la-@UNICODE_VERSION@.lo `test -f 'lib/@UNICODE_VERSION@.c' || echo '$(srcdir)/'`lib/@UNICODE_VERSION@.c; \
+@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/libinebreak_la-@UNICODE_VERSION@.Tpo" "$(DEPDIR)/libinebreak_la-@UNICODE_VERSION@.Plo"; else rm -f "$(DEPDIR)/libinebreak_la-@UNICODE_VERSION@.Tpo"; exit 1; fi
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='lib/@UNICODE_VERSION@.c' object='libinebreak_la-@UNICODE_VERSION@.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(liblinebreak_la_CFLAGS) $(CFLAGS) -c -o liblinebreak_la-@UNICODE_VERSION@.lo `test -f 'lib/@UNICODE_VERSION@.c' || echo '$(srcdir)/'`lib/@UNICODE_VERSION@.c
+@am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libinebreak_la_CFLAGS) $(CFLAGS) -c -o libinebreak_la-@UNICODE_VERSION@.lo `test -f 'lib/@UNICODE_VERSION@.c' || echo '$(srcdir)/'`lib/@UNICODE_VERSION@.c
 
 mostlyclean-libtool:
 	-rm -f *.lo
@@ -419,40 +414,6 @@ uninstall-pkgconfigDATA:
 	  f=$(am__strip_dir) \
 	  echo " rm -f '$(DESTDIR)$(pkgconfigdir)/$$f'"; \
 	  rm -f "$(DESTDIR)$(pkgconfigdir)/$$f"; \
-	done
-install-pkgdataDATA: $(pkgdata_DATA)
-	@$(NORMAL_INSTALL)
-	test -z "$(pkgdatadir)" || $(mkdir_p) "$(DESTDIR)$(pkgdatadir)"
-	@list='$(pkgdata_DATA)'; for p in $$list; do \
-	  if test -f "$$p"; then d=; else d="$(srcdir)/"; fi; \
-	  f=$(am__strip_dir) \
-	  echo " $(pkgdataDATA_INSTALL) '$$d$$p' '$(DESTDIR)$(pkgdatadir)/$$f'"; \
-	  $(pkgdataDATA_INSTALL) "$$d$$p" "$(DESTDIR)$(pkgdatadir)/$$f"; \
-	done
-
-uninstall-pkgdataDATA:
-	@$(NORMAL_UNINSTALL)
-	@list='$(pkgdata_DATA)'; for p in $$list; do \
-	  f=$(am__strip_dir) \
-	  echo " rm -f '$(DESTDIR)$(pkgdatadir)/$$f'"; \
-	  rm -f "$(DESTDIR)$(pkgdatadir)/$$f"; \
-	done
-install-pkgdatasubDATA: $(pkgdatasub_DATA)
-	@$(NORMAL_INSTALL)
-	test -z "$(pkgdatasubdir)" || $(mkdir_p) "$(DESTDIR)$(pkgdatasubdir)"
-	@list='$(pkgdatasub_DATA)'; for p in $$list; do \
-	  if test -f "$$p"; then d=; else d="$(srcdir)/"; fi; \
-	  f=$(am__strip_dir) \
-	  echo " $(pkgdatasubDATA_INSTALL) '$$d$$p' '$(DESTDIR)$(pkgdatasubdir)/$$f'"; \
-	  $(pkgdatasubDATA_INSTALL) "$$d$$p" "$(DESTDIR)$(pkgdatasubdir)/$$f"; \
-	done
-
-uninstall-pkgdatasubDATA:
-	@$(NORMAL_UNINSTALL)
-	@list='$(pkgdatasub_DATA)'; for p in $$list; do \
-	  f=$(am__strip_dir) \
-	  echo " rm -f '$(DESTDIR)$(pkgdatasubdir)/$$f'"; \
-	  rm -f "$(DESTDIR)$(pkgdatasubdir)/$$f"; \
 	done
 install-includeHEADERS: $(include_HEADERS)
 	@$(NORMAL_INSTALL)
@@ -668,7 +629,7 @@ check-am: all-am
 check: check-am
 all-am: Makefile $(LTLIBRARIES) $(DATA) $(HEADERS) config.h
 installdirs:
-	for dir in "$(DESTDIR)$(libdir)" "$(DESTDIR)$(pkgconfigdir)" "$(DESTDIR)$(pkgdatadir)" "$(DESTDIR)$(pkgdatasubdir)" "$(DESTDIR)$(includedir)" "$(DESTDIR)$(includedir)"; do \
+	for dir in "$(DESTDIR)$(libdir)" "$(DESTDIR)$(pkgconfigdir)" "$(DESTDIR)$(includedir)" "$(DESTDIR)$(includedir)"; do \
 	  test -z "$$dir" || $(mkdir_p) "$$dir"; \
 	done
 install: install-am
@@ -718,8 +679,7 @@ info: info-am
 info-am:
 
 install-data-am: install-includeHEADERS install-nodist_includeHEADERS \
-	install-pkgconfigDATA install-pkgdataDATA \
-	install-pkgdatasubDATA
+	install-pkgconfigDATA
 
 install-exec-am: install-libLTLIBRARIES
 
@@ -751,8 +711,7 @@ ps-am:
 
 uninstall-am: uninstall-includeHEADERS uninstall-info-am \
 	uninstall-libLTLIBRARIES uninstall-nodist_includeHEADERS \
-	uninstall-pkgconfigDATA uninstall-pkgdataDATA \
-	uninstall-pkgdatasubDATA
+	uninstall-pkgconfigDATA
 
 .PHONY: CTAGS GTAGS all all-am am--refresh check check-am clean \
 	clean-generic clean-libLTLIBRARIES clean-libtool ctags dist \
@@ -764,16 +723,19 @@ uninstall-am: uninstall-includeHEADERS uninstall-info-am \
 	install-exec install-exec-am install-includeHEADERS \
 	install-info install-info-am install-libLTLIBRARIES \
 	install-man install-nodist_includeHEADERS \
-	install-pkgconfigDATA install-pkgdataDATA \
-	install-pkgdatasubDATA install-strip installcheck \
+	install-pkgconfigDATA install-strip installcheck \
 	installcheck-am installdirs maintainer-clean \
 	maintainer-clean-generic mostlyclean mostlyclean-compile \
 	mostlyclean-generic mostlyclean-libtool pdf pdf-am ps ps-am \
 	tags uninstall uninstall-am uninstall-includeHEADERS \
 	uninstall-info-am uninstall-libLTLIBRARIES \
-	uninstall-nodist_includeHEADERS uninstall-pkgconfigDATA \
-	uninstall-pkgdataDATA uninstall-pkgdatasubDATA
+	uninstall-nodist_includeHEADERS uninstall-pkgconfigDATA
 
+
+#pkgdata_DATA = 
+#pkgdatasubdir = 
+#pkgdatasub_DATA = 
+#EXTRA_DIST = 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.
 .NOEXPORT:

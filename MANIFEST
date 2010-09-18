@@ -9,7 +9,7 @@ data/EastAsianWidth-5.2.0.custom
 data/LBCLASSES
 data/LineBreak-5.1.0.custom
 data/LineBreak-5.2.0.custom
-data/linebreak.h.in
+data/linebreak_constants.h.in
 data/makefile
 data/Rules-5.1.0.txt
 data/Rules-5.2.0.txt
@@ -37,7 +37,7 @@ linebreak/configure
 linebreak/configure.ac
 linebreak/COPYING
 linebreak/depcomp
-linebreak/include/linebreak.h
+linebreak/include/linebreak_defs.h
 linebreak/include/linebreak_constants.h
 linebreak/INSTALL
 linebreak/install-sh
@@ -48,7 +48,7 @@ linebreak/lib/charprop.c
 linebreak/lib/gcstring.c
 linebreak/lib/linebreak.c
 linebreak/lib/southeastasian.c
-linebreak/liblinebreak.pc.in
+linebreak/linebreak.pc.in
 linebreak/ltmain.sh
 linebreak/Makefile.am
 linebreak/Makefile.in

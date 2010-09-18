@@ -15,7 +15,7 @@
  * $id$
  */
 
-#include "linebreak.h"
+#include "linebreak_defs.h"
 
 extern propval_t *linebreak_rules[];
 extern size_t linebreak_rulessiz;

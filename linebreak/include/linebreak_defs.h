@@ -1,7 +1,7 @@
 /*
- * linebreak.h - common definitions for linebreak library
+ * linebreak_defs.h - common definitions for linebreak library
  * 
- * Copyright (C) 2009 by Hatuka*nezumi - IKEDA Soji.  All rights reserved.
+ * Copyright (C) 2009, 2010 by Hatuka*nezumi - IKEDA Soji.  All rights reserved.
  *
  * This file is part of the Linebreak Package.  This program is free
  * software; you can redistribute it and/or modify it under the terms
@@ -15,7 +15,7 @@
  * $id$
  */
 
-#ifndef _LINEBREAK_LINEBREAK_H_
+#ifndef _LINEBREAK_DEFS_H_
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -241,5 +241,5 @@ extern const char *linebreak_unicode_version;
 extern const char *linebreak_southeastasian_supported;
 extern void linebreak_southeastasian_flagbreak(gcstring_t *);
 
-#define _LINEBREAK_LINEBREAK_H_
-#endif /* _LINEBREAK_LINEBREAK_H_ */
+#define _LINEBREAK_DEFS_H_
+#endif /* _LINEBREAK_DEFS_H_ */

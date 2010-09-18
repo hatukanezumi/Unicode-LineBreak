@@ -1,7 +1,7 @@
 ## 
 
 MODULE_VERSION = 1.008
-BETA_VERSION = 01
+BETA_VERSION = 02
 UNICODE_VERSIONS = 5.1.0 5.2.0 6.0.0beta
 CURRENT_UNICODE_VERSION = 6.0.0beta
 
@@ -36,7 +36,7 @@ data: $(DATA_C)
 $(DATA_C): $(RULES) $(EASTASIANWIDTH) $(LINEBREAK) $(SCRIPTS) $(EASTASIANWIDTH_CUSTOM) $(LINEBREAK_CUSTOM) data.pl LBCLASSES
 	perl data.pl lb,ea,gb,sc $(UNICODE_VERSION)
 
-$(CONSTANTS_PM) $(CONSTANTS_H) LBCLASSES: makefile constants.pl Constants.pm.in linebreak.h.in
+$(CONSTANTS_PM) $(CONSTANTS_H) LBCLASSES: makefile constants.pl Constants.pm.in linebreak_constants.h.in
 	perl constants.pl lb,ea,gb,sc $(UNICODE_VERSIONS)
 	perl -wc $(CONSTANTS_PM)
 

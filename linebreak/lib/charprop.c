@@ -15,7 +15,7 @@
  * $id$
  */
 
-#include "linebreak.h"
+#include "linebreak_defs.h"
 
 extern const unsigned short linebreak_prop_index[];
 extern const propval_t linebreak_prop_array[];

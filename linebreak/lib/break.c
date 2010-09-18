@@ -15,7 +15,7 @@
  * $id$
  */
 
-#include "linebreak.h"
+#include "linebreak_defs.h"
 
 static
 gcstring_t *_preprocess(linebreak_t *lbobj, unistr_t *str)

@@ -16,7 +16,7 @@
 #include "ppport.h"
 #define PERL_MODULE_VERSION VERSION
 #undef VERSION
-#include "linebreak.h"
+#include "linebreak_defs.h"
 #undef VERSION
 #define VERSION PERL_MODULE_VERSION
 
