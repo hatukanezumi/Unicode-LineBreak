@@ -26,7 +26,7 @@ use Unicode::LineBreak;
 ### Globals
 
 # The package version
-our $VERSION = '0.005.1';
+our $VERSION = '0.005.2';
 
 use overload 
     '@{}' => \&as_arrayref,
@@ -63,7 +63,7 @@ I<extended grapheme clusters> defined by Unicode Standard Annex #29 [UAX #29].
 
 B<Grapheme cluster> is a sequence of Unicode character(s) that consists of one
 B<grapheme base> and optional B<grapheme extender> and/or
-B<prepend character>.  It is close in that people consider as I<character>.
+B<“prepend” character>.  It is close in that people consider as I<character>.
 
 =head2 Public Interface
 
@@ -257,8 +257,8 @@ L<http://hatuka.nezumi.nu/repos/Unicode-LineBreak/>.
 =head1 SEE ALSO
 
 [UAX #29]
-Mark Davis (2009).
-I<Unicode Standard Annex #29: Unicode Text Segmentation>, Revision 15.
+Mark Davis (2009-2010).
+I<Unicode Standard Annex #29: Unicode Text Segmentation>, Revision 15-16.
 L<http://www.unicode.org/reports/tr29/>.
 
 =head1 AUTHOR
@@ -267,7 +267,7 @@ Hatuka*nezumi - IKEDA Soji <hatuka(at)nezumi.nu>
 
 =head1 COPYRIGHT
 
-Copyright (C) 2009 Hatuka*nezumi - IKEDA Soji.
+Copyright (C) 2009, 2010 Hatuka*nezumi - IKEDA Soji.
 
 This program is free software; you can redistribute it and/or modify it
 under the same terms as Perl itself.

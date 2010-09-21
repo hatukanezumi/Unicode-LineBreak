@@ -27,11 +27,11 @@ lib/Unicode/LineBreak/Version.pm
 LineBreak.xs
 linebreak/aclocal.m4
 linebreak/AUTHORS
-linebreak/autogen.sh
 linebreak/ChangeLog
 linebreak/compile
 linebreak/config.guess
 linebreak/config.h.in
+linebreak/config.h.mingw
 linebreak/config.sub
 linebreak/configure
 linebreak/configure.ac
@@ -46,12 +46,14 @@ linebreak/lib/5.2.0.c
 linebreak/lib/break.c
 linebreak/lib/charprop.c
 linebreak/lib/gcstring.c
+linebreak/lib/Makefile.mingw
 linebreak/lib/linebreak.c
 linebreak/lib/southeastasian.c
 linebreak/linebreak.pc.in
 linebreak/ltmain.sh
 linebreak/Makefile.am
 linebreak/Makefile.in
+linebreak/Makefile.mingw
 linebreak/missing
 linebreak/NEWS
 linebreak/README

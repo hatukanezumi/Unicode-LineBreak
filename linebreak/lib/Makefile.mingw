@@ -1,0 +1,13 @@
+OBJECTS = break.o charprop.o gcstring.o linebreak.o southeastasian.o 6.0.0beta.o
+
+.c.o:
+	$(CC) $(CFLAGS) -DHAVE_CONFIG_H -o $@ $<
+
+all: libinebreak.a
+
+libinebreak.a: $(OBJECTS)
+	$(AR) rc $@ $<
+
+clean:
+	rm -f *.a *.o
+

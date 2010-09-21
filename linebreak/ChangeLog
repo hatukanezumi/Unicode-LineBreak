@@ -1,7 +1,8 @@
-1.8	Sat Sep 18 2010
+1.8	XXX XXX XX 2010
 	* update config.sub & config.guess.
 	* renamed: include/linebreak_defs.h, libinebreak.
 	* added linebreak.spec.in.
+	* removed autogen.sh.
 
 1.5	Wed Dec 30 2009
 	* gcstring_t: added new member elbc to describe non-CM LBC at

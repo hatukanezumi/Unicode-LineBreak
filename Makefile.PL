@@ -34,16 +34,25 @@ EOF
 
 sub postamble {
     my $args = join ' ', map {s/\'/\\\'/g; "'$_'"; } @args;
-    return <<EOF;
+    if ($^O eq 'MSWin32') {
+	return <<EOF;
+\$(MYEXTLIB): $csubdir/Makefile.mingw
+\tcd $csubdir && \\
+\t\$(MAKE) -f Makefile.mingw all \\
+\tCC='\$(CC)' CFLAGS='\$(CCFLAGS) \$(OPTIMIZE)' AR='\$(AR)'
+EOF
+    } else {
+	return <<EOF;
 \$(MYEXTLIB): $csubdir/Makefile
 \tcd $csubdir && \$(MAKE)
 $csubdir/Makefile: $csubdir/configure
 \tcd $csubdir && \\
-\tsh configure --disable-shared --enable-static $args \\
+\t./configure --disable-shared --enable-static $args \\
 \tCC='\$(CC)' CFLAGS='\$(CCFLAGS) \$(OPTIMIZE) \$(CCCDLFLAGS)'
 $csubdir/configure: $csubdir/configure.ac
 \tcd $csubdir && autoreconf
 EOF
+    }
 }
 
 foreach my $arg (@ARGV) {
@@ -72,16 +81,19 @@ if ($libthai and $enable_libthai eq 'yes') {
 } else {
     push @args, '--disable-libthai';
 }
-if (system("$pkg_config --atleast-version=$linebreak_atleast_version ".
-	    "libinebreak") % 256) {
+if (system("$pkg_config --atleast-version=$linebreak_atleast_version " .
+	   "linebreak") >> 8) {
     $bundled_linebreak = 'yes';
 }
-if ($bundled_linebreak = 'yes') {
+if ($^O eq 'MSWin32') {
+    push @opts, ('MYEXTLIB' => "$csubdir/lib/libinebreak\$(LIB_EXT)");
+    push @opts, ('INC' => "-I$csubdir/include -I$csubdir");
+} elsif ($bundled_linebreak eq 'yes') {
     push @opts, ('MYEXTLIB' => "$csubdir/.libs/libinebreak\$(LIB_EXT)");
     push @opts, ('INC' => "-I$csubdir/include -I$csubdir");
 } else {
-    push @opts, ('LIBS' => `$pkg_config --libs libinebreak`);
-    push @opts, ('INC' => `$pkg_config --cflags libinebreak`); 
+    push @opts, ('LIBS' => `$pkg_config --libs linebreak`);
+    push @opts, ('INC' => `$pkg_config --cflags linebreak`); 
 }
 
 WriteMakefile(

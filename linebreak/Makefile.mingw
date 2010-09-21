@@ -1,0 +1,12 @@
+all:
+	cp config.h.mingw config.h
+	cd lib && \
+	$(MAKE) -f Makefile.mingw all CC='$(CC)' CFLAGS='$(CFLAGS)' AR='$(AR)'
+
+clean:
+	cd lib && \
+	$(MAKE) -f Makefile.mingw clean
+
+distclean: clean
+	rm -f config.h
+
