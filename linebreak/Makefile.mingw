@@ -1,7 +1,9 @@
+# -*- Makefile -*- for linebreak
+
 all:
 	cp config.h.mingw config.h
 	cd lib && \
-	$(MAKE) -f Makefile.mingw all CC='$(CC)' CFLAGS='$(CFLAGS)' AR='$(AR)'
+	$(MAKE) -f Makefile.mingw all CC="$(CC)" CFLAGS="$(CFLAGS)" AR="$(AR)"
 
 clean:
 	cd lib && \

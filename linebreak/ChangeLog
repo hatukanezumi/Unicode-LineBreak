@@ -3,6 +3,7 @@
 	* renamed: include/linebreak_defs.h, libinebreak.
 	* added linebreak.spec.in.
 	* removed autogen.sh.
+	* added Makefile's for MinGW (testing).
 
 1.5	Wed Dec 30 2009
 	* gcstring_t: added new member elbc to describe non-CM LBC at

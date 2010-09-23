@@ -38,8 +38,7 @@ sub postamble {
 	return <<EOF;
 \$(MYEXTLIB): $csubdir/Makefile.mingw
 \tcd $csubdir && \\
-\t\$(MAKE) -f Makefile.mingw all \\
-\tCC='\$(CC)' CFLAGS='\$(CCFLAGS) \$(OPTIMIZE)' AR='\$(AR)'
+\t\$(MAKE) -f Makefile.mingw all CC=\"\$(CC)\" CFLAGS=\"\$(CCFLAGS) \$(OPTIMIZE)\" AR=\"\$(AR)\"
 EOF
     } else {
 	return <<EOF;

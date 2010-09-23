@@ -1,7 +1,11 @@
-OBJECTS = break.o charprop.o gcstring.o linebreak.o southeastasian.o 6.0.0beta.o
+# -*- Makefile -*- for linebreak/lib
+
+UNICODE_VERSION = 6.0.0beta
+OBJECTS = break.o charprop.o gcstring.o linebreak.o southeastasian.o \
+	  $(UNICODE_VERSION).o
 
 .c.o:
-	$(CC) $(CFLAGS) -DHAVE_CONFIG_H -o $@ $<
+	$(CC) -I.. -I../include $(CFLAGS) -DHAVE_CONFIG_H -o $@ $<
 
 all: libinebreak.a
 
