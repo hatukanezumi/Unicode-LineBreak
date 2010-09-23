@@ -5,7 +5,7 @@ OBJECTS = break.o charprop.o gcstring.o linebreak.o southeastasian.o \
 	  $(UNICODE_VERSION).o
 
 .c.o:
-	$(CC) -I.. -I../include $(CFLAGS) -DHAVE_CONFIG_H -o $@ $<
+	$(CC) -I.. -I../include $(CFLAGS) -DHAVE_CONFIG_H -o $@ -c $<
 
 all: libinebreak.a
 
