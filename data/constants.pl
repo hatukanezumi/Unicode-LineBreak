@@ -1,8 +1,5 @@
 #! perl
 
-my %character_classes = ();
-
-my $CONSTANTS_PM = '';
 my $LINEBREAK_H = '';
 my $LBCLASSES = '';
 
@@ -93,21 +90,12 @@ foreach my $attr (@attr) {
 		$beg = hex("0x$beg");
 		$end = hex("0x$end");
 
-		if ($c =~ /^\w+$/) {
-		    foreach my $chr (($beg..$end)) {
-			next if $attr eq 'sc' and !$SA{$chr}; # limit to SA
-			unless (defined $classes{$c}) {
-			    push @classes, $c;
-			    $classes{$c} = $version;
-			}
-		    }
-		} elsif ($c =~ /^\@([\w:]+)$/) {
-		    my @c = split /:/, $1;
-		    foreach my $cc (@c) {
-			$character_classes{$cc} ||= {};
-			foreach my $chr (($beg..$end)) {
-			    $character_classes{$cc}->{$chr} = 1;
-			}
+		next unless $c =~ /^\w+$/;
+		foreach my $chr (($beg..$end)) {
+		    next if $attr eq 'sc' and !$SA{$chr}; # limit to SA
+		    unless (defined $classes{$c}) {
+			push @classes, $c;
+			$classes{$c} = $version;
 		    }
 		}
 	    }
@@ -126,24 +114,11 @@ foreach my $attr (@attr) {
     }
 
     my $i;
-    $CONSTANTS_PM .= "use constant {\n";
     for ($i = 0; $i <= $#classes; $i++) {
-	$CONSTANTS_PM .= "    ".uc($attr)."_$classes[$i] => $i,\n";
 	$LINEBREAK_H .= "#define ".uc($attr)."_$classes[$i] ((propval_t)$i)\n";
     }
-    $CONSTANTS_PM .= "};\n\n";
     $LINEBREAK_H .= "\n";
 }
-
-$CONSTANTS_PM .= "use constant {\n";
-foreach my $cc (sort keys %character_classes) {
-    $CONSTANTS_PM .= "    $cc => [";
-    foreach my $chr (sort { $a <=> $b } keys %{$character_classes{$cc}}) {
-	$CONSTANTS_PM .= sprintf '0x%04X, ', $chr;
-    }
-    $CONSTANTS_PM .= "],\n";
-}
-$CONSTANTS_PM .= "};\n\n";
 
 $LBCLASSES .= "\%indexedclasses = (\n";
 foreach my $attr (@attr) {
@@ -158,14 +133,8 @@ foreach my $attr (@attr) {
 }
 $LBCLASSES .= ");\n\n1;\n";
 
-open LINEBREAK_H, '>', '../linebreak/include/linebreak_constants.h' || die $!;
-open CONSTANTS_PM, '>', '../lib/Unicode/LineBreak/Constants.pm' || die $!;
-open LBCLASSES, '>', 'LBCLASSES' || $!;
-
-open IN, '<', 'Constants.pm.in' || die $!; $_ = join '', <IN>; close IN;
-s/([^\n]*<<<[^\n]*)(.*)(\n[^\n]*>>>[^\n]*)/$1\n$CONSTANTS_PM$3/s;
-print CONSTANTS_PM $_;
-close CONSTANTS_PM;
+open LINEBREAK_H, '>', '../linebreak/include/linebreak_constants.h' or die $!;
+open LBCLASSES, '>', 'LBCLASSES' or die $!;
 
 open IN, '<', 'linebreak_constants.h.in' || die $!; $_ = join '', <IN>; close IN;
 s/([^\n]*<<<[^\n]*)(.*)(\n[^\n]*>>>[^\n]*)/$1\n$LINEBREAK_H$3/s;

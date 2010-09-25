@@ -25,7 +25,7 @@ use Unicode::GCString;
 ### Globals
 
 ### The package version
-require Unicode::LineBreak::Version;
+our $VERSION = '1.008_06';
 
 ### Public Configuration Attributes
 our $Config = {
@@ -56,6 +56,19 @@ push @{$EXPORT_TAGS{'all'}}, @consts;
 ### Load XS module
 require XSLoader;
 XSLoader::load('Unicode::LineBreak', $VERSION);
+
+### Load dynamic constants
+foreach my $prop (qw(EA GB LB SC)) {
+    my $idx = 0;
+    foreach my $val (_propvals($prop)) {
+	no strict;
+	my $const = "${prop}_${val}";
+	*{$const} = eval "sub { $idx }";
+	push @EXPORT_OK, $const;
+	push @{$EXPORT_TAGS{'all'}}, $const;
+	$idx++;
+    }
+}
 
 ### Privates
 my $EASTASIAN_CHARSETS = qr{

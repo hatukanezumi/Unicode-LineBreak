@@ -392,6 +392,22 @@ const char *linebreak_unicode_version = UNICODE_VERSION;
 
 EOF
 
+# Print property values.
+foreach my $k (sort keys %indexedclasses) {
+    print DATA_C "const char *linebreak_propvals_".uc($k)."[] = {\n    ";
+    foreach my $v (@{$indexedclasses{$k}->{$version}}) {
+	print DATA_C "\"$v\", ";
+    }
+    if (uc($k) eq 'LB') {
+	foreach my $v (qw(SG AI SA XX)) {
+	    print DATA_C "\"$v\", ";
+	}
+    }
+    print DATA_C "NULL\n";
+    print DATA_C "};\n";
+}
+print DATA_C "\n";
+
 # print rule map.
 my $clss = join '', map { /(.)(.)/; $1.lc($2); } @LBCLASSES;
 print DATA_C <<"EOF";

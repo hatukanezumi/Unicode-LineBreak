@@ -4,6 +4,8 @@
 	* added linebreak.spec.in.
 	* removed autogen.sh.
 	* added Makefile's for MinGW (testing).
+	* Chg: added linebreak_propvals_?? variables to tell application layer
+	  possible property values.
 
 1.5	Wed Dec 30 2009
 	* gcstring_t: added new member elbc to describe non-CM LBC at

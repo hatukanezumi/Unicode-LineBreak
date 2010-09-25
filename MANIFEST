@@ -1,18 +1,20 @@
 ARTISTIC
 Changes
 data/constants.pl
-data/Constants.pm.in
 data/custom.pl
 data/data.pl
 data/EastAsianWidth-5.1.0.custom
 data/EastAsianWidth-5.2.0.custom
+data/EastAsianWidth-6.0.0beta.custom
 data/LBCLASSES
 data/LineBreak-5.1.0.custom
 data/LineBreak-5.2.0.custom
+data/LineBreak-6.0.0beta.custom
 data/linebreak_constants.h.in
 data/makefile
 data/Rules-5.1.0.txt
 data/Rules-5.2.0.txt
+data/Rules-6.0.0beta.txt
 GPL
 lib/Text/LineFold.pm
 lib/Text/LineFold/JA_JP.pod
@@ -23,7 +25,6 @@ lib/Unicode/LineBreak.pod
 lib/Unicode/LineBreak/Constants.pm
 lib/Unicode/LineBreak/Defaults.pm.sample
 lib/Unicode/LineBreak/JA_JP.pod
-lib/Unicode/LineBreak/Version.pm
 LineBreak.xs
 linebreak/aclocal.m4
 linebreak/AUTHORS
@@ -43,6 +44,7 @@ linebreak/INSTALL
 linebreak/install-sh
 linebreak/lib/5.1.0.c
 linebreak/lib/5.2.0.c
+linebreak/lib/6.0.0beta.c
 linebreak/lib/break.c
 linebreak/lib/charprop.c
 linebreak/lib/gcstring.c

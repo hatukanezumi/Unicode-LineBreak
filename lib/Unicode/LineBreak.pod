@@ -609,7 +609,7 @@ L<http://rt.cpan.org/Public/Dist/Display.html?Name=Unicode-LineBreak>.
 
 =head1 VERSION
 
-See L<Unicode::LineBreak::Version>.
+Consult $VERSION variable.
 
 Development versions of this module may be found at 
 L<http://hatuka.nezumi.nu/repos/Unicode-LineBreak/>.

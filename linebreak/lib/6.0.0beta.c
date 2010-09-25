@@ -6,6 +6,19 @@
 #define UNICODE_VERSION "6.0.0beta"
 const char *linebreak_unicode_version = UNICODE_VERSION;
 
+const char *linebreak_propvals_EA[] = {
+    "Z", "Na", "N", "A", "W", "H", "F", NULL
+};
+const char *linebreak_propvals_GB[] = {
+    "CR", "LF", "Control", "Extend", "Prepend", "SpacingMark", "L", "V", "T", "LV", "LVT", "Other", NULL
+};
+const char *linebreak_propvals_LB[] = {
+    "BK", "CR", "LF", "NL", "SP", "OP", "CL", "QU", "GL", "NS", "EX", "SY", "IS", "PR", "PO", "NU", "AL", "ID", "IN", "HY", "BA", "BB", "B2", "CB", "ZW", "CM", "WJ", "H2", "H3", "JL", "JV", "JT", "CP", "SG", "AI", "SA", "XX", NULL
+};
+const char *linebreak_propvals_SC[] = {
+    "Common", "Inherited", "Unknown", "Han", "Hangul", "Thai", "Lao", "Myanmar", "Khmer", "Tai_Le", "New_Tai_Lue", "Tai_Tham", "Tai_Viet", NULL
+};
+
 #define r(cc) static propval_t rule_##cc[]
 /* Note: Entries related to BK, CR, CM, LF, NL, SP aren't used by break(). */
     /* BkCrLfNlSpOpClQuGlNsExSyIsPrPoNuAlIdInHyBaBbB2CbZwCmWjH2H3JlJvJtCp */
@@ -816,7 +829,7 @@ propval_t linebreak_prop_array[] = {
     LB_CM, EA_Z, GB_Extend, SC_Unknown, LB_CM, EA_Z, GB_Extend, SC_Unknown,
     LB_CM, EA_Z, GB_Extend, SC_Unknown, LB_CM, EA_Z, GB_Extend, SC_Unknown,
     LB_CM, EA_Z, GB_Extend, SC_Unknown, LB_AL, EA_Z, GB_Control, SC_Unknown,
-    LB_AL, EA_Z, GB_Other, SC_Unknown, LB_CM, EA_Z, GB_Extend, SC_Unknown,
+    LB_AL, EA_N, GB_Other, SC_Unknown, LB_CM, EA_Z, GB_Extend, SC_Unknown,
     LB_CM, EA_Z, GB_Extend, SC_Unknown, LB_CM, EA_Z, GB_Extend, SC_Unknown,
     LB_CM, EA_Z, GB_Extend, SC_Unknown, LB_CM, EA_Z, GB_Extend, SC_Unknown,
     LB_AL, EA_N, GB_Other, SC_Unknown, LB_AL, EA_N, GB_Other, SC_Unknown,

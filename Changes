@@ -2,6 +2,7 @@
 
 	* MSWin32 support (testing).
 	* Doc: Unicode::GCString: small fix.
+	* Removed Version.pm.
 
 1.008_02  Sat Sep 18 2010
 
