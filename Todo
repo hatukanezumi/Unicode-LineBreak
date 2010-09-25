@@ -9,7 +9,7 @@
 	  contexts (SA), at least on Thai and Khmer scripts.
 	- For Thai, libthai package will be useful. - DONE by 1.000_01.
 	- Some implementations can be found for Khmer.
-	- Burmese, Lao, Tai Le, New Tai Lue, Tai Tham and Tai Viet - No plan.
+	- Burmese, Lao, Tai Le, New Tai Lue, Tai Tham and Tai Viet - No plans.
 
 2009-05-17  Hatuka*nezumi - IKEDA Soji <hatuka(at)nezumi.nu>
 
@@ -21,7 +21,7 @@
 
 2009-05-02  Hatuka*nezumi - IKEDA Soji <Hatuka(at)nezumi.nu>
 
-	* Text::LineFold: obsoleted RFC 2646 folding and unfolding.
+	* Text::LineFold: obsoleted RFC 2646 folding and unfolding. - DONE by 1.007.
 
 2009-05-02  Hatuka*nezumi - IKEDA Soji <Hatuka(at)nezumi.nu>
 

@@ -3,6 +3,7 @@
 	* MSWin32 support (testing).
 	* Doc: Unicode::GCString: small fix.
 	* Removed Version.pm.
+	* Needs linebreak > 1.8.1.
 
 1.008_02  Sat Sep 18 2010
 

@@ -133,7 +133,7 @@ foreach my $attr (@attr) {
 }
 $LBCLASSES .= ");\n\n1;\n";
 
-open LINEBREAK_H, '>', '../linebreak/include/linebreak_constants.h' or die $!;
+open LINEBREAK_H, '>', '../include/linebreak_constants.h' or die $!;
 open LBCLASSES, '>', 'LBCLASSES' or die $!;
 
 open IN, '<', 'linebreak_constants.h.in' || die $!; $_ = join '', <IN>; close IN;

@@ -1,4 +1,4 @@
-## 
+#-*- Makefile -*-
 
 UNICODE_VERSIONS = 5.1.0 5.2.0 6.0.0beta
 CURRENT_UNICODE_VERSION = 6.0.0beta
@@ -15,10 +15,9 @@ LINEBREAK_CUSTOM = LineBreak-$(UNICODE_VERSION).custom
 SCRIPTS = Scripts-$(UNICODE_VERSION).txt
 #SCRIPTS_CUSTOM = Scripts-$(UNICODE_VERSION).custom
 SCRIPTS_CUSTOM =
-DATA_C = ../linebreak/lib/$(UNICODE_VERSION).c
-CONSTANTS_H = ../linebreak/include/linebreak_constants.h
-META_YML = ../META.yml
-CONFIGURE_IN = ../linebreak/configure.ac
+DATA_C = ../lib/$(UNICODE_VERSION).c
+CONSTANTS_H = ../include/linebreak_constants.h
+CONFIGURE_IN = ../configure.ac
 
 all:
 	$(MAKE) $(CONSTANTS_H)

@@ -10,13 +10,18 @@ const char *linebreak_propvals_EA[] = {
     "Z", "Na", "N", "A", "W", "H", "F", NULL
 };
 const char *linebreak_propvals_GB[] = {
-    "CR", "LF", "Control", "Extend", "Prepend", "SpacingMark", "L", "V", "T", "LV", "LVT", "Other", NULL
+    "CR", "LF", "Control", "Extend", "Prepend", "SpacingMark", "L", "V", 
+    "T", "LV", "LVT", "Other", NULL
 };
 const char *linebreak_propvals_LB[] = {
-    "BK", "CR", "LF", "NL", "SP", "OP", "CL", "QU", "GL", "NS", "EX", "SY", "IS", "PR", "PO", "NU", "AL", "ID", "IN", "HY", "BA", "BB", "B2", "CB", "ZW", "CM", "WJ", "H2", "H3", "JL", "JV", "JT", "SG", "AI", "SA", "XX", NULL
+    "BK", "CR", "LF", "NL", "SP", "OP", "CL", "QU", "GL", "NS", "EX", "SY", 
+    "IS", "PR", "PO", "NU", "AL", "ID", "IN", "HY", "BA", "BB", "B2", "CB", 
+    "ZW", "CM", "WJ", "H2", "H3", "JL", "JV", "JT", "SG", "AI", "SA", "XX", 
+    NULL
 };
 const char *linebreak_propvals_SC[] = {
-    "Common", "Inherited", "Unknown", "Han", "Hangul", "Thai", "Lao", "Myanmar", "Khmer", "Tai_Le", "New_Tai_Lue", NULL
+    "Common", "Inherited", "Unknown", "Han", "Hangul", "Thai", "Lao", 
+    "Myanmar", "Khmer", "Tai_Le", "New_Tai_Lue", NULL
 };
 
 #define r(cc) static propval_t rule_##cc[]
