@@ -1,0 +1,66 @@
+#-*- Makefile -*-
+
+UNICODE_VERSIONS = 5.1.0 5.2.0 6.0.0beta
+CURRENT_UNICODE_VERSION = 6.0.0beta
+
+WGET = wget
+UCD_BASE = http://www.unicode.org/Public/$(UNICODE_VERSION)/ucd/
+UNICODEDATA = UnicodeData-$(UNICODE_VERSION).txt
+LINEBREAK = LineBreak-$(UNICODE_VERSION).txt
+EASTASIANWIDTH = EastAsianWidth-$(UNICODE_VERSION).txt
+GRAPHEMEBREAK = GraphemeBreakProperty-$(UNICODE_VERSION).txt
+RULES = Rules-$(UNICODE_VERSION).txt
+EASTASIANWIDTH_CUSTOM = EastAsianWidth-$(UNICODE_VERSION).custom
+LINEBREAK_CUSTOM = LineBreak-$(UNICODE_VERSION).custom
+SCRIPTS = Scripts-$(UNICODE_VERSION).txt
+#SCRIPTS_CUSTOM = Scripts-$(UNICODE_VERSION).custom
+SCRIPTS_CUSTOM =
+DATA_C = ../lib/$(UNICODE_VERSION).c
+CONSTANTS_H = ../include/linebreak_constants.h
+CONFIGURE_IN = ../configure.ac
+
+all:
+	$(MAKE) $(CONSTANTS_H)
+	$(MAKE) $(CONFIGURE_IN)
+	for v in $(UNICODE_VERSIONS); do \
+		$(MAKE) data UNICODE_VERSION=$$v || exit 1; \
+	done
+
+data: $(DATA_C)
+
+$(DATA_C): $(RULES) $(EASTASIANWIDTH) $(LINEBREAK) $(SCRIPTS) $(EASTASIANWIDTH_CUSTOM) $(LINEBREAK_CUSTOM) data.pl LBCLASSES
+	perl data.pl lb,ea,gb,sc $(UNICODE_VERSION)
+
+$(CONSTANTS_H) LBCLASSES: makefile constants.pl linebreak_constants.h.in
+	perl constants.pl lb,ea,gb,sc $(UNICODE_VERSIONS)
+
+$(CONFIGURE_IN): makefile
+	perl -i.bak -pe 's/^DEFAULT_UNICODE_VERSION=.+/DEFAULT_UNICODE_VERSION="$(CURRENT_UNICODE_VERSION)"/' $(CONFIGURE_IN)
+
+custom-data: $(UNICODEDATA) $(LINEBREAK) $(EASTASIANWIDTH) $(GRAPHEMEBREAK) $(SCRIPTS) custom.pl
+	for f in $(EASTASIANWIDTH_CUSTOM) $(LINEBREAK_CUSTOM) $(SCRIPTS_CUSTOM); do \
+	    if [ -e $$f ]; then mv $$f $$f.old; fi; done
+	perl custom.pl ea $(UNICODE_VERSION) > $(EASTASIANWIDTH_CUSTOM)
+	perl custom.pl lb $(UNICODE_VERSION) > $(LINEBREAK_CUSTOM)
+
+custom:
+	for v in $(UNICODE_VERSIONS); do \
+		$(MAKE) custom-data UNICODE_VERSION=$$v; \
+	done
+
+unicodedata:
+	$(WGET) -O $(UNICODEDATA) $(UCD_BASE)UnicodeData.txt
+	$(WGET) -O $(LINEBREAK) $(UCD_BASE)LineBreak.txt
+	$(WGET) -O $(EASTASIANWIDTH) $(UCD_BASE)EastAsianWidth.txt
+	$(WGET) -O $(GRAPHEMEBREAK) $(UCD_BASE)auxiliary/GraphemeBreakProperty.txt
+	$(WGET) -O $(SCRIPTS) $(UCD_BASE)Scripts.txt
+
+clean-data:
+	rm -f $(DATA_C)
+
+clean:
+	rm -f $(CONSTANTS_H)
+	for v in $(UNICODE_VERSIONS); do \
+		$(MAKE) clean-data UNICODE_VERSION=$$v; \
+	done
+

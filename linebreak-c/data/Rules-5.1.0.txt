@@ -1,0 +1,166 @@
+#### Rules for Unicode Line Breaking Algorithm.
+#### Based on Unicode Standard Annex #14 (UAX#14), Revision 22 (2008-03-31)
+#### by Asmus Freytag and Andy Heninger. http://www.unicode.org/reports/tr14/
+
+### 1 Non-tailorable Line Breaking Rules
+
+## Resolve line breaking classes:
+
+# LB1
+Assign a line breaking class to each code point of the input.
+
+## Start and end of text:
+
+# LB2
+sot ×
+
+# LB3
+! eot
+
+## Mandatory breaks:
+
+# LB4
+BK !
+
+# LB5
+CR × LF
+CR !
+LF !
+NL !
+
+# LB6
+× ( BK | CR | LF | NL )
+
+## Explicit breaks and non-breaks:
+
+# LB7
+× SP
+× ZW
+
+# LB8
+ZW ÷
+
+## Combining marks:
+
+# LB9
+Treat X CM* as if it were X. where X is any line break class except  BK, CR, LF, NL, SP, or ZW.
+
+# LB10
+Treat any remaining CM as it if were AL.
+
+## Word joiner:
+
+# LB11
+× WJ
+WJ ×
+
+## Non-breaking characters:
+
+# LB12
+GL ×
+
+### 2 Tailorable Line Breaking Rules
+
+## Non-breaking characters:
+
+# LB12a
+[^SP BA HY] × GL
+
+## Opening and closing:
+
+# LB13
+× CL
+× EX
+× IS
+× SY
+
+# LB14
+OP SP* ×
+
+# LB15
+QU SP* × OP
+
+# LB16
+CL SP* × NS
+
+# LB17
+B2 SP* × B2
+
+## Spaces:
+
+# LB18
+SP ÷
+
+## Special case rules:
+
+# LB19
+× QU
+QU ×
+
+# LB20
+÷ CB
+CB ÷
+
+# LB21
+× BA
+× HY
+× NS
+BB ×
+
+# LB22
+AL × IN
+ID × IN
+IN × IN
+NU × IN
+
+## Numbers:
+
+# LB23
+ID × PO
+AL × NU
+NU × AL
+
+# LB24
+PR × ID
+PR × AL
+PO × AL
+
+# LB25
+CL × PO
+CL × PR
+NU × PO
+NU × PR
+PO × OP
+PO × NU
+PR × OP
+PR × NU
+HY × NU
+IS × NU
+NU × NU
+SY × NU
+
+## Korean syllable blocks
+
+# LB26
+JL × (JL | JV | H2 | H3)
+(JV | H2) × (JV | JT)
+(JT | H3) × JT
+
+# LB27
+(JL | JV | JT | H2 | H3) × IN
+(JL | JV | JT | H2 | H3) × PO
+PR × (JL | JV | JT | H2 | H3)
+
+## Finally, join alphabetic letters into words and break everything else. 
+
+# LB28
+AL × AL
+
+# LB29
+IS × AL
+
+# LB30 - Withdrawn
+
+# LB31
+ALL ÷
+÷ ALL

@@ -1,0 +1,69 @@
+Summary: Unicode Line Breaking package
+Name: linebreak
+Version: @VERSION@
+Release: 0%{?dist}
+# No version is specified, so all versions are possible.
+License: GPLv2+
+Group: System Environment/Libraries
+Source: linebreak-@VERSION@.tar.gz
+URL: http://search.cpan.org/dist/Unicode-LineBreak/
+BuildRoot: %{_tmppath}/%{name}-%{version}-root-%(%{__id_u} -n)
+
+BuildRequires: pkgconfig
+# we edit the Makefile.am's
+BuildRequires: automake
+BuildRequires: autoconf
+BuildRequires: libtool
+BuildRequires: libthai-devel
+Requires: libthai
+
+%description
+linebreak package performs Line Breaking Algorithm described in Unicode
+Standards Annex #14 (UAX #14).  East_Asian_Width informative properties
+defined by Annex #11 (UAX #11) will be concerned to determin breaking
+positions.
+
+%package devel
+Summary: Unicode Line Break package
+Group: Development/Libraries
+Requires: %{name} = %{version}-%{release}
+Requires: pkgconfig
+
+%description devel
+The linebreak-devel package includes the header files and developer docs 
+for the linebreak package.  Install linebreak-devel if you want to develop
+programs which will use linebreak.
+
+%prep
+%setup -q -n %{name}-%{version}
+
+%build
+autoreconf -i -f
+%configure --disable-static
+make
+
+%install
+rm -rf $RPM_BUILD_ROOT
+%makeinstall
+rm $RPM_BUILD_ROOT%{_libdir}/*.la
+
+%clean
+rm -rf $RPM_BUILD_ROOT
+
+%post -p /sbin/ldconfig
+
+%postun -p /sbin/ldconfig
+
+%files
+%defattr(-, root, root)
+%doc README AUTHORS COPYING ChangeLog
+%{_libdir}/lib*.so.*
+
+%files devel
+%defattr(-, root, root)
+%{_includedir}/*
+%{_libdir}/lib*.so
+%{_libdir}/pkgconfig/*
+#%{_mandir}/man3/*
+
+%changelog
