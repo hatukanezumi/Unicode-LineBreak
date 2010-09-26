@@ -1,7 +1,7 @@
 /*
  * LineBreak.xs - Perl XS glue for Linebreak package.
  * 
- * Copyright (C) 2009 Hatuka*nezumi - IKEDA Soji <hatuka(at)nezumi.nu>.
+ * Copyright (C) 2009, 2010 Hatuka*nezumi - IKEDA Soji <hatuka(at)nezumi.nu>.
  * 
  * This file is part of the Unicode::LineBreak package.  This program is
  * free software; you can redistribute it and/or modify it under the same

@@ -1,9 +1,11 @@
-1.008_05  XXX XXX XX 2010
+1.008_06  XXX XXX XX 2010
 
-	* MSWin32 support (testing).
-	* Doc: Unicode::GCString: small fix.
+	* Now linebreak library will maintained independently. See repository
+	  <http://hatuka.nezumi.nu/repos/linebreak>.
 	* Removed Version.pm.
 	* Needs linebreak > 1.8.1.
+	* MSWin32 support (testing).
+	* Doc: Unicode::GCString: small fix.
 
 1.008_02  Sat Sep 18 2010
 
