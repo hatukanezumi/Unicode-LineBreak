@@ -174,7 +174,7 @@ OFFSET を指定した場合は、次の位置をそれにする。
 
 =item *
 
-Perl の 5.10.1 版あたりでは、Unicode::GCString オブジェクトから Unicode 文字列への暗黙の変換が C<"utf8_mg_pos"> キャッシュを混乱させることがある。
+Perl の 5.10.1 版あたりでは、Unicode::GCString オブジェクトから Unicode 文字列への暗黙の変換が C<"utf8_mg_pos_cache_update"> キャッシュを混乱させることがある。
 
 たとえば、つぎのように
 

@@ -228,7 +228,7 @@ Returns next position of grapheme cluster string.
 =item *
 
 On Perl around 5.10.1, implicit conversion from Unicode::GCString object to
-Unicode string sometimes let C<"utf8_mg_pos"> cache be confused.
+Unicode string sometimes let C<"utf8_mg_pos_cache_update"> cache be confused.
 
 For example, instead of doing
 
