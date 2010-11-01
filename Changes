@@ -1,3 +1,7 @@
+1.008.1  Mon Nov 01 2010
+
+	* Fixed linebreak library (only for Win32).
+
 1.008  Mon Oct 11 2010
 
 	* By now linebreak library will be maintained independently. See repository
