@@ -25,7 +25,7 @@ B<Mandatory break> is obligatory line breaking behavior defined by core
 rules and performed regardless of surrounding characters.
 B<Arbitrary break> is line breaking behavior allowed by core rules
 and chosen by user to perform it.
-Arabitrary break includes B<direct break> and B<indirect break>
+Arbitrary break includes B<direct break> and B<indirect break>
 defined by [UAX #14].
 
 B<Alphabetic characters> are characters usually no line breaks are allowed
@@ -35,7 +35,7 @@ B<Ideographic characters> are characters that usually allow line breaks
 both before and after themselves.
 [UAX #14] classifies most of alphabetic to AL and most of ideographic to ID
 (These terms are inaccurate from the point of view by grammatology).
-On several scripts, breaking points are not obvious by each characters
+On several scripts, breaking positions are not obvious by each characters
 therefore heuristic based on dictionary is used.
 
 B<Number of columns> of a string is not always equal to the number of characters it contains:
@@ -194,7 +194,7 @@ Just only insert newline at arbitrary breaking positions.
 
 =item C<"NEWLINE">
 
-Insert or replace newline sequences by that specified by L</Newline> option,
+Insert or replace newline sequences with that specified by L</Newline> option,
 remove SPACEs leading newline sequences or end-of-text.  Then append newline
 at end of text if it does not exist.
 
@@ -375,7 +375,7 @@ and STR is a fragment of Unicode string leading or trailing breaking position.
     "sol" |After arbitrary break|Fragment on sequel of line
     ""    |Just before any      |Complete line without trailing
           |breaks               |SPACEs
-    "eol" |Arabitrary break     |SPACEs leading breaking position
+    "eol" |Arbitrary break      |SPACEs leading breaking position
     "eop" |Mandatory break      |Newline and its leading SPACEs
     "eot" |End of text          |SPACEs (and newline) at end of
           |                     |text
@@ -440,7 +440,7 @@ STR is a Unicode string matched with REGEX.
 
 Subroutine should return an array of broken string STR.
 
-For example, following code break HTTP URLs using [CMOS] rule.
+For example, following code will break HTTP URLs using [CMOS] rule.
 
     my $url = qr{http://[\x21-\x7E]+}i;
     sub breakurl {
