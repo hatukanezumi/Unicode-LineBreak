@@ -1,6 +1,8 @@
-1.008.1  Mon Nov 01 2010
+1.008.2  Tue Nov 16 2010
 
 	* Fixed linebreak library (only for Win32).
+
+1.008.1  Mon Nov 01 2010 - Withdrawn
 
 1.008  Mon Oct 11 2010
 
