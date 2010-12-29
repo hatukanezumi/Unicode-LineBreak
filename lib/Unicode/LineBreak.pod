@@ -504,6 +504,8 @@ options.  Some constants are defined for convenience of tailoring.
 
 =head3 Line Breaking Properties
 
+=head4 Nonstarters of Kana-like Characters
+
 By default, several hiragana, katakana and characters corresponding to kana
 are treated as nonstarters (NS).
 When the following pair(s) are specified for value of L</TailorLB> option,
@@ -554,6 +556,43 @@ N.B. This character is classified as nonstarter (NS) by [UAX #14]
 and as Class 13 (corresponding to ID) by [JIS X 4051].
 
 =back
+
+=head4 Ambiguous Quotation Marks
+
+By default, some punctuations are ambiguous quotation marks (QU).
+
+=over 4
+
+=item C<LEFT_QUOTES() =E<gt> LB_OP, RIGHT_QUOTES() =E<gt> LB_CL>
+
+Some languages (Dutch, English, Italian, Portugese, Spanish, Turkish and
+most East Asian) use rotated-9-style punctuations (E<0x2018> E<0x201C>) as
+opening and 9-style punctuations (E<0x2019> E<0x201D>) as closing quotation
+marks.
+
+=item C<RIGHT_QUOTES() =E<gt> LB_OP, LEFT_QUOTES() =E<gt> LB_CL>
+
+Some others (Czech, German and Slovak) use 9-style punctuations
+(E<0x2019> E<0x201D>) as opening and rotated-9-style punctuations
+(E<0x2018> E<0x201C>) as closing quotation marks.
+
+=item C<LEFT_GUILLEMETS() =E<gt> LB_OP, RIGHT_GUILLEMETS() =E<gt> LB_CL>
+
+French, Greek, Russian etc. use left-pointing guillemets (E<0x00AB> E<0x2039>)
+as opening and right-pointing guillemets (E<0x00BB> E<0x203A>) as closing
+quotation marks.
+
+=item C<RIGHT_GUILLEMETS() =E<gt> LB_OP, LEFT_GUILLEMETS() =E<gt> LB_CL>
+
+German and Slovak use right-pointing guillemets (E<0x00BB> E<0x203A>) as
+opening and left-pointing guillemets (E<0x00AB> E<0x2039>) as closing
+quotation marks.
+
+=back
+
+Danish, Finnish, Norwegian and Swedish use 9-style or right-pointing
+punctuations (E<0x2019> E<0x201D> E<0x00BB> E<0x203A>) as both opening and
+closing quotation marks.
 
 =head3 East_Asian_Width Properties
 
@@ -702,7 +741,7 @@ L<http://unicode.org/reports/tr11/>.
 =item [UAX #14]
 
 A. Freytag and A. Heninger (2008-2010).
-I<Unicode Standard Annex #14: Unicode Line Breaking Algorithm>, Revision 22-25.
+I<Unicode Standard Annex #14: Unicode Line Breaking Algorithm>, Revision 22-26.
 L<http://unicode.org/reports/tr14/>.
 
 =back

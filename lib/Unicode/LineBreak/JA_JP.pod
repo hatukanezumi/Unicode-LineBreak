@@ -455,6 +455,8 @@ L</TailorLB> オプションおよび L</TailorEA> オプションで個々の�
 
 =head3 行分割特性
 
+=head4 仮名などの行頭禁則文字
+
 初期値では、若干の仮名や仮名に準ずるものを行頭禁則文字 (NS) と扱う。
 以下の対を L<TailorLB> オプションに指定すれば、これらの文字を通常の表語文字的な文字 (ID) と扱える。
 
@@ -497,6 +499,42 @@ U+303C ます記号。
 注。この文字は [UAX #14] では行頭禁則文字 (NS) に分類されるが、[JIS X 4051] では文字クラス (13) (ID に相当) に分類される。
 
 =back
+ 
+=head4 曖昧な引用符
+
+初期値では、若干の記号を曖昧な引用符 (QU) として扱っている。
+
+=over 4
+
+=item C<LEFT_QUOTES() =E<gt> LB_OP, RIGHT_QUOTES() =E<gt> LB_CL>
+
+ある言語 (オランダ語、英語、イタリア語、ポルトガル語、スペイン語、トルコ語、
+および東アジアの多くの言語) では、開き記号に 9 が回転した形状の引用符
+(E<0x2018> E<0x201C>) を、閉じ記号に 9 の形状の引用符
+(E<0x2019> E<0x201D>) を用いる。
+
+=item C<RIGHT_QUOTES() =E<gt> LB_OP, LEFT_QUOTES() =E<gt> LB_CL>
+
+ほかの言語 (チェコ語、ドイツ語、スロヴァク語) では、9 の形状の引用符
+(E<0x2019> E<0x201D>) を開き記号に、9 が回転した形状の引用符
+(E<0x2018> E<0x201C>) を閉じ記号に用いる。
+
+=item C<LEFT_GUILLEMETS() =E<gt> LB_OP, RIGHT_GUILLEMETS() =E<gt> LB_CL>
+
+フランス語、ギリシャ語、ロシア語などでは、左向きのギュメ
+(E<0x00AB> E<0x2039>) を開き記号に、右向きのギュメ
+(E<0x00BB> E<0x203A>) を閉じ記号に用いる。
+
+=item C<RIGHT_GUILLEMETS() =E<gt> LB_OP, LEFT_GUILLEMETS() =E<gt> LB_CL>
+
+ドイツ語やスロヴァク語では、右向きのギュメ (E<0x00BB> E<0x203A>)
+を開き記号に、左向きのギュメ (E<0x00AB> E<0x2039>) を閉じ記号に用いる。
+
+=back
+
+デーン語、フィン語、ノルウェー語、スウェーデン語では、9 の形状の引用符や
+右向きのギュメ (E<0x2019> E<0x201D> E<0x00BB> E<0x203A>)
+を開き記号にも閉じ記号にも用いる。
 
 =head3 East_Asian_Width 特性
 
@@ -632,7 +670,7 @@ L<http://unicode.org/reports/tr11/>.
 =item [UAX #14]
 
 A. Freytag and A. Heninger (2008-2010).
-I<Unicode Standard Annex #14: Unicode Line Breaking Algorithm>, Revision 22-25.
+I<Unicode Standard Annex #14: Unicode Line Breaking Algorithm>, Revision 22-26.
 L<http://unicode.org/reports/tr14/>.
 
 =back

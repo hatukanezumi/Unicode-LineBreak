@@ -1,3 +1,9 @@
+1.009    Wed Dec 29 2010
+
+	* New linebreak library (1.9; fixed broken pair table).
+	* Added constants for some ambiguous quotation marks (QU).
+	* Doc: some modifications
+
 1.008.2  Tue Nov 16 2010
 
 	* Fixed linebreak library (only for Win32).
