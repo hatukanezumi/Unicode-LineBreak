@@ -2,7 +2,7 @@
 	* Updated linebreak library (improved conformance to UAX #14).
 	* Added BreakIndent option that defaults to "YES".
 	* Requires linebreak >= 1.10.0
-	* Added test #0 (partially fail).
+	* Added test #0 (partially failed).
 
 1.010    Wed Dec 29 2010
 

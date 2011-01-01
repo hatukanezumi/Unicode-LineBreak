@@ -51,6 +51,7 @@ linebreak-c/lib/Makefile.mingw
 linebreak-c/lib/linebreak.c
 linebreak-c/lib/southeastasian.c
 linebreak-c/linebreak.pc.in
+linebreak-c/linebreak.spec.in
 linebreak-c/ltmain.sh
 linebreak-c/Makefile.am
 linebreak-c/Makefile.in
