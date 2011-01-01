@@ -688,7 +688,9 @@ _config(self, ...)
 	else if (items < 3) {
 	    key = (char *)SvPV_nolen(ST(1));
 
-	    if (strcasecmp(key, "CharactersMax") == 0)
+	    if (strcasecmp(key, "BreakIndent") == 0)
+		RETVAL = newSVuv(lbobj->options & LINEBREAK_OPTION_BREAK_INDENT); 
+	    else if (strcasecmp(key, "CharactersMax") == 0)
 		RETVAL = newSVuv(lbobj->charmax);
 	    else if (strcasecmp(key, "ColumnsMax") == 0)
 		RETVAL = newSVnv((NV)lbobj->colmax);
@@ -805,6 +807,11 @@ _config(self, ...)
 		    lbobj->map = _loadmap(lbobj->map, val, &mapsiz);
 		    lbobj->mapsiz = mapsiz;
 		}
+	    } else if (strcasecmp(key, "BreakIndent") == 0) {
+		if (SVtoboolean(val))
+		    lbobj->options |= LINEBREAK_OPTION_BREAK_INDENT;
+		else
+		    lbobj->options &= ~LINEBREAK_OPTION_BREAK_INDENT;
 	    } else if (strcasecmp(key, "CharactersMax") == 0)
 		lbobj->charmax = SvUV(val);
 	    else if (strcasecmp(key, "ColumnsMax") == 0)

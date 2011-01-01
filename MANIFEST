@@ -65,6 +65,7 @@ MANIFEST			This list of files
 META.yml
 ppport.h
 README
+t/00LineBreakTest.t
 t/01break.t
 t/02hangul.t
 t/03ns.t

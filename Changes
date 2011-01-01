@@ -1,4 +1,10 @@
-1.009    Wed Dec 29 2010
+1.011  Sat Jan 01 2011
+	* Updated linebreak library (improved conformance to UAX #14).
+	* Added BreakIndent option that defaults to "YES".
+	* Requires linebreak >= 1.10.0
+	* Added test #0 (partially fail).
+
+1.010    Wed Dec 29 2010
 
 	* New linebreak library (1.9; fixed broken pair table).
 	* Added constants for some ambiguous quotation marks (QU).

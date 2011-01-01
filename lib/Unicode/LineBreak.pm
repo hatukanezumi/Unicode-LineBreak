@@ -25,10 +25,11 @@ use Unicode::GCString;
 ### Globals
 
 ### The package version
-our $VERSION = '1.010';
+our $VERSION = '1.011';
 
 ### Public Configuration Attributes
 our $Config = {
+    BreakIndent => 'YES',
     CharactersMax => 998,
     ColumnsMin => 0,
     ColumnsMax => 76,
@@ -140,7 +141,7 @@ sub new {
 
 sub config ($@) {
     my $self = shift;
-    my @nopts = qw(CharactersMax ColumnsMin ColumnsMax Context
+    my @nopts = qw(BreakIndent CharactersMax ColumnsMin ColumnsMax Context
 		   HangulAsAL LegacyCM Newline);
     my @uopts = qw(Format SizingMethod
 		   TailorEA TailorLB UrgentBreaking UserBreaking);

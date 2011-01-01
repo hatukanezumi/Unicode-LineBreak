@@ -149,6 +149,15 @@ L</new> and L</config> methods accept following pairs.
 
 =over 4
 
+=item BreakIndent => C<"YES"> | C<"NO">
+
+Always allows break after SPACEs at beginning of line, a.k.a. indent.
+[UAX #14] does not take account of such usage.
+Default is C<"YES">.
+
+B<Note>:
+This option was introduced at release 1.011.
+
 =item CharactersMax => NUMBER
 
 Possible maximum number of characters in one line,
@@ -752,7 +761,7 @@ L<Text::LineFold>, L<Text::Wrap>.
 
 =head1 AUTHOR
 
-Copyright (C) 2009, 2010 Hatuka*nezumi - IKEDA Soji <hatuka(at)nezumi.nu>.
+Copyright (C) 2009-2011 Hatuka*nezumi - IKEDA Soji <hatuka(at)nezumi.nu>.
 
 This program is free software; you can redistribute it and/or modify it 
 under the same terms as Perl itself.

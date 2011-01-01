@@ -132,6 +132,15 @@ L</new>、L</config> の両メソッドには以下の対を指定できる。
 
 =over 4
 
+=item BreakIndent => C<"YES"> | C<"NO">
+
+行頭の SPACE の並び (インデント) の後では常に分割を許す。
+[UAX #14] はこのような用法を考慮していない。
+初期値は C<"YES">。
+
+B<注>:
+このオプションはリリース 1.011 で導入された。
+
 =item CharactersMax => NUMBER
 
 行に含みうる最大の文字数。行末の空白文字と改行の文字列を除く。
@@ -681,7 +690,7 @@ L<Text::LineFold::JA_JP>, L<Text::Wrap>.
 
 =head1 AUTHOR
 
-Copyright (C) 2009, 2010 Hatuka*nezumi - IKEDA Soji <hatuka(at)nezumi.nu>.
+Copyright (C) 2009-2011 Hatuka*nezumi - IKEDA Soji <hatuka(at)nezumi.nu>.
 
 This program is free software; you can redistribute it and/or modify it 
 under the same terms as Perl itself.

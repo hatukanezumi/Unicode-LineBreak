@@ -5,7 +5,7 @@ package MY;
 use ExtUtils::MakeMaker;
 
 my $csubdir = 'linebreak-c';
-my $linebreak_atleast_version = '1.8.1';
+my $linebreak_atleast_version = '1.10.0';
 my $pkg_config = $ENV{'PKG_CONFIG'} || 'pkg-config';
 my @args = ();
 my $enable_libthai = 'yes';

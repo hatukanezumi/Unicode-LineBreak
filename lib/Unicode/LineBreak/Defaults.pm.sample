@@ -17,6 +17,8 @@ Following settings are available.
 
 =over 4
 
+=item BreakIndent
+
 =item CharactersMax
 
 =item ColumnsMin
@@ -56,6 +58,7 @@ L<Unicode::LineBreak>
 #--------------------------------------------------------------------------#
 
 ## Default settings on current release are:
+# $Config->{BreakIndent} = 'YES';
 # $Config->{CharactersMax} = 998;
 # $Config->{ColumnsMin} = 0;
 # $Config->{ColumnsMax} = 76;
