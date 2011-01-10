@@ -13,7 +13,7 @@
 
 use strict;
 use Test::More;
-use Encode qw(decode is_utf8);
+use Encode qw(decode is_utf8 encode_utf8);
 use Unicode::LineBreak qw(:all);
 
 BEGIN {
@@ -32,8 +32,6 @@ BEGIN {
     }
 }
 
-my $result;
-
 sub format {
     my $self = shift;
     my $ev = shift;
@@ -46,17 +44,18 @@ sub format {
 	$self->{'L'} = '';
     } elsif ($ev eq '') {
 	$self->{'L'} = $str;
+	return '';
     } elsif ($ev =~ /^eo/) {
 	$self->{'L'} .= $str;
 	push @{$self->{'T'}}, $self->{'L'};
-    }
-    if ($ev eq 'eot') {
-	$result = join ' ÷ ',
-	map { join ' × ',
-	      map { sprintf '%04X', ord $_ }
-	      grep { length $_ }
-	      split /(.)/s, "$_" }
-	@{$self->{'T'}};
+	if ($ev eq 'eot') {
+	    return join ' ÷ ',
+	    map { join ' × ',
+		  map { sprintf '%04X', ord $_ }
+		  split //s, "$_" }
+	    @{$self->{'T'}};
+	}
+	return '';
     }
     undef;
 }
@@ -80,14 +79,13 @@ while (<IN>) {
     s/^×\s*//;
     my $s = join '',
 	    map {
-		$_ = sprintf '%c', hex "0x$_";
+		$_ = chr hex "0x$_";
 		$_ = decode('iso-8859-1', $_) unless is_utf8($_);
 		$_;
 	    }
 	    split /\s*(?:÷|×)\s*/, $_;
 
-    $lb->break($s);
-    is ($result, $_);
+    is encode_utf8($lb->break($s)), $_;
 }
 
 close IN;

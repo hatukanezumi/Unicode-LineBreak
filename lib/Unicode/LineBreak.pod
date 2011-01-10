@@ -314,7 +314,7 @@ Won't break URIs.
 =item C<"BREAKURI">
 
 Break URIs according to a rule suitable for printed materials.
-For more details see [CMOS], sections 6.17 and 7.11.
+For more details see [CMOS], sections 6.17 and 17.11.
 
 =item C<[> REGEX, SUBREF C<]>
 
@@ -733,7 +733,7 @@ East_Asian_Width property values assigned by [UAX #11].
 =item [CMOS]
 
 I<The Chicago Manual of Style>, 15th edition.
-Chicago University Press, 2003.
+University of Chicago Press, 2003.
 
 =item [JIS X 4051]
 

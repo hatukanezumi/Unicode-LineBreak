@@ -1,3 +1,6 @@
+X.XXX  Xxx Xxx XX XXXX
+	* Doc: Some typos.
+
 1.011  Sat Jan 01 2011
 	* Updated linebreak library (improved conformance to UAX #14).
 	* Added BreakIndent option that defaults to "YES".

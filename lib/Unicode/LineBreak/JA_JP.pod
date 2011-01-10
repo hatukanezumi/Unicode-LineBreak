@@ -292,7 +292,7 @@ URI を分割しない。
 =item C<"BREAKURI">
 
 URI を、印刷物に適した規則で分割する。
-詳しくは [CMOS] の 6.17 節と 7.11 節を参照。
+詳しくは [CMOS] の 6.17 節と 17.11 節を参照。
 
 =item C<[> REGEX, SUBREF C<]>
 
@@ -662,7 +662,7 @@ SG や XX に分類される文字は AL に解決する。
 =item [CMOS]
 
 I<The Chicago Manual of Style>, 15th edition.
-Chicago University Press, 2003.
+University of Chicago Press, 2003.
 
 =item [JIS X 4051]
 
