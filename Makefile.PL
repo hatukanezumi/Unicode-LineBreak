@@ -4,12 +4,12 @@ use strict;
 package MY;
 use ExtUtils::MakeMaker;
 
-my $csubdir = 'linebreak-c';
-my $linebreak_atleast_version = '1.10.0';
+my $csubdir = 'sombok';
+my $sombok_atleast_version = '2011.0';
 my $pkg_config = $ENV{'PKG_CONFIG'} || 'pkg-config';
 my @args = ();
 my $enable_libthai = 'yes';
-my $bundled_linebreak = 'no';
+my $bundled_sombok = 'no';
 my $libthai;
 
 sub top_targets {
@@ -34,14 +34,7 @@ EOF
 
 sub postamble {
     my $args = join ' ', map {s/\'/\\\'/g; "'$_'"; } @args;
-    if ($^O eq 'MSWin32') {
-	return <<EOF;
-\$(MYEXTLIB): $csubdir/Makefile.mingw
-\tcd $csubdir && \\
-\t\$(MAKE) -f Makefile.mingw all CC=\"\$(CC)\" CFLAGS=\"\$(CCFLAGS) \$(OPTIMIZE)\" AR=\"\$(AR)\"
-EOF
-    } else {
-	return <<EOF;
+    return <<EOF;
 \$(MYEXTLIB): $csubdir/Makefile
 \tcd $csubdir && \$(MAKE)
 $csubdir/Makefile: $csubdir/configure
@@ -51,7 +44,6 @@ $csubdir/Makefile: $csubdir/configure
 $csubdir/configure: $csubdir/configure.ac
 \tcd $csubdir && autoreconf
 EOF
-    }
 }
 
 foreach my $arg (@ARGV) {
@@ -62,8 +54,8 @@ foreach my $arg (@ARGV) {
     } elsif ($arg eq 'nolibthai' or $arg eq '--disable-libthai' or
 	$arg eq '--enable-libthai=no') {
 	$enable_libthai = 'no';
-    } elsif ($arg eq '--with-bundled-linebreak') {
-	$bundled_linebreak = 'yes';
+    } elsif ($arg eq '--with-bundled-sombok') {
+	$bundled_sombok = 'yes';
     } elsif ($arg =~ /^--/ or $arg =~ /^\w+=/) {
 	push @args, $arg;
     } else {
@@ -80,19 +72,16 @@ if ($libthai and $enable_libthai eq 'yes') {
 } else {
     push @args, '--disable-libthai';
 }
-if (system("$pkg_config --atleast-version=$linebreak_atleast_version " .
-	   "linebreak") >> 8) {
-    $bundled_linebreak = 'yes';
+if (system("$pkg_config --atleast-version=$sombok_atleast_version sombok")
+    >> 8) {
+    $bundled_sombok = 'yes';
 }
-if ($^O eq 'MSWin32') {
-    push @opts, ('MYEXTLIB' => "$csubdir/lib/libinebreak\$(LIB_EXT)");
-    push @opts, ('INC' => "-I$csubdir/include -I$csubdir");
-} elsif ($bundled_linebreak eq 'yes') {
-    push @opts, ('MYEXTLIB' => "$csubdir/.libs/libinebreak\$(LIB_EXT)");
+if ($bundled_sombok eq 'yes') {
+    push @opts, ('MYEXTLIB' => "$csubdir/.libs/libsombok\$(LIB_EXT)");
     push @opts, ('INC' => "-I$csubdir/include -I$csubdir");
 } else {
-    push @opts, ('LIBS' => `$pkg_config --libs linebreak`);
-    push @opts, ('INC' => `$pkg_config --cflags linebreak`); 
+    push @opts, ('LIBS' => `$pkg_config --libs sombok`);
+    push @opts, ('INC' => `$pkg_config --cflags sombok`); 
 }
 
 WriteMakefile(

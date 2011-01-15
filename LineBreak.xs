@@ -1,5 +1,5 @@
 /*
- * LineBreak.xs - Perl XS glue for Linebreak package.
+ * LineBreak.xs - Perl XS glue for Sombok package.
  * 
  * Copyright (C) 2009-2011 Hatuka*nezumi - IKEDA Soji <hatuka(at)nezumi.nu>.
  * 
@@ -16,7 +16,7 @@
 #include "ppport.h"
 #define PERL_MODULE_VERSION VERSION
 #undef VERSION
-#include "linebreak_defs.h"
+#include "sombok.h"
 #undef VERSION
 #define VERSION PERL_MODULE_VERSION
 
@@ -237,13 +237,13 @@ gcstring_t *gctogcstring(gcstring_t *gcstr, gcchar_t *gc)
 }
 
 /***
- *** Callbacks for linebreak library.
+ *** Callbacks for Sombok library.
  ***/
 
 /*
  * Increment/decrement reference count
  */
-void refcount(SV *sv, int datatype, int d)
+void ref_func(SV *sv, int datatype, int d)
 {
     if (0 < d)
 	SvREFCNT_inc(sv);
@@ -348,108 +348,11 @@ gcstring_t *format_func(linebreak_t *lbobj, linebreak_state_t action,
 }
 
 /*
- * Built-in format brehaviors specified by C<Format>.
- *
- * Following table describes behavior by each option.
- *
- * state| "DEFAULT"       | "NEWLINE"         | "TRIM"
- * -----+-----------------+-------------------+-------------------
- * SOT  |
- * SOP  |                       not modify
- * SOL  |
- * LINE |
- * EOL  | append newline  | replace by newline| replace by newline
- * EOP  | not modify      | replace by newline| remove SPACEs
- * EOT  | not modify      | replace by newline| remove SPACEs
- * ----------------------------------------------------------------
- */
-
-static
-gcstring_t *format_func_DEFAULT(linebreak_t *lbobj,
-				linebreak_state_t state,
-				gcstring_t *gcstr)
-{
-    gcstring_t *t, *result;
-    unistr_t unistr;
-
-    switch (state) {
-    case LINEBREAK_STATE_EOL:
-	if ((result = gcstring_copy(gcstr)) == NULL)
-	    croak("format_func_DEFAULT: %s", strerror(errno));
-	unistr.str = lbobj->newline.str;
-	unistr.len = lbobj->newline.len;
-	if ((t = gcstring_newcopy(&unistr, lbobj)) == NULL)
-	    croak("format_func_DEFAULT: %s", strerror(errno));
-	if (gcstring_append(result, t) == NULL)
-	    croak("format_func_DEFAULT: %s", strerror(errno));
-	gcstring_destroy(t);
-	return result;
-    default:
-	return NULL;
-    }
-}
-
-static
-gcstring_t *format_func_NEWLINE(linebreak_t *lbobj,
-				    linebreak_state_t state,
-				    gcstring_t *gcstr)
-{
-    gcstring_t *result;
-    unistr_t unistr;
-
-    switch (state) {
-    case LINEBREAK_STATE_EOL:
-    case LINEBREAK_STATE_EOP:
-    case LINEBREAK_STATE_EOT:
-	unistr.str = lbobj->newline.str;
-	unistr.len = lbobj->newline.len;
-	if ((result = gcstring_newcopy(&unistr, lbobj)) == NULL)
-	    croak("format_func_NEWLINE: %s", strerror(errno));
-	return result;
-    default:
-	return NULL;
-    }
-}
-
-static
-gcstring_t *format_func_TRIM(linebreak_t *lbobj,
-				 linebreak_state_t state,
-				 gcstring_t *gcstr)
-{
-    gcstring_t *result;
-    unistr_t unistr = {NULL, 0};
-    size_t i;
-
-    switch (state) {
-    case LINEBREAK_STATE_EOL:
-	unistr.str = lbobj->newline.str;
-	unistr.len = lbobj->newline.len;
-	if ((result = gcstring_newcopy(&unistr, lbobj)) == NULL)
-	    croak("format_func_TRIM: %s", strerror(errno));
-	return result;
-    case LINEBREAK_STATE_EOP:
-    case LINEBREAK_STATE_EOT:
-	if (gcstr->str == NULL || gcstr->len == 0) {
-	    if ((result = gcstring_newcopy(&unistr, lbobj)) == NULL)
-		croak("format_func_TRIM: %s", strerror(errno));
-	    return result;
-	}
-	for (i = 0; i < gcstr->gclen && gcstr->gcstr[i].lbc == LB_SP; i++) ;
-	if ((result = gcstring_substr(gcstr, i, gcstr->gclen, NULL)) == NULL)
-	    croak("format_func_TRIM: %s", strerror(errno));
-	return result;
-    default:
-	return NULL;
-    }
-}
-
-/*
  * Call sizing function
  */
 static
 double sizing_func(linebreak_t *lbobj, double len,
-		   gcstring_t *pre, gcstring_t *spc, gcstring_t *str,
-		   size_t max)
+		   gcstring_t *pre, gcstring_t *spc, gcstring_t *str)
 {
     int count;
     double ret;
@@ -463,7 +366,6 @@ double sizing_func(linebreak_t *lbobj, double len,
     XPUSHs(sv_2mortal(CtoPerl("Unicode::GCString", gcstring_copy(pre))));
     XPUSHs(sv_2mortal(CtoPerl("Unicode::GCString", gcstring_copy(spc))));
     XPUSHs(sv_2mortal(CtoPerl("Unicode::GCString", gcstring_copy(str))));
-    XPUSHs(sv_2mortal(newSViv(max))); 
     PUTBACK;
     count = call_sv(lbobj->sizing_data, G_SCALAR | G_EVAL);
 
@@ -488,8 +390,7 @@ double sizing_func(linebreak_t *lbobj, double len,
  * Call urgent breaking function
  */
 static
-gcstring_t *urgent_func(linebreak_t *lbobj, double cols,
-			gcstring_t *pre, gcstring_t *spc, gcstring_t *str)
+gcstring_t *urgent_func(linebreak_t *lbobj, gcstring_t *str)
 {
     SV *sv;
     int count;
@@ -501,9 +402,6 @@ gcstring_t *urgent_func(linebreak_t *lbobj, double cols,
     SAVETMPS;
     PUSHMARK(SP);
     XPUSHs(sv_2mortal(CtoPerl("Unicode::LineBreak", linebreak_copy(lbobj))));
-    XPUSHs(sv_2mortal(newSVnv(cols)));
-    XPUSHs(sv_2mortal(CtoPerl("Unicode::GCString", gcstring_copy(pre))));
-    XPUSHs(sv_2mortal(CtoPerl("Unicode::GCString", gcstring_copy(spc))));
     XPUSHs(sv_2mortal(CtoPerl("Unicode::GCString", gcstring_copy(str))));
     PUTBACK;
     count = call_sv(lbobj->urgent_data, G_ARRAY | G_EVAL);
@@ -533,78 +431,6 @@ gcstring_t *urgent_func(linebreak_t *lbobj, double cols,
     LEAVE;
 
     return ret;
-}
-
-/*
- * Built-in urgent breaking brehaviors specified by C<UrgentBreaking>.
- */
-
-static
-gcstring_t *urgent_func_CROAK(linebreak_t *lbobj, double cols,
-			gcstring_t *pre, gcstring_t *spc, gcstring_t *str)
-{
-    croak("Excessive line was found");
-}
-
-static
-gcstring_t *urgent_func_FORCE(linebreak_t *lbobj, double cols,
-			gcstring_t *pre, gcstring_t *spc, gcstring_t *str)
-{
-    size_t colmax;
-    double (*sizing)();
-    gcstring_t *result, *s;
-
-    if ((!spc || !spc->len) && (!str || !str->len))
-	return gcstring_new(NULL, lbobj);
-
-    colmax = (size_t)lbobj->colmax;
-    if (colmax <= 0) {
-	errno = EINVAL;
-	return NULL;
-    }
-    if (lbobj->sizing_func)
-	sizing = lbobj->sizing_func;
-    else
-	sizing = linebreak_strsize;
-
-    result = gcstring_new(NULL, lbobj);
-    s = gcstring_copy(str);
-    while (1) {
-	double idx;
-	gcstring_t *t;
-
-	idx = (*sizing)(lbobj, cols, pre, spc, s, colmax);
-	if (0 < idx) {
-	    size_t i;
-
-	    for (i = 0;
-		 i < s->gclen && s->gcstr[i].idx + s->gcstr[i].len <= idx;
-		 i++) ;
-	    t = gcstring_substr(s, 0, i, NULL);
-	    if (t->gclen) {
-		t->gcstr[0].flag = LINEBREAK_FLAG_BREAK_BEFORE;
-		gcstring_append(result, t);
-	    }
-	    gcstring_destroy(t);
-	    t = gcstring_substr(s, i, s->gclen - i, NULL);
-	    gcstring_destroy(s);
-	    s = t;
-
-	    if (!s->gclen)
-		break;
-	} else if (cols == 0 && idx <= 0) {
-	    if (s->gclen) {
-		s->gcstr[0].flag = LINEBREAK_FLAG_BREAK_BEFORE;
-		gcstring_append(result, s);
-	    }
-	    break;
-	}
-	cols = 0;
-	pre = NULL;
-	spc = NULL;
-    }
-    gcstring_destroy(s);
-    return result;
 }
 
 
@@ -643,6 +469,7 @@ _new(klass)
     CODE:
 	if ((lbobj = linebreak_new()) == NULL)
 	    croak("%s->_new: Can't allocate memory", klass);
+	lbobj->ref_func = (void *)ref_func;
 	RETVAL = CtoPerl(klass, lbobj);
     OUTPUT:
 	RETVAL
@@ -689,20 +516,25 @@ _config(self, ...)
 	    key = (char *)SvPV_nolen(ST(1));
 
 	    if (strcasecmp(key, "BreakIndent") == 0)
-		RETVAL = newSVuv(lbobj->options & LINEBREAK_OPTION_BREAK_INDENT); 
+		RETVAL = newSVuv(lbobj->options &
+				 LINEBREAK_OPTION_BREAK_INDENT); 
 	    else if (strcasecmp(key, "CharactersMax") == 0)
 		RETVAL = newSVuv(lbobj->charmax);
 	    else if (strcasecmp(key, "ColumnsMax") == 0)
 		RETVAL = newSVnv((NV)lbobj->colmax);
 	    else if (strcasecmp(key, "ColumnsMin") == 0)
 		RETVAL = newSVnv((NV)lbobj->colmin);
+	    else if (strcasecmp(key, "ComplexBreaking") == 0)
+		RETVAL = newSVuv(lbobj->options &
+				 LINEBREAK_OPTION_COMPLEX_BREAKING);
 	    else if (strcasecmp(key, "Context") == 0) {
 		if (lbobj->options & LINEBREAK_OPTION_EASTASIAN_CONTEXT)
 		    RETVAL = newSVpvn("EASTASIAN", 9);
 		else
 		    RETVAL = newSVpvn("NONEASTASIAN", 12);
 	    } else if (strcasecmp(key, "HangulAsAL") == 0)
-		RETVAL = newSVuv(lbobj->options & LINEBREAK_OPTION_HANGUL_AS_AL);
+		RETVAL = newSVuv(lbobj->options &
+				 LINEBREAK_OPTION_HANGUL_AS_AL);
 	    else if (strcasecmp(key, "LegacyCM") == 0)
 		RETVAL = newSVuv(lbobj->options & LINEBREAK_OPTION_LEGACY_CM);
 	    else if (strcasecmp(key, "Newline") == 0) {
@@ -725,77 +557,95 @@ _config(self, ...)
 
 	    if (strcmp(key, "UserBreaking") == 0) {
 		if (lbobj->user_data)
-		    refcount(lbobj->user_data, LINEBREAK_REF_USER, -1);
+		    SvREFCNT_dec(lbobj->user_data);
 		if (SvOK(val)) {
 		    lbobj->user_data = (void *)val;
 		    lbobj->user_func = user_func;
-		    refcount(val, LINEBREAK_REF_USER, +1);
+		    SvREFCNT_inc(val);
 		} else {
 		    lbobj->user_data = NULL;
 		    lbobj->user_func = NULL;
 		}
 	    } else if (strcmp(key, "Format") == 0) {
 		if (lbobj->format_data)
-		    refcount(lbobj->format_data, LINEBREAK_REF_FORMAT, -1);
+		    SvREFCNT_dec(lbobj->format_data);
 		if (sv_derived_from(val, "CODE")) {
 		    lbobj->format_data = (void *)val;
 		    lbobj->format_func = format_func;
-		    refcount(val, LINEBREAK_REF_FORMAT, +1);
-		} else {
+		    SvREFCNT_inc(val);
+		} else if (SvOK(val)) {
 		    char *s = SvPV_nolen(val);
 
 		    lbobj->format_data = NULL;
-		    if (strcasecmp(s, "DEFAULT") == 0)
-			lbobj->format_func = format_func_DEFAULT;
+		    if (strcasecmp(s, "DEFAULT") == 0) {
+			warn("Method name \"DEFAULT\" for Format option was "
+			     "obsoleted. Use \"SIMPLE\"");
+			lbobj->format_func = linebreak_format_SIMPLE;
+		    } else if (strcasecmp(s, "SIMPLE") == 0)
+			lbobj->format_func = linebreak_format_SIMPLE;
 		    else if (strcasecmp(s, "NEWLINE") == 0)
-			lbobj->format_func = format_func_NEWLINE;
+			lbobj->format_func = linebreak_format_NEWLINE;
 		    else if (strcasecmp(s, "TRIM") == 0)
-			lbobj->format_func = format_func_TRIM;
+			lbobj->format_func = linebreak_format_TRIM;
 		    else {
 			warn("Unknown Format option: %s", s);
-			lbobj->format_func = format_func_DEFAULT;
+			lbobj->format_func = NULL;
 		    }
+		} else {
+		    lbobj->format_data = NULL;
+		    lbobj->format_func = NULL;
 		}
 	    } else if (strcmp(key, "SizingMethod") == 0) {
 		if (lbobj->sizing_data)
-		    refcount((SV *)lbobj->sizing_data, LINEBREAK_REF_SIZING,
-			     -1);
+		    SvREFCNT_dec((SV *)lbobj->sizing_data);
 		if (sv_derived_from(val, "CODE")) {
 		    lbobj->sizing_data = (void *)val;
 		    lbobj->sizing_func = sizing_func;
-		    refcount(val, LINEBREAK_REF_SIZING, +1);
-		} else {
+		    SvREFCNT_inc(val);
+		} else if (SvOK(val)) {
 		    char *s = SvPV_nolen(val);
 
 		    lbobj->sizing_data = NULL;
-		    if (strcasecmp(s, "DEFAULT") == 0)
-			lbobj->sizing_func = NULL;
+		    if (strcasecmp(s, "DEFAULT") == 0) {
+			warn("Method name \"DEFAULT\" for SizingMethod option "
+			     "was obsoleted. Use \"UAX11\"");
+			lbobj->sizing_func = linebreak_sizing_UAX11;
+		    } else if (strcasecmp(s, "UAX11") == 0)
+			lbobj->sizing_func = linebreak_sizing_UAX11;
 		    else {
 			warn("Unknown SizingMethod option: %s", s);
 			lbobj->sizing_func = NULL;
 		    }
+		} else {
+		    lbobj->sizing_data = NULL;
+		    lbobj->sizing_func = NULL;
 		}
 	    } else if (strcmp(key, "UrgentBreaking") == 0) {
 		if (lbobj->urgent_data)
-		    refcount(lbobj->urgent_data, LINEBREAK_REF_URGENT, -1);
+		    SvREFCNT_dec(lbobj->urgent_data);
 		if (sv_derived_from(val, "CODE")) {
 		    lbobj->urgent_data = (void *)val;
 		    lbobj->urgent_func = urgent_func;
-		    refcount(val, LINEBREAK_REF_URGENT, +1);
-		} else {
+		    SvREFCNT_inc(val);
+		} else if (SvOK(val)) {
 		    char *s = SvPV_nolen(val);
 
 		    lbobj->urgent_data = NULL;
 		    if (strcasecmp(s, "CROAK") == 0)
-			lbobj->urgent_func = urgent_func_CROAK;
+			lbobj->urgent_func = linebreak_urgent_ABORT;
 		    else if (strcasecmp(s, "FORCE") == 0)
-			lbobj->urgent_func = urgent_func_FORCE;
-		    else if (strcasecmp(s, "NONBREAK") == 0)
+			lbobj->urgent_func = linebreak_urgent_FORCE;
+		    else if (strcasecmp(s, "NONBREAK") == 0) {
+			warn("Method name \"NONBREAK\" for UrgentBreaking "
+			     " option was obsoleted. Use undef");
 			lbobj->urgent_func = NULL;
-		    else {
+		    } else {
 			warn("Unknown UrgentBreaking option: %s", s);
 			lbobj->urgent_func = NULL;
 		    }
+		} else {
+		    lbobj->urgent_data = NULL;
+		    lbobj->urgent_func = NULL;
 		}
 	    } else if (strcmp(key, "_map") == 0) {
 		if (lbobj->map) {
@@ -818,7 +668,12 @@ _config(self, ...)
 		lbobj->colmax = (double)SvNV(val);
 	    else if (strcasecmp(key, "ColumnsMin") == 0)
 		lbobj->colmin = (double)SvNV(val);
-	    else if (strcasecmp(key, "Context") == 0) {
+	    else if (strcasecmp(key, "ComplexBreaking") == 0) {
+		if (SVtoboolean(val))
+		    lbobj->options |= LINEBREAK_OPTION_COMPLEX_BREAKING;
+		else
+		    lbobj->options &= ~LINEBREAK_OPTION_COMPLEX_BREAKING;
+	    } else if (strcasecmp(key, "Context") == 0) {
 		if (SvOK(val))
 		    opt = (char *)SvPV_nolen(val);
 		else
@@ -876,7 +731,7 @@ as_hashref(self, ...)
 	if (RETVAL == NULL)
 	    XSRETURN_UNDEF;
 	if (SvROK(RETVAL)) /* FIXME */
-	    refcount((SV*)RETVAL, LINEBREAK_REF_STASH, +1);
+	    SvREFCNT_inc((SV*)RETVAL);
     OUTPUT:
 	RETVAL
 
@@ -1015,7 +870,6 @@ strsize(self, len, pre, spc, str, ...)
     INIT:
 	linebreak_t *lbobj;
 	gcstring_t /* *gcpre, */ *gcspc, *gcstr;
-	size_t max;
     CODE:
 	lbobj = SVtolinebreak(self);
 	/* gcpre = SVtogcstring(pre, lbobj); */
@@ -1023,12 +877,9 @@ strsize(self, len, pre, spc, str, ...)
 	gcstr = SVtogcstring(str, lbobj);
 
 	if (5 < items)
-	    max = SvUV(ST(5));
-	else
-	    max = 0;
+	     warn("``max'' argument of strsize was obsoleted");
 
-	RETVAL = linebreak_strsize(lbobj, len, /* gcpre */NULL, gcspc, gcstr,
-				   max);
+	RETVAL = linebreak_sizing_UAX11(lbobj, len, NULL, gcspc, gcstr);
 
 	/* if (!sv_isobject(pre))
 	    gcstring_destroy(gcpre); */
@@ -1067,8 +918,15 @@ break(self, input)
 	}
 
 	ret = linebreak_break(lbobj, &unistr);
-	if (ret == NULL)
-	    croak("%s", strerror(errno));
+
+	if (ret == NULL) {
+	    if (lbobj->errnum == LINEBREAK_ELONG)
+		croak("%s", "Excessive line was found");
+	    else if (lbobj->errnum)
+		croak("%s", strerror(lbobj->errnum));
+	    else
+		croak("%s", "Unknown error");
+	}
 
 	RETVAL = unistrtoSV(ret, 0, ret->len);
 	if (ret->str)
@@ -1111,8 +969,14 @@ break_partial(self, input)
 		    free(str->str);
 	}
 
-	if (ret == NULL)
-	    croak("%s", strerror(errno));
+	if (ret == NULL) {
+	    if (lbobj->errnum == LINEBREAK_ELONG)
+		croak("%s", "Excessive line was found");
+	    else if (lbobj->errnum)
+		croak("%s", strerror(lbobj->errnum));
+	    else
+		croak("%s", "Unknown error");
+	}
 
 	RETVAL = unistrtoSV(ret, 0, ret->len);
 	if (ret->str)

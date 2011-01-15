@@ -25,6 +25,8 @@ Following settings are available.
 
 =item ColumnsMax
 
+=item ComplexBreaking
+
 =item Context
 
 =item Format
@@ -62,15 +64,16 @@ L<Unicode::LineBreak>
 # $Config->{CharactersMax} = 998;
 # $Config->{ColumnsMin} = 0;
 # $Config->{ColumnsMax} = 76;
+# $Config->{ComplexBreaking} = 'YES';
 # $Config->{Context} = 'NONEASTASIAN';
-# $Config->{Format} = 'DEFAULT';
+# $Config->{Format} = 'SIMPLE';
 # $Config->{HangulAsAL} = 'NO';
 # $Config->{LegacyCM} = 'YES';
 # $Config->{Newline} = "\n";
-# $Config->{SizingMethod} = 'DEFAULT';
+# $Config->{SizingMethod} = 'UAX11';
 # $config->{TailorEA} = [];
 # $config->{TailorLB} = [];
-# $Config->{UrgentBreaking} = 'NONBREAK';
+# $Config->{UrgentBreaking} = undef;
 # $Config->{UserBreaking} = [];
 
 1;

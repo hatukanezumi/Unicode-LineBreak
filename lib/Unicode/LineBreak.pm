@@ -25,7 +25,7 @@ use Unicode::GCString;
 ### Globals
 
 ### The package version
-our $VERSION = '1.011';
+our $VERSION = '2011.0';
 
 ### Public Configuration Attributes
 our $Config = {
@@ -33,15 +33,16 @@ our $Config = {
     CharactersMax => 998,
     ColumnsMin => 0,
     ColumnsMax => 76,
+    ComplexBreaking => 'YES',
     Context => 'NONEASTASIAN',
-    Format => "DEFAULT",
+    Format => "SIMPLE",
     HangulAsAL => 'NO',
     LegacyCM => 'YES',
     Newline => "\n",
-    SizingMethod => 'DEFAULT',
+    SizingMethod => 'UAX11',
     TailorEA => [],
     TailorLB => [],
-    UrgentBreaking => 'NONBREAK',
+    UrgentBreaking => undef,
     UserBreaking => [],
 };
 eval { require Unicode::LineBreak::Defaults; };

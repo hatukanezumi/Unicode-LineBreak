@@ -7,14 +7,14 @@ $Unicode::LineBreak::Config = {
     ColumnsMin => 0,
     ColumnsMax => 76,
     Context => 'NONEASTASIAN',
-    Format => 'DEFAULT',
+    Format => 'SIMPLE',
     HangulAsAL => 'NO',
     LegacyCM => "YES",
     Newline => "\n",
-    SizingMethod => "DEFAULT",
+    SizingMethod => "UAX11",
     TailorEA => [],
     TailorLB => [],
-    UrgentBreaking => 'NONBREAK',
+    UrgentBreaking => undef,
     UserBreaking => [],
 };
 

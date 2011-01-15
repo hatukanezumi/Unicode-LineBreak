@@ -47,8 +47,8 @@ use Unicode::LineBreak qw(:all);
 
 ### Globals
 
-### The package version, both in 1.23 style *and* usable by MakeMaker:
-our $VERSION = '1.000';
+### The package Version
+our $VERSION = '2011.0';
 
 ### Public Configuration Attributes
 our $Config = {
@@ -271,8 +271,7 @@ sub config {
     ## Note: Example in Unicode::LineBreak POD treats $spcstr as Perl string.
     ## Following code is more efficient.
     $self->SUPER::config(SizingMethod => sub {
-	my ($self, $cols, $pre, $spc, $str, $max) = @_;
-	return undef if $max;
+	my ($self, $cols, $pre, $spc, $str) = @_;
 
 	my $tabsize = $self->{TabSize};
 	my $spcstr = $spc.$str;

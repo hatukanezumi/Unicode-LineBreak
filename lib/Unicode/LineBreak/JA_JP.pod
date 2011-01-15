@@ -118,11 +118,8 @@ B<注>:
 
 =item $self->strsize (LEN, PRE, SPC, STR)
 
-=item $self->strsize (LEN, PRE, SPC, STR, MAX)
-
 I<インスタンスメソッド>。
-MAX を指定しないと、[UAX #11] で定義された文字幅に基づいて、Unicode 文字列 PRE.SPC.STR のI<桁数>を算出する。
-正の値 MAX を指定すると、PRE.SPC.SUBSTR の桁数が MAX を超えないような STR の最長の部分文字列 SUBSTR のI<文字数>を返す。
+[UAX #11] で定義された文字幅に基づいて、Unicode 文字列 PRE.SPC.STR のI<桁数>を算出する。
 
 =back
 
@@ -164,6 +161,12 @@ L</UrgentBreaking> オプションおよび L</ユーザ定義の行分割動作
 
 =over 4
 
+
+=item ComplexBreaking => C<"YES"> | C<"NO">
+
+東南アジアの複雑な文脈で、発見的な行折りを行う。
+初期値は、東南アジアの表記体系での語分割が有効なら C<"YES">。
+
 =item Context => CONTEXT
 
 言語/地域の文脈を指定する。
@@ -176,7 +179,7 @@ L</UrgentBreaking> オプションおよび L</ユーザ定義の行分割動作
 
 =over 4
 
-=item C<"DEFAULT">
+=item C<"SIMPLE">
 
 初期の方法。
 任意分割の位置に改行を挿入するだけ。
@@ -191,6 +194,10 @@ L</Newline> オプションで指定したもので改行を置き換える。
 
 任意分割の位置に改行を挿入する。
 改行の前の空白文字を除去する。
+
+=item C<undef>
+
+なにもしない (改行の挿入も)。
 
 =item サブルーチンへの参照
 
@@ -221,10 +228,14 @@ Unicode 5.0 版からは、空白文字のこのような使いかたは推奨�
 
 =over 4
 
-=item C<"DEFAULT">
+=item C<"UAX11">
 
 初期の方法。
 strsize() を使う。
+
+=item C<undef>
+
+文字列に含まれる書記素クラスタ (L<Unicode::GCString> 参照) の数を返す。
 
 =item サブルーチンへの参照
 
@@ -267,7 +278,7 @@ L</文字の特性の手直し> も参照。
 
 長すぎる文字列を無理やり分割する。
 
-=item C<"NONBREAK">
+=item C<undef>
 
 初期の方法。
 長すぎる文字列も分割しない。
@@ -363,8 +374,8 @@ SELF は Unicode::LineBreak オブジェクト、EVENT はサブルーチンが�
 なお、C<"sot">、C<"sop">、C<"sol"> の文脈での修正はその後の分割位置の決定に影響するが、ほかの文脈での修正は影響しない。
 
 B<注意>:
-リリース 1.003 以降は、文字列の引数は Unicode::GCString オブジェクトである。
-L<Unicode::GCString::JA_JP/CAVEAT> 参照。
+文字列の引数は実際には書記素クラスタ列である。
+L<Unicode::GCString::JA_JP> 参照。
 
 たとえば次のコードは、行末の空白を取り除いて行折りをする。
 
@@ -379,23 +390,23 @@ L<Unicode::GCString::JA_JP/CAVEAT> 参照。
 
 =head2 ユーザ定義の行分割動作
 
-任意分割によって生じる行が CharactersMax、ColumnsMin、ColumnsMax のいずれかの制限を超えると見込まれるときは、引き続く文字列に対してB<緊急分割>を実行できる。
-L</UrgentBreaking> オプションにサブルーチンへの参照を指定する場合、そのサブルーチンは 5 つの引数を取らなければならない。
+任意分割によって生じる行が CharactersMax、ColumnsMax、ColumnsMin のいずれかの制限を超えると見込まれるときは、引き続く文字列に対してB<緊急分割>を実行できる。
+L</UrgentBreaking> オプションにサブルーチンへの参照を指定する場合、そのサブルーチンは 2 つの引数を取らなければならない。
 
-    分割後 = &サブルーチン(SELF, LEN, PRE, SPC, STR);
+    分割後 = &サブルーチン(SELF, STR);
 
-SELF は Unicode::LineBreak オブジェクト、LEN は先立つ行の長さ、PRE はその行の Unicode 文字列、SPC は追加される空白文字、STR は分割すべき Unicode 文字列。
+SELF は Unicode::LineBreak オブジェクト、STR は分割すべき Unicode 文字列。
 
 サブルーチンは、文字列 STR を分割した結果の配列を返さなければならない。
 
 B<注意>:
-リリース 1.003 以降は、文字列の引数は Unicode::GCString オブジェクトである。
-L<Unicode::GCString::JA_JP/CAVEAT> 参照。
+文字列の引数は実際には書記素クラスタ列である。
+L<Unicode::GCString::JA_JP> 参照。
 
 たとえば次のコードは、若干の化学物質 (チチンのような) の名称にハイフンを挿入し、行折りできるようにする。
 
     sub hyphenize {
-	return map {$_ =~ s/yl$/yl-/; $_} split /(\w+?yl(?=\w))/, $_[4];
+	return map {$_ =~ s/yl$/yl-/; $_} split /(\w+?yl(?=\w))/, $_[1];
     }
     my $lb = Unicode::LineBreak->new(UrgentBreaking => \&hyphenize);
     $output = $lb->break("Methionylthreonylthreonylglutaminylarginyl...");
@@ -423,30 +434,25 @@ SELF は Unicode::LineBreak オブジェクト、STR は REGEX にマッチす�
 
 =head2 文字列長の算出
 
-L</SizingMethod> オプションにサブルーチンへの参照を指定する場合、そのサブルーチンは 5 つか 6 つの引数を取らなければならない。
+L</SizingMethod> オプションにサブルーチンへの参照を指定する場合、そのサブルーチンは 5 つの引数を取らなければならない。
 
     桁数 = &サブルーチン(SELF, LEN, PRE, SPC, STR);
 
-    文字数 = &サブルーチン(SELF, LEN, PRE, SPC, STR, MAX);
-
 SELF は Unicode::LineBreak オブジェクト、LEN は先行する文字列の長さ、PRE は先行する Unicode 文字列、SPC は追加される空白文字、STR は処理する Unicode 文字列。
 
-ひとつめの形式では、サブルーチンは C<PRE.SPC.STR> の桁数を算出して返さなければならない。
+サブルーチンは C<PRE.SPC.STR> の桁数を算出して返さなければならない。
 桁数は整数でなくてもよい。桁数の単位は随意に選べるが、L</ColumnsMin> オプションおよび L</ColumnsMax> オプションのそれと一致させなければならない。
 
-ふたつめの形式では、サブルーチンは STR の部分文字列の I<Unicode 文字の数>の最大値を返さなければならない。部分文字列 SUBSTR は PRE.SPC.SUBSTR の桁数が MAX を超えないように取る。この形式は L</UrgentBreaking> オプションを C<"FORCE"> に設定した場合に使う。後の形式を実装したくなければ、C<undef> を返さなければならない。
-
 B<注意>:
-リリース 1.003 以降は、文字列の引数は Unicode::GCString オブジェクトである。
-L<Unicode::GCString::JA_JP/CAVEAT> 参照。
+文字列の引数は実際には書記素クラスタ列である。
+L<Unicode::GCString::JA_JP> 参照。
 
 たとえば次のコードは、行に 8 桁ごとのタブストップがあるものとして処理する。
 
     sub tabbedsizing {
-        my ($self, $cols, $pre, $spc, $str, $max) = @_;
-        return undef if $max;
+        my ($self, $cols, $pre, $spc, $str) = @_;
 
-	my $spcstr = $spc.$str;
+        my $spcstr = $spc.$str;
         while ($spcstr =~ s/^( *)(\t+)//) {
             $cols += length($1);
             $cols += length($2) * 8 - $cols % 8;
@@ -511,7 +517,7 @@ U+303C ます記号。
  
 =head4 曖昧な引用符
 
-初期値では、若干の記号を曖昧な引用符 (QU) として扱っている。
+初期値では、若干の記号を曖昧な引用符 (QU) と扱う。
 
 =over 4
 
