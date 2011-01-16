@@ -81,6 +81,7 @@ t/11format.t
 t/12fold2.t
 t/13flowedsp.t
 t/14sea_al.t
+t/15array.t
 t/lb.pl
 t/lf.pl
 t/pod.t
@@ -133,5 +134,5 @@ testin/uri.in
 testin/uri.nonbreak.out
 testin/zh.in
 testin/zh.out
-Todo
+Todo.REL1
 typemap

@@ -76,5 +76,28 @@ sub dotest_partial {
     is($broken, $outstring);
 }
 
+sub dotest_array {
+    my $in = shift;
+    my $out = shift;
+
+    open IN, "<testin/$in.in" or die "open: $!";
+    my $instring = decode_utf8(join '', <IN>);
+    close IN;
+    my $lb = Unicode::LineBreak->new(@_);
+    my @broken = map { encode_utf8($_) } $lb->break($instring);
+
+    my @outstring = ();
+    if (open OUT, "<testin/$out.out") {
+	@outstring = <OUT>;
+	close OUT;
+    } else {
+	open XXX, ">testin/$out.xxx";
+	print XXX join '', @broken;
+	close XXX;
+    }
+
+    is_deeply(\@broken, \@outstring);
+}    
+
 1;
 

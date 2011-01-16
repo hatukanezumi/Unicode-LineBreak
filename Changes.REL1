@@ -8,6 +8,8 @@
 	  - SizingMethod callback with extra 6th argument was deprecated.
 	  - UrgentBreaking callback name "NONBREAK" was deprecated. Use undef.
 	  - UrgentBreaking callback should take two arguments, not five.
+	* Imp: In array context, break() and break_partial() return an array
+	  of lines.
 	* Chg: Linebreak library package was renamed to Sombok.
 	* Requires Sombok >= 2011.0.
 	* Doc: some typos.

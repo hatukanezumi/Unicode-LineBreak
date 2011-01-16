@@ -10,7 +10,7 @@ Prerequisites
 
 Perl 5.8.0 or later is required.
 
-Sombok library package is required.  If Sombok had not be installed,
+Sombok library package is required.  If Sombok had not been installed,
 bundled source will be used.
 
 Optionally, libthai package is needed to support Thai word segmentation:

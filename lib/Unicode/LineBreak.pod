@@ -59,6 +59,7 @@ About KEY => VALUE pairs see L</Options>.
 
 I<Instance method>.
 Break Unicode string STRING and returns it.
+In array context, returns array of lines contained in the result.
 
 =item $self->break_partial (STRING)
 

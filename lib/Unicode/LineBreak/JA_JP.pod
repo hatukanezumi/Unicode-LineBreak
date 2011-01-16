@@ -51,6 +51,7 @@ KEY => VALUE の対については L</オプション> を参照。
 
 I<インスタンスメソッド>。
 Unicode 文字列 STRING を分割し、それを返す。
+配列コンテクストでは、結果の各行の配列を返す。
 
 =item $self->break_partial (STRING)
 
