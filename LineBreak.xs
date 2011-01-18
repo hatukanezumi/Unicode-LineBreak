@@ -81,7 +81,7 @@ unistr_t *SVtounistr(unistr_t *buf, SV *str)
     STRLEN utf8len, unilen, len;
     unichar_t *uniptr;
 
-    if (!buf) {
+    if (buf == NULL) {
 	if ((buf = malloc(sizeof(unistr_t))) == NULL)
 	    croak("SVtounistr: Can't allocate memory");
     } else if (buf->str)
@@ -104,10 +104,18 @@ unistr_t *SVtounistr(unistr_t *buf, SV *str)
     uniptr = buf->str;
     while (utf8ptr < utf8 + utf8len) {
 	*uniptr = (unichar_t)utf8_to_uvuni(utf8ptr, &len);
-	if (len < 0)
+	if (len < 0) {
+	    free(buf->str);
+	    buf->str = NULL;
+	    buf->len = 0;
 	    croak("SVtounistr: Not well-formed UTF-8");
-	if (len == 0)
+	}
+	if (len == 0) {
+	    free(buf->str);
+	    buf->str = NULL;
+	    buf->len = 0;
 	    croak("SVtounistr: Internal error");
+	}
 	utf8ptr += len;
 	uniptr++;
     }
@@ -136,14 +144,15 @@ SV *unistrtoSV(unistr_t *unistr, size_t uniidx, size_t unilen)
     uniptr = unistr->str + uniidx;
     while (uniptr < unistr->str + uniidx + unilen &&
 	   uniptr < unistr->str + unistr->len) {
-        if ((newbuf = realloc(buf,
-                              sizeof(U8) * (utf8len + UTF8_MAXLEN + 1)))
-            == NULL) {
-            croak("unistrtoSV: Can't allocate memory");
-        }
-        buf = newbuf;
-        utf8len = uvuni_to_utf8(buf + utf8len, *uniptr) - buf;
-        uniptr++;
+	if ((newbuf = realloc(buf,
+			      sizeof(U8) * (utf8len + UTF8_MAXLEN + 1)))
+	    == NULL) {
+	    free(buf);
+	    croak("unistrtoSV: Can't allocate memory");
+	}
+	buf = newbuf;
+	utf8len = uvuni_to_utf8(buf + utf8len, *uniptr) - buf;
+	uniptr++;
     }
 
     utf8 = newSVpvn((char *)(void *)buf, utf8len);
@@ -233,7 +242,7 @@ gcstring_t *gctogcstring(gcstring_t *gcstr, gcchar_t *gc)
     if (gc == NULL)
 	return NULL;
     offset = gc - gcstr->gcstr;
-    return gcstring_substr(gcstr, offset, 1, NULL);
+    return gcstring_substr(gcstr, offset, 1, NULL, 1);
 }
 
 /***
@@ -276,7 +285,8 @@ gcstring_t *user_func(linebreak_t *lbobj, unistr_t *str)
 
     SPAGAIN;
     if (SvTRUE(ERRSV)) {
-	warn("%s", SvPV_nolen(ERRSV));
+	if (!lbobj->errnum)
+	    lbobj->errnum = LINEBREAK_EEXTN;
 	return NULL;
     }
     ret = gcstring_new(NULL, lbobj);
@@ -285,7 +295,7 @@ gcstring_t *user_func(linebreak_t *lbobj, unistr_t *str)
 	if (!SvOK(sv))
 	    continue;
 	gcstr = SVtogcstring(sv, lbobj);
-	gcstring_substr(ret, 0, 0, gcstr);
+	gcstring_substr(ret, 0, 0, gcstr, 0);
 	if (!sv_isobject(sv))
 	    gcstring_destroy(gcstr);
     }
@@ -328,7 +338,8 @@ gcstring_t *format_func(linebreak_t *lbobj, linebreak_state_t action,
 
     SPAGAIN;
     if (SvTRUE(ERRSV)) {
-	warn("%s", SvPV_nolen(ERRSV));
+	if (!lbobj->errnum)
+	    lbobj->errnum = LINEBREAK_EEXTN;
 	POPs;
 	return NULL;
     } else if (count != 1)
@@ -373,7 +384,8 @@ double sizing_func(linebreak_t *lbobj, double len,
 
     SPAGAIN;
     if (SvTRUE(ERRSV)) {
-	warn("%s", SvPV_nolen(ERRSV));
+	if (!lbobj->errnum)
+	    lbobj->errnum = LINEBREAK_EEXTN;
 	POPs;
 	return -1;
     } else if (count != 1)
@@ -410,7 +422,8 @@ gcstring_t *urgent_func(linebreak_t *lbobj, gcstring_t *str)
 
     SPAGAIN;
     if (SvTRUE(ERRSV)) {
-	warn("%s", SvPV_nolen(ERRSV));
+	if (!lbobj->errnum)
+	    lbobj->errnum = LINEBREAK_EEXTN;
 	return NULL;
     } if (count == 0)
 	return NULL;
@@ -422,7 +435,7 @@ gcstring_t *urgent_func(linebreak_t *lbobj, gcstring_t *str)
 	    gcstr = SVtogcstring(sv, lbobj);
 	    if (gcstr->gclen)
 		gcstr->gcstr[0].flag = LINEBREAK_FLAG_BREAK_BEFORE;
-	    gcstring_destroy(gcstring_substr(ret, 0, 0, gcstr));
+	    gcstring_substr(ret, 0, 0, gcstr, 0);
 	    if (!sv_isobject(sv))
 		gcstring_destroy(gcstr);
 	}
@@ -875,30 +888,39 @@ break(self, input)
     PROTOTYPE: $$
     INIT:
 	linebreak_t *lbobj;
-	unistr_t unistr = {NULL, 0};
+	unistr_t unistr = {NULL, 0}, *str;
 	gcstring_t **ret, *r;
 	size_t i;
     PPCODE:
 	lbobj = SVtolinebreak(self);
 	if (!SvOK(input))
-	    ;
+	    str = &unistr;
 	else {
-	    if (!sv_isobject(input) && !SvUTF8(input)) {
-		char *s;
-		size_t len, i;
-		len = SvCUR(input);
-		s = SvPV(input, len);
-		for (i = 0; i < len; i++)
-		    if (127 < (unsigned char)s[i])
-			croak("Unicode string must be given.");
-	    }
-	    SVtounistr(&unistr, input);
+	    if (!sv_isobject(input)) {
+		if (!SvUTF8(input)) {
+		    char *s;
+		    size_t len, i;
+
+		    len = SvCUR(input);
+		    s = SvPV(input, len);
+		    for (i = 0; i < len; i++)
+			if (127 < (unsigned char)s[i])
+			    croak("Unicode string must be given.");
+		}
+		SVtounistr(&unistr, input);
+		str = &unistr;
+	    } else
+		str = (unistr_t *)SVtogcstring(input, lbobj);
+
+	    ret = linebreak_break(lbobj, str);
+	    if (!sv_isobject(input))
+		free(unistr.str);
 	}
 
-	ret = linebreak_break(lbobj, &unistr);
-
 	if (ret == NULL) {
-	    if (lbobj->errnum == LINEBREAK_ELONG)
+	    if (lbobj->errnum == LINEBREAK_EEXTN)
+		croak("%s", SvPV_nolen(ERRSV));
+	    else if (lbobj->errnum == LINEBREAK_ELONG)
 		croak("%s", "Excessive line was found");
 	    else if (lbobj->errnum)
 		croak("%s", strerror(lbobj->errnum));
@@ -946,27 +968,32 @@ break_partial(self, input)
 	if (!SvOK(input))
 	    ret = linebreak_break_partial(lbobj, NULL);
 	else {
-	    if (!sv_isobject(input) && !SvUTF8(input)) {
-		char *s;
-		size_t len, i;
+	    if (!sv_isobject(input)) {
+		if (!SvUTF8(input)) {
+		    char *s;
+		    size_t len, i;
 
-		len = SvCUR(input);
-		s = SvPV(input, len);
-		for (i = 0; i < len; i++)
-		    if (127 < (unsigned char)s[i])
-			croak("Unicode string must be given.");
+		    len = SvCUR(input);
+		    s = SvPV(input, len);
+		    for (i = 0; i < len; i++)
+			if (127 < (unsigned char)s[i])
+			    croak("Unicode string must be given.");
+		}
 		SVtounistr(&unistr, input);
 		str = &unistr;
 	    } else
 		str = (unistr_t *)SVtogcstring(input, lbobj);
+
 	    ret = linebreak_break_partial(lbobj, str);
 	    if (!sv_isobject(input))
-		if (str->str)
+		if (str->str != NULL)
 		    free(str->str);
 	}
 
 	if (ret == NULL) {
-	    if (lbobj->errnum == LINEBREAK_ELONG)
+	    if (lbobj->errnum == LINEBREAK_EEXTN)
+		croak("%s", SvPV_nolen(ERRSV));
+	    else if (lbobj->errnum == LINEBREAK_ELONG)
 		croak("%s", "Excessive line was found");
 	    else if (lbobj->errnum)
 		croak("%s", strerror(lbobj->errnum));
@@ -1429,11 +1456,13 @@ substr(self, offset, ...)
         } else
             replacement = NULL;
 
-	ret = gcstring_substr(gcstr, offset, length, replacement);
-        if (3 < items && !sv_isobject(ST(3)))
-            gcstring_destroy(replacement);
-	if (ret == NULL)
+	ret = gcstring_substr(gcstr, offset, length, replacement, 1);
+	if (3 < items && !sv_isobject(ST(3)))
+	    gcstring_destroy(replacement);
+	if (ret == NULL) {
+	    gcstring_destroy(ret);
 	    croak("%s", strerror(errno));
-	RETVAL = CtoPerl("Unicode::GCString", ret);
+	} else
+	    RETVAL = CtoPerl("Unicode::GCString", ret);
     OUTPUT:
 	RETVAL

@@ -4,12 +4,16 @@
 
 Important Changes beside Unicode-LineBreak-1.x:
 
-	* Changes of public interface:
+	* 1.x had memory leaks & potantial buffer overrun vulnerabilities.
+	  Switching to release 20XX is strongly recommended.
+	* Major changes of public interface:
 	  - Format callback name "DEFAULT" was deprecated. Use "SIMPLE".
 	  - SizingMethod callback name "DEFAULT" was deprecated. Use "UAX11".
 	  - SizingMethod callback with extra 6th argument was deprecated.
 	  - UrgentBreaking callback name "NONBREAK" was deprecated. Use undef.
 	  - UrgentBreaking callback MUST take two arguments, NOT five.
+	  - In array context, break() and break_partial() return an array
+	    of lines.
 	* Linebreak library package was renamed to Sombok.
 
 About change history until release 1.x see Changes.REL1 file.

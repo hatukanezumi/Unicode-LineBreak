@@ -59,6 +59,8 @@ sombok/Makefile.in
 sombok/missing
 sombok/NEWS
 sombok/README
+sombok/src/mymalloc.c
+sombok/src/mymalloc.h
 sombok/src/strcasecmp.c
 sombok/src/strerror.c
 Makefile.PL

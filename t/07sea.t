@@ -2,14 +2,18 @@ use strict;
 use Test::More;
 require "t/lb.pl";
 
-BEGIN { plan tests => 1 }
-
-my $sea = Unicode::LineBreak::SouthEastAsian::supported();
-if ($sea) {
-    diag "SA word segmentation supported. $sea";
-    dotest('th', 'th', ComplexBreaking => "YES");
-} else {
-    SKIP: { skip "SA word segmentation not supported.", 1 }
+BEGIN {
+    require Unicode::LineBreak;
+    if (Unicode::LineBreak::SouthEastAsian::supported()) {
+	plan tests => 1;
+    } else {
+	plan skip_all => "SA word segmentation not supported.";
+    }
 }
+
+diag "SA word segmentation supported. " .
+    Unicode::LineBreak::SouthEastAsian::supported();
+dotest('th', 'th', ComplexBreaking => "YES");
+
 1;
 

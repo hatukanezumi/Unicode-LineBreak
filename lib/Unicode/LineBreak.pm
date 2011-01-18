@@ -25,7 +25,7 @@ use Unicode::GCString;
 ### Globals
 
 ### The package version
-our $VERSION = '2011.000_01';
+our $VERSION = '2011.000_02';
 
 ### Public Configuration Attributes
 our $Config = {
@@ -101,12 +101,12 @@ my $URIre = qr{
 my %USER_BREAKING_FUNCS = (
     'NONBREAKURI' => [ $URIre, sub { ($_[1]) } ],
     # Breaking URIs according to CMOS:
-    # 7.11 1-1: [/] ÷ [^/]
-    # 7.11 2:   [-] ×
+    # 17.11 1-1: [/] ÷ [^/]
+    # 17.11 2:   [-] ×
     # 6.17 2:   [.] ×
-    # 7.11 1-2: ÷ [-~.,_?#%]
-    # 7.11 1-3: ÷ [=&]
-    # 7.11 1-3: [=&] ÷
+    # 17.11 1-2: ÷ [-~.,_?#%]
+    # 17.11 1-3: ÷ [=&]
+    # 17.11 1-3: [=&] ÷
     # Default:  ALL × ALL
     'BREAKURI' => [ $URIre,
 		    sub {

@@ -84,7 +84,7 @@ sub dotest_array {
     my $instring = decode_utf8(join '', <IN>);
     close IN;
     my $lb = Unicode::LineBreak->new(@_);
-    my @broken = map { encode_utf8($_) } $lb->break($instring);
+    my @broken = map { encode_utf8("$_") } $lb->break($instring);
 
     my @outstring = ();
     if (open OUT, "<testin/$out.out") {
