@@ -242,7 +242,7 @@ gcstring_t *gctogcstring(gcstring_t *gcstr, gcchar_t *gc)
     if (gc == NULL)
 	return NULL;
     offset = gc - gcstr->gcstr;
-    return gcstring_substr(gcstr, offset, 1, NULL, 1);
+    return gcstring_substr(gcstr, offset, 1);
 }
 
 /***
@@ -295,7 +295,7 @@ gcstring_t *user_func(linebreak_t *lbobj, unistr_t *str)
 	if (!SvOK(sv))
 	    continue;
 	gcstr = SVtogcstring(sv, lbobj);
-	gcstring_substr(ret, 0, 0, gcstr, 0);
+	gcstring_replace(ret, 0, 0, gcstr);
 	if (!sv_isobject(sv))
 	    gcstring_destroy(gcstr);
     }
@@ -435,7 +435,7 @@ gcstring_t *urgent_func(linebreak_t *lbobj, gcstring_t *str)
 	    gcstr = SVtogcstring(sv, lbobj);
 	    if (gcstr->gclen)
 		gcstr->gcstr[0].flag = LINEBREAK_FLAG_BREAK_BEFORE;
-	    gcstring_substr(ret, 0, 0, gcstr, 0);
+	    gcstring_replace(ret, 0, 0, gcstr);
 	    if (!sv_isobject(sv))
 		gcstring_destroy(gcstr);
 	}
@@ -1456,7 +1456,10 @@ substr(self, offset, ...)
         } else
             replacement = NULL;
 
-	ret = gcstring_substr(gcstr, offset, length, replacement, 1);
+	ret = gcstring_substr(gcstr, offset, length);
+	if (replacement != NULL)
+	    gcstring_replace(gcstr, offset, length, replacement);
+
 	if (3 < items && !sv_isobject(ST(3)))
 	    gcstring_destroy(replacement);
 	if (ret == NULL) {

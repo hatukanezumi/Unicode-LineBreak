@@ -120,8 +120,6 @@ I<インスタンスメソッド>。
 I<インスタンスメソッド>。
 現在の位置が書記素クラスタ文字列の最後かどうか調べる。
 
-=begin comment
-
 =item flag ([OFFSET, [VALUE]])
 
 I<インスタンスメソッド>。
@@ -129,7 +127,19 @@ OFFSET番めの書記素クラスタのフラグ値を取得、設定する。
 OFFSET を指定しないと、次の位置の書記素クラスタのフラグ値を返す。
 フラグ値は 255 を超えない非負整数で、はじめは 0。
 
-=end comment
+定義ずみのフラグには次のものがある。
+
+=over 4
+
+=item Unicode::LineBreak::BREAK_BEFORE
+
+この書記素クラスタの直前で行分割を許す。
+
+=item Unicode::LineBreak::PROHIBIT_BEFORE
+
+この書記素クラスタの直前での行分割を禁ずる。
+
+=back
 
 =item item ([OFFSET])
 
@@ -137,13 +147,11 @@ I<インスタンスメソッド>。
 OFFSET番めの書記素クラスタを返す。
 OFFSET を指定しないと、次の位置の書記素クラスタの情報を返す。
 
-=begin comment
-
 =item lbclass ([OFFSET])
 
-I<Undocumented>.
-
-=end comment
+OFFSET番めの書記素クラスタの最初の文字の行分割クラス
+(L<Unicode::LineBreak::JA_JP> 参照) を返す。
+FFSET を指定しないと、次の位置の書記素クラスタの情報を返す。
 
 =begin comment
 
@@ -214,7 +222,7 @@ Hatuka*nezumi - IKEDA Soji <hatuka(at)nezumi.nu>
 
 =head1 COPYRIGHT
 
-Copyright (C) 2009, 2010 Hatuka*nezumi - IKEDA Soji.
+Copyright (C) 2009-2011 Hatuka*nezumi - IKEDA Soji.
 
 This program is free software; you can redistribute it and/or modify it
 under the same terms as Perl itself.
