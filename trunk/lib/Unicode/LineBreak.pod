@@ -1,0 +1,768 @@
+=encoding utf-8
+
+=head1 NAME
+
+Unicode::LineBreak - UAX #14 Unicode Line Breaking Algorithm
+
+=head1 SYNOPSIS
+
+    use Unicode::LineBreak;
+    $lb = Unicode::LineBreak->new();
+    $broken = $lb->break($string);
+
+=head1 DESCRIPTION
+
+Unicode::LineBreak performs Line Breaking Algorithm described in
+Unicode Standards Annex #14 [UAX #14].
+East_Asian_Width informative properties defined by Annex #11 [UAX #11] will
+be concerned to determin breaking positions.
+
+=head2 Terminology
+
+Following terms are used for convenience.
+
+B<Mandatory break> is obligatory line breaking behavior defined by core
+rules and performed regardless of surrounding characters.
+B<Arbitrary break> is line breaking behavior allowed by core rules
+and chosen by user to perform it.
+Arbitrary break includes B<direct break> and B<indirect break>
+defined by [UAX #14].
+
+B<Alphabetic characters> are characters usually no line breaks are allowed
+between pairs of them, except that other characters provide break
+oppotunities.
+B<Ideographic characters> are characters that usually allow line breaks
+both before and after themselves.
+[UAX #14] classifies most of alphabetic to AL and most of ideographic to ID
+(These terms are inaccurate from the point of view by grammatology).
+On several scripts, breaking positions are not obvious by each characters
+therefore heuristic based on dictionary is used.
+
+B<Number of columns> of a string is not always equal to the number of characters it contains:
+Each of characters is either B<wide>, B<narrow> or nonspacing;
+they occupy 2, 1 or 0 columns, respectively.
+Several characters may be both wide and narrow by the contexts they are used.
+Characters may have more various widths by customization.
+
+=head1 PUBLIC INTERFACE
+
+=head2 Line Breaking
+
+=over 4
+
+=item new ([KEY => VALUE, ...])
+
+I<Constructor>.
+About KEY => VALUE pairs see L</Options>.
+
+=item $self->break (STRING)
+
+I<Instance method>.
+Break Unicode string STRING and returns it.
+In array context, returns array of lines contained in the result.
+
+=item $self->break_partial (STRING)
+
+I<Instance method>.
+Same as break() but accepts incremental inputs.
+Give C<undef> as STRING argument to specify that input was completed.
+
+=item $self->config (KEY)
+
+=item $self->config (KEY => VALUE, ...)
+
+I<Instance method>.
+Get or update configuration.  About KEY => VALUE pairs see L</Options>.
+
+=item $self->copy
+
+I<Copy constructor>.
+Create a copy of object instance.
+
+=begin comment
+
+=item $self->reset
+
+I<Undocumented>.
+
+=end comment
+
+=back
+
+=head2 Getting Informations
+
+=over 4
+
+=item context ([Charset => CHARSET], [Language => LANGUAGE])
+
+I<Function>.
+Get language/region context used by character set CHARSET or
+language LANGUAGE.
+
+=item $self->eawidth (STRING)
+
+I<Instance method>.
+Get East_Asian_Width property of the first character of Unicode string
+STRING.
+See L</Constants> for returned value.
+EA_Z means nonspacing (zero width) character.
+Property value A (ambiguous) will be resolved to other appropriate values. 
+
+=item $self->lbclass (STRING)
+
+I<Instance method>.
+Get line breaking property (class) of the first character of Unicode string
+STRING.
+See L</Constants> for returned value.
+Classes AI, SA, SG and XX will be resolved to other
+appropriate classes. 
+However, when word segmentation for South East Asian writing systems is
+enabled, characters of supported scripts (currently Thai only) will be kept SA.
+
+=item $self->lbrule (BEFORE, AFTER)
+
+I<Instance method>.
+Get line breaking action between class BEFORE and class AFTER.
+See L</Constants> for returned value.
+
+B<Note>:
+This method might not give appropriate value related to classes
+BK, CM, CR, LF, NL and SP,
+and won't give meaningful value related to classes
+AI, SA, SG and XX. 
+
+=item $self->strsize (LEN, PRE, SPC, STR)
+
+I<Instance method>.
+Calculate I<number of columns> of Unicode string
+PRE.SPC.STR based on character widths defined by [UAX #11].
+
+=back
+
+=head2 Options
+
+L</new> and L</config> methods accept following pairs.
+
+=over 4
+
+=item BreakIndent => C<"YES"> | C<"NO">
+
+Always allows break after SPACEs at beginning of line, a.k.a. indent.
+[UAX #14] does not take account of such usage.
+Default is C<"YES">.
+
+B<Note>:
+This option was introduced at release 1.011.
+
+=item CharactersMax => NUMBER
+
+Possible maximum number of characters in one line,
+not counting trailing SPACEs and newline sequence.
+Note that number of characters generally doesn't represent length of line.
+Default is C<998>.
+Should not be C<0>.
+
+=item ColumnsMin => NUMBER
+
+Minimum number of columns which line broken arbitrarily may include, not
+counting trailing spaces and newline sequences.
+Default is C<0>.
+
+=item ColumnsMax => NUMBER
+
+Maximum number of columns line may include not counting trailing spaces and
+newline sequence.  In other words, maximum length of line.
+Default is C<76>.
+
+=back
+
+See also L</UrgentBreaking> option and L</User-Defined Breaking Behaviors>.
+
+=over 4
+
+=item ComplexBreaking => C<"YES"> | C<"NO">
+
+Performs heuristic breaking on South East Asian complex context.
+Default is, if word segmentation for South East Asian writing systems is
+enabled, C<"YES">.
+
+=item Context => CONTEXT
+
+Specify language/region context.
+Currently available contexts are C<"EASTASIAN"> and C<"NONEASTASIAN">.
+Default context is C<"NONEASTASIAN">.
+
+=item Format => METHOD
+
+Specify the method to format broken lines.
+
+=over 4
+
+=item C<"SIMPLE">
+
+Default method.
+Just only insert newline at arbitrary breaking positions.
+
+=item C<"NEWLINE">
+
+Insert or replace newline sequences with that specified by L</Newline> option,
+remove SPACEs leading newline sequences or end-of-text.  Then append newline
+at end of text if it does not exist.
+
+=item C<"TRIM">
+
+Insert newline at arbitrary breaking positions. Remove SPACEs leading
+newline sequences.
+
+=item C<undef>
+
+Do nothing, even inserting any newlines.
+
+=item Subroutine reference
+
+See L</Formatting Lines>.
+
+=back
+
+=item HangulAsAL => C<"YES"> | C<"NO">
+
+Treat hangul syllables and conjoining jamos as alphabetic characters (AL).
+Default is C<"NO">.
+
+=item LegacyCM => C<"YES"> | C<"NO">
+
+Treat combining characters lead by a SPACE as an isolated combining character
+(ID).
+As of Unicode 5.0, such use of SPACE is not recommended.
+Default is C<"YES">.
+
+=item Newline => STRING
+
+Unicode string to be used for newline sequence.
+Default is C<"\n">.
+
+=item SizingMethod => METHOD
+
+Specify method to calculate size of string.
+Following options are available.
+
+=over 4
+
+=item C<"UAX11">
+
+Default method.
+strsize() will be used.
+
+=item C<undef>
+
+Number of grapheme clusters (see L<Unicode::GCString>) contained in the string.
+
+=item Subroutine reference
+
+See L</Calculating String Size>.
+
+=back
+
+See also L</TailorEA> option.
+
+=item TailorEA => C<[> ORD C<=E<gt>> CLASS, ... C<]>
+
+Tailor classification of East_Asian_Width property.
+ORD is UCS scalar value of character or array reference of them.
+CLASS is one of East_Asian_Width property values N, Na, W, F and H
+(See L</Constants>).
+
+By default, no tailorings are available.
+See also L</Tailoring Character Properties>.
+
+=item TailorLB => C<[> ORD C<=E<gt>> CLASS, ... C<]>
+
+Tailor classification of line breaking property.
+ORD is UCS scalar value of character or array reference of them.
+CLASS is one of line breaking classes (See L</Constants>).
+
+By default, no tailorings are available.
+See also L</Tailoring Character Properties>.
+
+=item UrgentBreaking => METHOD
+
+Specify method to handle excessing lines.
+Following options are available.
+
+=over 4
+
+=item C<"CROAK">
+
+Print error message and die.
+
+=item C<"FORCE">
+
+Force breaking excessing fragment.
+
+=item C<undef>
+
+Default method.
+Won't break excessing fragment.
+
+=item Subroutine reference
+
+See L</User-Defined Breaking Behaviors>.
+
+=back
+
+=item UserBreaking => C<[>METHOD, ...C<]>
+
+Specify user-defined line breaking behavior(s).
+Following methods are available.
+
+=over 4
+
+=item C<"NONBREAKURI">
+
+Won't break URIs.
+
+=item C<"BREAKURI">
+
+Break URIs according to a rule suitable for printed materials.
+For more details see [CMOS], sections 6.17 and 17.11.
+
+=item C<[> REGEX, SUBREF C<]>
+
+The sequences matching regular expression REGEX will be broken by
+subroutine referred by SUBREF.
+For more details see L</User-Defined Breaking Behaviors>.
+
+=back
+
+=back
+
+=head2 Constants
+
+=over 4
+
+=item C<EA_Na>,	C<EA_N>, C<EA_A>, C<EA_W>, C<EA_H>, C<EA_F>, C<EA_Z>
+
+Index values to specify 6 East_Asian_Width properties
+defined by [UAX #11], and EA_Z to specify nonspacing.
+
+=item C<LB_BK>, C<LB_CR>, C<LB_LF>, C<LB_NL>, C<LB_SP>, C<LB_OP>, C<LB_CL>, C<LB_CP>, C<LB_QU>, C<LB_GL>, C<LB_NS>, C<LB_EX>, C<LB_SY>, C<LB_IS>, C<LB_PR>, C<LB_PO>, C<LB_NU>, C<LB_AL>, C<LB_ID>, C<LB_IN>, C<LB_HY>, C<LB_BA>, C<LB_BB>, C<LB_B2>, C<LB_CB>, C<LB_ZW>, C<LB_CM>, C<LB_WJ>, C<LB_H2>, C<LB_H3>, C<LB_JL>, C<LB_JV>, C<LB_JT>, C<LB_SG>, C<LB_AI>, C<LB_SA>, C<LB_XX>
+
+Index values to specify 37 line breaking properties (classes)
+defined by [UAX #14].
+
+B<Note>: Property value CP was introduced by Unicode 5.2.0.
+
+=item C<MANDATORY>, C<DIRECT>, C<INDIRECT>, C<PROHIBITED>
+
+4 values to specify line breaking behaviors:
+Mandatory break; Both direct break and indirect break are allowed;
+Indirect break is allowed but direct break is prohibited;
+Prohibited break.
+
+=item C<Unicode::LineBreak::SouthEastAsian::supported>
+
+Flag to determin if word segmentation for South East Asian writing systems is
+enabled.
+If this feature was enabled, a non-empty string is set. 
+Otherwise, C<undef> is set.
+
+B<N.B.>: Current release supports Thai script of modern Thai language only.
+
+=item C<UNICODE_VERSION>
+
+A string to specify version of Unicode standard this module refers.
+
+=back
+
+=head1 CUSTOMIZATION
+
+=head2 Formatting Lines
+
+If you specify subroutine reference as a value of L</Format> option,
+it should accept three arguments:
+
+    MODIFIED = &subroutine(SELF, EVENT, STR);
+
+SELF is a Unicode::LineBreak object,
+EVENT is a string to determine the context that subroutine was called in,
+and STR is a fragment of Unicode string leading or trailing breaking position.
+
+    EVENT |When Fired           |Value of STR
+    -----------------------------------------------------------------
+    "sot" |Beginning of text    |Fragment of first line
+    "sop" |After mandatory break|Fragment of next line
+    "sol" |After arbitrary break|Fragment on sequel of line
+    ""    |Just before any      |Complete line without trailing
+          |breaks               |SPACEs
+    "eol" |Arbitrary break      |SPACEs leading breaking position
+    "eop" |Mandatory break      |Newline and its leading SPACEs
+    "eot" |End of text          |SPACEs (and newline) at end of
+          |                     |text
+    -----------------------------------------------------------------
+
+Subroutine should return modified text fragment or may return
+C<undef> to express that no modification occurred.
+Note that modification in the context of C<"sot">, C<"sop"> or C<"sol"> may
+affect decision of successive breaking positions while in the others won't.
+
+B<Note>:
+String arguments are actually sequences of grapheme clusters.
+See L<Unicode::GCString>.
+
+For example, following code folds lines removing trailing spaces:
+
+    sub fmt {
+        if ($_[1] =~ /^eo/) {
+            return "\n";
+        }
+        return undef;
+    }
+    my $lb = Unicode::LineBreak->new(Format => \&fmt);
+    $output = $lb->break($text);
+
+=head2 User-Defined Breaking Behaviors
+
+When a line generated by arbitrary break is expected to be beyond measure of
+either CharactersMax, ColumnsMax or ColumnsMin, B<urgent break> may be
+performed on successive string.
+If you specify subroutine reference as a value of L</UrgentBreaking> option,
+it should accept two arguments:
+
+    BROKEN = &subroutine(SELF, STR);
+
+SELF is a Unicode::LineBreak object and STR is a Unicode string to be broken.
+
+Subroutine should return an array of broken string STR.
+
+B<Note>:
+String argument is actually a sequence of grapheme clusters.
+See L<Unicode::GCString>.
+
+For example, following code inserts hyphen to the name of several chemical substances (such as Titin) so that it may be folded:
+
+    sub hyphenize {
+        return map {$_ =~ s/yl$/yl-/; $_} split /(\w+?yl(?=\w))/, $_[1];
+    }
+    my $lb = Unicode::LineBreak->new(UrgentBreaking => \&hyphenize);
+    $output = $lb->break("Methionylthreonylthreonylglutaminylarginyl...");
+
+If you specify [REGEX, SUBREF] array reference as an item of
+L</UserBreaking> option,
+subroutine should accept two arguments:
+
+    BROKEN = &subroutine(SELF, STR);
+
+SELF is a Unicode::LineBreak object and
+STR is a Unicode string matched with REGEX.
+
+Subroutine should return an array of broken string STR.
+
+For example, following code will break HTTP URLs using [CMOS] rule.
+
+    my $url = qr{http://[\x21-\x7E]+}i;
+    sub breakurl {
+        my $self = shift;
+        my $str = shift;
+        return split m{(?<=[/]) (?=[^/]) |
+                       (?<=[^-.]) (?=[-~.,_?\#%=&]) |
+                       (?<=[=&]) (?=.)}x, $str;
+    }
+    my $lb = Unicode::LineBreak->new(UserBreaking => [$url, \&breakurl]);
+    $output = $lb->break($string);
+
+=head2 Calculating String Size
+
+If you specify subroutine reference as a value of L</SizingMethod> option,
+it will be called with five arguments:
+
+    COLS = &subroutine(SELF, LEN, PRE, SPC, STR);
+
+SELF is a Unicode::LineBreak object, LEN is size of preceding string,
+PRE is preceding Unicode string, SPC is additional SPACEs and STR is a
+Unicode string to be processed.
+
+Subroutine should return calculated number of columns of C<PRE.SPC.STR>.
+The number of columns may not be an integer: Unit of the number may be freely chosen, however, it should be same as those of L</ColumnsMin> and L</ColumnsMax> option.
+
+B<Note>:
+String arguments are actually sequences of grapheme clusters.
+See L<Unicode::GCString>.
+
+For example, following code processes lines with tab stops by each eight columns.
+
+    sub tabbedsizing {
+        my ($self, $cols, $pre, $spc, $str) = @_;
+    
+        my $spcstr = $spc.$str;
+        while ($spcstr =~ s/^( *)(\t+)//) {
+            $cols += length($1);
+            $cols += length($2) * 8 - $cols % 8;
+        }
+        $cols += $self->strsize(0, '', '', $spcstr);
+        return $cols;
+    };
+    my $lb = Unicode::LineBreak->new(TailorLB => [ord("\t") => LB_SP],
+                                     SizingMethod => \&tabbedsizing);
+    $output = $lb->break($string);
+
+=head2 Tailoring Character Properties
+
+Character properties may be tailored by L</TailorLB> and L</TailorEA>
+options.  Some constants are defined for convenience of tailoring.
+
+=head3 Line Breaking Properties
+
+=head4 Nonstarters of Kana-like Characters
+
+By default, several hiragana, katakana and characters corresponding to kana
+are treated as nonstarters (NS).
+When the following pair(s) are specified for value of L</TailorLB> option,
+these characters are treated as normal ideographic characters (ID).
+
+=over 4
+
+=item C<KANA_NONSTARTERS() =E<gt> LB_ID>
+
+All of characters below.
+
+=item C<IDEOGRAPHIC_ITERATION MARKS() =E<gt> LB_ID>
+
+Ideographic iteration marks.
+U+3005 IDEOGRAPHIC ITERATION MARK, U+303B VERTICAL IDEOGRAPHIC ITERATION MARK, U+309D HIRAGANA ITERATION MARK, U+309E HIRAGANA VOICED ITERATION MARK, U+30FD KATAKANA ITERATION MARK and U+30FE KATAKANA VOICED ITERATION MARK.
+
+N.B. Some of them are neither hiragana nor katakana.
+
+=item C<KANA_SMALL_LETTERS() =E<gt> LB_ID>
+
+=item C<KANA_PROLONGED_SOUND_MARKS() =E<gt> LB_ID>
+
+Hiragana or katakana small letters:
+Hiragana small letters U+3041 A, U+3043 I, U+3045 U, U+3047 E, U+3049 O, U+3063 TU, U+3083 YA, U+3085 YU, U+3087 YO, U+308E WA, U+3095 KA, U+3096 KE. 
+Katakana small letters U+30A1 A, U+30A3 I, U+30A5 U, U+30A7 E, U+30A9 O, U+30C3 TU, U+30E3 YA, U+30E5 YU, U+30E7 YO, U+30EE WA, U+30F5 KA, U+30F6 KE.
+Katakana phonetic extensions U+31F0 KU - U+31FF RO.
+Halfwidth katakana small letters U+FF67 A - U+FF6F TU.
+
+Hiragana or katakana prolonged sound marks:
+U+30FC KATAKANA-HIRAGANA PROLONGED SOUND MARK and
+U+FF70 HALFWIDTH KATAKANA-HIRAGANA PROLONGED SOUND MARK.
+
+N.B. These letters are optionally treated either as nonstarter or
+as normal ideographic.  See [JIS X 4051] 6.1.1.
+
+N.B. U+3095, U+3096, U+30F5, U+30F6 are considered to be
+neither hiragana nor katakana.
+
+=item C<MASU_MARK() =E<gt> LB_ID>
+
+U+303C MASU MARK.
+
+N.B. Although this character is not kana, it is usually regarded as
+abbreviation to sequence of hiragana C<"ます"> or katakana C<"マス">,
+MA and SU.
+
+N.B. This character is classified as nonstarter (NS) by [UAX #14]
+and as Class 13 (corresponding to ID) by [JIS X 4051].
+
+=back
+
+=head4 Ambiguous Quotation Marks
+
+By default, some punctuations are ambiguous quotation marks (QU).
+
+=over 4
+
+=item C<LEFT_QUOTES() =E<gt> LB_OP, RIGHT_QUOTES() =E<gt> LB_CL>
+
+Some languages (Dutch, English, Italian, Portugese, Spanish, Turkish and
+most East Asian) use rotated-9-style punctuations (E<0x2018> E<0x201C>) as
+opening and 9-style punctuations (E<0x2019> E<0x201D>) as closing quotation
+marks.
+
+=item C<RIGHT_QUOTES() =E<gt> LB_OP, LEFT_QUOTES() =E<gt> LB_CL>
+
+Some others (Czech, German and Slovak) use 9-style punctuations
+(E<0x2019> E<0x201D>) as opening and rotated-9-style punctuations
+(E<0x2018> E<0x201C>) as closing quotation marks.
+
+=item C<LEFT_GUILLEMETS() =E<gt> LB_OP, RIGHT_GUILLEMETS() =E<gt> LB_CL>
+
+French, Greek, Russian etc. use left-pointing guillemets (E<0x00AB> E<0x2039>)
+as opening and right-pointing guillemets (E<0x00BB> E<0x203A>) as closing
+quotation marks.
+
+=item C<RIGHT_GUILLEMETS() =E<gt> LB_OP, LEFT_GUILLEMETS() =E<gt> LB_CL>
+
+German and Slovak use right-pointing guillemets (E<0x00BB> E<0x203A>) as
+opening and left-pointing guillemets (E<0x00AB> E<0x2039>) as closing
+quotation marks.
+
+=back
+
+Danish, Finnish, Norwegian and Swedish use 9-style or right-pointing
+punctuations (E<0x2019> E<0x201D> E<0x00BB> E<0x203A>) as both opening and
+closing quotation marks.
+
+=head3 East_Asian_Width Properties
+
+Some particular letters of Latin, Greek and Cyrillic scripts have ambiguous
+(A) East_Asian_Width property.  Thus, these characters are treated as wide
+in C<"EASTASIAN"> context.
+Specifying C<TailorEA =E<gt> [ AMBIGUOUS_>*C<() =E<gt> EA_N ]>,
+those characters are always treated as narrow.
+
+=over 4
+
+=item C<AMBIGUOUS_ALPHABETICS() =E<gt> EA_N>
+
+Treat all of characters below as East_Asian_Width neutral (N).
+
+=item C<AMBIGUOUS_CYRILLIC() =E<gt> EA_N>
+
+=item C<AMBIGUOUS_GREEK() =E<gt> EA_N>
+
+=item C<AMBIGUOUS_LATIN() =E<gt> EA_N>
+
+Treate letters having ambiguous (A) width of Cyrillic, Greek and Latin scripts
+as neutral (N).
+
+=back
+
+On the other hand, despite several characters were occasionally rendered as wide characters by number of implementations for East Asian character sets, they are given narrow (Na) East_Asian_Width property just because they have fullwidth (F) compatibility characters.
+Specifying C<TailorEA> as below, those characters are treated as ambiguous
+--- wide on C<"EASTASIAN"> context.
+
+=over 4
+
+=item C<QUESTIONABLE_NARROW_SIGNS() =E<gt> EA_A>
+
+U+00A2 CENT SIGN, U+00A3 POUND SIGN, U+00A5 YEN SIGN (or yuan sign),
+U+00A6 BROKEN BAR, U+00AC NOT SIGN, U+00AF MACRON.
+
+=back
+
+=head2 Configuration File
+
+Built-in defaults of option parameters for L</new> and L</config> method
+can be overridden by configuration files:
+F<Unicode/LineBreak/Defaults.pm>.
+For more details read F<Unicode/LineBreak/Defaults.pm.sample>.
+
+=head1 BUGS
+
+Please report bugs or buggy behaviors to developer.
+
+CPAN Request Tracker:
+L<http://rt.cpan.org/Public/Dist/Display.html?Name=Unicode-LineBreak>.
+
+=head1 VERSION
+
+Consult $VERSION variable.
+
+Development versions of this module may be found at 
+L<http://hatuka.nezumi.nu/repos/Unicode-LineBreak/>.
+
+=head2 Conformance to Standards
+
+Character properties this module is based on are defined by
+Unicode Standards version 6.0.0.
+
+This module is intended to implement UAX14-C2.
+
+=over 4
+
+=item *
+
+Some ideographic characters may be treated either as NS or as ID by choice.
+
+=item *
+
+Hangul syllables and conjoining jamos may be treated as
+either ID or AL by choice.
+
+=item *
+
+Characters assigned to AI may be resolved to either AL or ID by choice.
+
+=item *
+
+Character(s) assigned to CB are not resolved.
+
+=item *
+
+When word segmentation for South East Asian writing systems is not supported,
+characters assigned to SA are resolved to AL,
+except that characters that have Grapheme_Cluster_Break property value
+Extend or SpacingMark be resolved to CM.
+
+=item *
+
+Characters assigned to SG or XX are resolved to AL.
+
+=item *
+
+Code points of following UCS ranges are given fixed property values even
+if they have not been assigned any characers.
+
+    Ranges             | lbclass()  | eawidth()  | Description
+    -------------------------------------------------------------
+    U+3400..U+4DBF     | ID         | W          | CJK ideographs
+    U+4E00..U+9FFF     | ID         | W          | CJK ideographs
+    U+D800..U+DFFF     | AL (SG)    | N          | Surrogates
+    U+E000..U+F8FF     | AL (XX)    | F or N (A) | Private use
+    U+F900..U+FAFF     | ID         | W          | CJK ideographs
+    U+20000..U+2FFFD   | ID         | W          | CJK ideographs
+    U+30000..U+3FFFD   | ID         | W          | CJK ideographs
+    U+F0000..U+FFFFD   | AL (XX)    | F or N (A) | Private use
+    U+100000..U+10FFFD | AL (XX)    | F or N (A) | Private use
+    Other unassigned   | AL (XX)    | N          | Unassigned
+    -------------------------------------------------------------
+
+=item *
+
+Characters belonging to General Category Mn, Me, Cc, Cf, Zl or Zp have the
+property value Z (nonspacing) defined by this module, regardless of
+East_Asian_Width property values assigned by [UAX #11].
+
+=back
+
+=head1 REFERENCES
+
+=over 4
+
+=item [CMOS]
+
+I<The Chicago Manual of Style>, 15th edition.
+University of Chicago Press, 2003.
+
+=item [JIS X 4051]
+
+JIS X 4051:2004
+I<日本語文書の組版方法> (I<Formatting Rules for Japanese Documents>).
+Japanese Standards Association, 2004.
+
+=item [UAX #11]
+
+A. Freytag (2008-2009).
+I<Unicode Standard Annex #11: East Asian Width>, Revision 17-19.
+L<http://unicode.org/reports/tr11/>.
+
+=item [UAX #14]
+
+A. Freytag and A. Heninger (2008-2010).
+I<Unicode Standard Annex #14: Unicode Line Breaking Algorithm>, Revision 22-26.
+L<http://unicode.org/reports/tr14/>.
+
+=back
+
+=head1 SEE ALSO
+
+L<Text::LineFold>, L<Text::Wrap>.
+
+=head1 AUTHOR
+
+Copyright (C) 2009-2011 Hatuka*nezumi - IKEDA Soji <hatuka(at)nezumi.nu>.
+
+This program is free software; you can redistribute it and/or modify it 
+under the same terms as Perl itself.
+
+=cut

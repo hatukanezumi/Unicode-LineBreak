@@ -1,0 +1,79 @@
+#-*- perl -*-
+
+package Unicode::LineBreak;
+
+=head1 NAME
+
+Unicode::LineBreak::Defaults - Configuration for Unicode::LineBreak
+
+=head1 SYNOPSIS
+
+Edit this file and place it on Unicode/LineBreak/Defaults.pm 
+to activate custom settings.
+
+=head1 DESCRIPTION
+
+Following settings are available.
+
+=over 4
+
+=item BreakIndent
+
+=item CharactersMax
+
+=item ColumnsMin
+
+=item ColumnsMax
+
+=item ComplexBreaking
+
+=item Context
+
+=item Format
+
+=item HangulAsAL
+
+=item LegacyCM
+
+=item Newline
+
+=item SizingMethod
+
+=item TailorEA
+
+=item TailorLB
+
+=item UrgentBreaking
+
+=item UserBreaking
+
+=back
+
+=head1 SEE ALSO
+
+L<Unicode::LineBreak>
+
+=cut
+
+#--------------------------------------------------------------------------#
+# Add your own settings below.
+#--------------------------------------------------------------------------#
+
+## Default settings on current release are:
+# $Config->{BreakIndent} = 'YES';
+# $Config->{CharactersMax} = 998;
+# $Config->{ColumnsMin} = 0;
+# $Config->{ColumnsMax} = 76;
+# $Config->{ComplexBreaking} = 'YES';
+# $Config->{Context} = 'NONEASTASIAN';
+# $Config->{Format} = 'SIMPLE';
+# $Config->{HangulAsAL} = 'NO';
+# $Config->{LegacyCM} = 'YES';
+# $Config->{Newline} = "\n";
+# $Config->{SizingMethod} = 'UAX11';
+# $config->{TailorEA} = [];
+# $config->{TailorLB} = [];
+# $Config->{UrgentBreaking} = undef;
+# $Config->{UserBreaking} = [];
+
+1;
