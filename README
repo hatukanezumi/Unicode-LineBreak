@@ -12,12 +12,13 @@ Perl 5.8.0 or later is required.
 
 Sombok library package is required.  If Sombok had not been installed,
 bundled source will be used.
+    https://sourceforge.net/projects/linefold/files/
 
 Optionally, libthai package is needed to support Thai word segmentation:
     http://linux.thai.net/projects/libthai
 
-Additionally, pkg-config 0.9.0 or later will be required for libthai and/or
-shared sombok library.
+Additionally, pkg-config will be required for libthai and/or shared
+sombok library.
 
 Install
 =======

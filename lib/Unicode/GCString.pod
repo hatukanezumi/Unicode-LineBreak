@@ -159,13 +159,11 @@ Returns Line Breaking Class (See L<Unicode::LineBreak>) of the first
 character of OFFSET-th grapheme cluster.
 If OFFSET was not specified, returns class of next grapheme cluster.
 
-=begin comment
-
 =item lbclass_ext ([OFFSET])
 
-I<Undocumented>.
-
-=end comment
+Returns Line Breaking Class (See L<Unicode::LineBreak>) of the last
+grapheme extender of OFFSET-th grapheme cluster.  If there are no
+grapheme extenders or its class is CM, value of lbclass() is returned.
 
 =item next
 

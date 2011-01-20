@@ -682,22 +682,15 @@ _config(self, ...)
 		else
 		    lbobj->options &= ~LINEBREAK_OPTION_LEGACY_CM;
 	    } else if (strcasecmp(key, "Newline") == 0) {
-		if (lbobj->newline.str) free(lbobj->newline.str);
 		if (!sv_isobject(val)) {
 		    unistr_t unistr = {NULL, 0};
 		    SVtounistr(&unistr, val);
-		    lbobj->newline.str = unistr.str;
-		    lbobj->newline.len = unistr.len;
+		    linebreak_set_newline(lbobj, &unistr);	
+		    free(unistr.str);
 		} else if (sv_derived_from(val, "Unicode::GCString")) {
-	            gcstring_t *gcstr = PerltoC(gcstring_t *, val);
-		    if ((lbobj->newline.str =
-			malloc(sizeof(unichar_t) * gcstr->len)) == NULL)
-			croak("_config: Can't allocate memory");
-		    else {
-			memcpy(lbobj->newline.str, gcstr->str,
-			       sizeof(unichar_t) * gcstr->len);
-			lbobj->newline.len = gcstr->len;
-		    }
+		    gcstring_t *gcstr;
+		    gcstr = PerltoC(gcstring_t *, val);
+		    linebreak_set_newline(lbobj, (unistr_t *)gcstr);
 		} else
 		    croak("Unknown object %s", HvNAME(SvSTASH(SvRV(val))));
 	    }
@@ -894,7 +887,7 @@ break(self, input)
     PPCODE:
 	lbobj = SVtolinebreak(self);
 	if (!SvOK(input))
-	    str = &unistr;
+	    XSRETURN_UNDEF;
 	else {
 	    if (!sv_isobject(input)) {
 		if (!SvUTF8(input)) {
@@ -909,8 +902,10 @@ break(self, input)
 		}
 		SVtounistr(&unistr, input);
 		str = &unistr;
-	    } else
+	    } else if (sv_derived_from(input, "Unicode::GCString"))
 		str = (unistr_t *)SVtogcstring(input, lbobj);
+	    else
+		croak("Unknown object %s", HvNAME(SvSTASH(SvRV(input))));
 
 	    ret = linebreak_break(lbobj, str);
 	    if (!sv_isobject(input))
@@ -936,7 +931,7 @@ break(self, input)
 		gcstring_destroy(ret[i]);
 	    }
 	    free(ret);
-	    XPUSHs(sv_2mortal(unistrtoSV(r, 0, r->len)));
+	    XPUSHs(sv_2mortal(unistrtoSV((unistr_t *)r, 0, r->len)));
 	    gcstring_destroy(r);
 	    XSRETURN(1);
 
@@ -1009,7 +1004,7 @@ break_partial(self, input)
 		gcstring_destroy(ret[i]);
 	    }
 	    free(ret);
-	    XPUSHs(sv_2mortal(unistrtoSV(r, 0, r->len)));
+	    XPUSHs(sv_2mortal(unistrtoSV((unistr_t *)r, 0, r->len)));
 	    gcstring_destroy(r);
 	    XSRETURN(1);
 
@@ -1458,7 +1453,8 @@ substr(self, offset, ...)
 
 	ret = gcstring_substr(gcstr, offset, length);
 	if (replacement != NULL)
-	    gcstring_replace(gcstr, offset, length, replacement);
+	    if (gcstring_replace(gcstr, offset, length, replacement) == NULL)
+		croak("%s", strerror(errno));
 
 	if (3 < items && !sv_isobject(ST(3)))
 	    gcstring_destroy(replacement);

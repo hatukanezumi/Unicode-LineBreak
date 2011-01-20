@@ -151,15 +151,13 @@ OFFSET を指定しないと、次の位置の書記素クラスタの情報を�
 
 OFFSET番めの書記素クラスタの最初の文字の行分割クラス
 (L<Unicode::LineBreak::JA_JP> 参照) を返す。
-FFSET を指定しないと、次の位置の書記素クラスタの情報を返す。
-
-=begin comment
+OFFSET を指定しないと、次の位置の書記素クラスタの情報を返す。
 
 =item lbclass_ext ([OFFSET])
 
-I<Undocumented>.
-
-=end comment
+OFFSET番めの書記素クラスタの最後の書記素エキステンダの行分割クラス
+(L<Unicode::LineBreak> 参照) を返す。
+書記素エキステンダがないか、またはクラスが CM の場合は、lbclass() の値を返す。
 
 =item next
 
