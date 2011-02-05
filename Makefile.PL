@@ -11,6 +11,7 @@ my @args = ();
 my $enable_libthai = 'yes';
 my $bundled_sombok = 'no';
 my $libthai;
+my $enable_malloc_debug = 'no';
 
 sub top_targets {
     my $inherited = shift->SUPER::top_targets(@_);
@@ -56,6 +57,8 @@ foreach my $arg (@ARGV) {
 	$enable_libthai = 'no';
     } elsif ($arg eq '--with-bundled-sombok') {
 	$bundled_sombok = 'yes';
+    } elsif ($arg eq '--enable-malloc-debug') {
+	$enable_malloc_debug = 'yes';
     } elsif ($arg =~ /^--/ or $arg =~ /^\w+=/) {
 	push @args, $arg;
     } else {
@@ -75,6 +78,11 @@ if ($libthai and $enable_libthai eq 'yes') {
 if (system("$pkg_config --atleast-version=$sombok_atleast_version sombok")
     >> 8) {
     $bundled_sombok = 'yes';
+}
+if ($enable_malloc_debug eq 'yes') {
+    $bundled_sombok = 'yes';
+    push @args, '--enable-malloc-debug';
+    push @opts, ('DEFINE' => '-DMALLOC_DEBUG');
 }
 if ($bundled_sombok eq 'yes') {
     push @opts, ('MYEXTLIB' => "$csubdir/.libs/libsombok\$(LIB_EXT)");

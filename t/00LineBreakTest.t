@@ -18,7 +18,7 @@ use Unicode::LineBreak qw(:all);
 
 BEGIN {
     my $tests = 0;
-    if (open IN, 'testin/LineBreakTest.txt') {
+    if (open IN, 'test-data/LineBreakTest.txt') {
 	while (<IN>) {
 	    s/\s*#.*//;
 	    next unless /\S/;
@@ -27,7 +27,7 @@ BEGIN {
 	close IN;
 	plan tests => $tests;
     } else {
-	plan skip_all => 'testin/LineBreakTest.txt found at '.
+	plan skip_all => 'test-data/LineBreakTest.txt found at '.
 	    'http://www.unicode.org/Public/ is required.';
     }
 }
@@ -68,7 +68,7 @@ my $lb = Unicode::LineBreak->new(
 				 TailorEA => [[1..65532] => EA_N],
 			      );
 
-open IN, 'testin/LineBreakTest.txt';
+open IN, 'test-data/LineBreakTest.txt';
 
 while (<IN>) {
     chomp $_;

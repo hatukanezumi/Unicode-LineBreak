@@ -117,7 +117,7 @@ my %USER_BREAKING_FUNCS = (
 			    (?<=[=&]) (?=.)
 			}iox, $_[1];
 			# Won't break punctuations at end of matches.
-			while (2 <= scalar @c and $c[$#c] =~ /^[.:;,>]+$/) {
+			while (2 <= scalar @c and $c[$#c] =~ /^[\".:;,>]+$/) {
 			    my $c = pop @c;
 			    $c[$#c] .= $c;
 			}
