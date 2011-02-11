@@ -137,7 +137,7 @@ Predefined flags are:
 
 =over 4
 
-=item Unicode::LineBreak::BREAK_BEFORE
+=item Unicode::LineBreak::ALLOW_BEFORE
 
 Allow line breaking just before this grapheme cluster.
 

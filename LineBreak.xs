@@ -14,11 +14,7 @@
 #include "perl.h"
 #include "XSUB.h"
 #include "ppport.h"
-#define PERL_MODULE_VERSION VERSION
-#undef VERSION
 #include "sombok.h"
-#undef VERSION
-#define VERSION PERL_MODULE_VERSION
 
 /***
  *** Utilities.
@@ -246,6 +242,40 @@ gcstring_t *gctogcstring(gcstring_t *gcstr, gcchar_t *gc)
 }
 
 /***
+ *** Other utilities
+ ***/
+
+/*
+ * Do regex match once then returns offset and length.
+ */
+void do_pregexec_once(REGEXP *rx, unistr_t *str)
+{
+    SV *screamer;
+    char *str_arg, *str_beg, *str_end;
+
+    screamer = sv_2mortal(unistrtoSV(str, 0, str->len));
+    str_beg = str_arg = SvPVX(screamer);
+    str_end = SvEND(screamer);
+
+    if (pregexec(rx, str_arg, str_end, str_beg, 0, screamer, 1)) {
+	size_t offs_beg, offs_end;
+#if PERL_VERSION >= 11
+	offs_beg = ((regexp *)SvANY(rx))->offs[0].start;
+	offs_end = ((regexp *)SvANY(rx))->offs[0].end;
+#elif ((PERL_VERSION >= 10) || (PERL_VERSION == 9 && PERL_SUBVERSION >= 5))
+	offs_beg = rx->offs[0].start;
+	offs_end = rx->offs[0].end;
+#else /* PERL_VERSION */
+	offs_beg = rx->startp[0];
+	offs_end = rx->endp[0];
+#endif
+	str->str += utf8_length(str_beg, str_beg + offs_beg);	
+	str->len = utf8_length(str_beg + offs_beg, str_beg + offs_end);
+    } else
+	str->str = NULL;
+}
+
+/***
  *** Callbacks for Sombok library.
  ***/
 
@@ -263,46 +293,94 @@ void ref_func(SV *sv, int datatype, int d)
 }
 
 /*
- * Call preprocess (user breaking) function
+ * Call preprocessing function
  */
 static
-gcstring_t *user_func(linebreak_t *lbobj, unistr_t *str)
+gcstring_t *prep_func(linebreak_t *lbobj, void *dataref, unistr_t *str,
+		      unistr_t *text)
 {
-    SV *sv;
-    int count, i;
+    AV *data;
+    SV *sv, **pp, *func = NULL;
+    REGEXP *rx = NULL;
+    int count, i, j;
     gcstring_t *gcstr, *ret;
 
-    dSP;
-    ENTER;
-    SAVETMPS;
-    PUSHMARK(SP);
-    /* FIXME:sync refcount between C & Perl */
-    XPUSHs(sv_2mortal(CtoPerl("Unicode::LineBreak", linebreak_copy(lbobj))));
-    XPUSHs((SV *)lbobj->user_data); /* shouldn't be mortal. */
-    XPUSHs(sv_2mortal(unistrtoSV(str, 0, str->len)));
-    PUTBACK;
-    count = call_pv("Unicode::LineBreak::preprocess", G_ARRAY | G_EVAL);
+    if (dataref == NULL ||
+	(data = (AV *)SvRV((SV *)dataref)) == NULL)
+	return (lbobj->errnum = EINVAL), NULL;
 
-    SPAGAIN;
-    if (SvTRUE(ERRSV)) {
-	if (!lbobj->errnum)
-	    lbobj->errnum = LINEBREAK_EEXTN;
+    /* Pass I */
+
+    if ((pp = av_fetch(data, 0, 0)) == NULL ||
+	! SvROK(*pp) || ! SvMAGICAL(sv = SvRV(*pp)) ||
+	(rx = (REGEXP *)(mg_find(sv, PERL_MAGIC_qr))->mg_obj) == NULL)
+	return (lbobj->errnum = EINVAL), NULL;
+
+    if (text != NULL) {
+	do_pregexec_once(rx, str);
 	return NULL;
     }
-    ret = gcstring_new(NULL, lbobj);
-    for (i = 0; i < count; i++) {
-	sv = POPs;
-	if (!SvOK(sv))
-	    continue;
-	gcstr = SVtogcstring(sv, lbobj);
-	gcstring_replace(ret, 0, 0, gcstr);
-	if (!sv_isobject(sv))
-	    gcstring_destroy(gcstr);
-    }
 
-    PUTBACK;
-    FREETMPS;
-    LEAVE;
+    /* Pass II */
+
+    if ((pp = av_fetch(data, 1, 0)) == NULL)
+        func = NULL;
+    else if (SvOK(*pp))
+        func = *pp;
+    else
+        func = NULL;
+
+    if (func == NULL) {
+	if ((ret = gcstring_newcopy(str, lbobj)) == NULL)
+	    return (lbobj->errnum = errno ? errno : ENOMEM), NULL;
+    } else {
+	dSP;
+	ENTER;
+	SAVETMPS;
+	PUSHMARK(SP);
+	/* FIXME:sync refcount between C & Perl */
+	XPUSHs(sv_2mortal(CtoPerl("Unicode::LineBreak",
+				  linebreak_copy(lbobj))));
+	XPUSHs(sv_2mortal(unistrtoSV(str, 0, str->len)));
+	PUTBACK;
+	count = call_sv(func, G_ARRAY | G_EVAL);
+
+	SPAGAIN;
+	if (SvTRUE(ERRSV)) {
+	    if (!lbobj->errnum)
+		 lbobj->errnum = LINEBREAK_EEXTN;
+	    return NULL;
+	}
+
+	if ((ret = gcstring_new(NULL, lbobj)) == NULL)
+	    return (lbobj->errnum = errno ? errno : ENOMEM), NULL;
+
+	for (i = 0; i < count; i++) {
+	    sv = POPs;
+	    if (!SvOK(sv))
+		continue;
+	    gcstr = SVtogcstring(sv, lbobj);
+
+	    for (j = 0; j < gcstr->gclen; j++) {
+		if (gcstr->gcstr[j].flag &
+		    (LINEBREAK_FLAG_ALLOW_BEFORE |
+		     LINEBREAK_FLAG_PROHIBIT_BEFORE))
+		    continue;
+		if (i < count - 1 && j == 0)
+		    gcstr->gcstr[j].flag |= LINEBREAK_FLAG_ALLOW_BEFORE;
+		else if (0 < j)
+		    gcstr->gcstr[j].flag |= LINEBREAK_FLAG_PROHIBIT_BEFORE;
+	    }
+
+	    gcstring_replace(ret, 0, 0, gcstr);
+	    if (!sv_isobject(sv))
+		gcstring_destroy(gcstr);
+	}
+
+	PUTBACK;
+	FREETMPS;
+	LEAVE;
+    }
 
     return ret;
 }
@@ -434,7 +512,7 @@ gcstring_t *urgent_func(linebreak_t *lbobj, gcstring_t *str)
 	if (SvOK(sv)) {
 	    gcstr = SVtogcstring(sv, lbobj);
 	    if (gcstr->gclen)
-		gcstr->gcstr[0].flag = LINEBREAK_FLAG_BREAK_BEFORE;
+		gcstr->gcstr[0].flag = LINEBREAK_FLAG_ALLOW_BEFORE;
 	    gcstring_replace(ret, 0, 0, gcstr);
 	    if (!sv_isobject(sv))
 		gcstring_destroy(gcstr);
@@ -569,11 +647,64 @@ _config(self, ...)
 	    key = (char *)SvPV_nolen(ST(i));
 	    val = ST(i + 1);
 
-	    if (strcmp(key, "UserBreaking") == 0) {
-		if (SvOK(val))
-		    linebreak_set_user(lbobj, user_func, (void *)val);
-		else
-		    linebreak_set_user(lbobj, NULL, NULL);
+	    if (strcmp(key, "Prep") == 0) {
+		SV *sv, *pattern, *func;
+		AV *av;
+		PMOP *pm;
+		REGEXP *rx;
+
+		if (SvROK(val) && 0 < av_len(av = (AV *)SvRV(val)) + 1) {
+		    pattern = *av_fetch(av, 0, 0);
+		    if (av_fetch(av, 1, 0) == NULL)
+			func = &PL_sv_undef;
+		    else
+			func = *av_fetch(av, 1, 0);
+
+		    if (SvROK(pattern) && SvMAGICAL(sv = SvRV(pattern)))
+			rx = (REGEXP*)((mg_find(sv, PERL_MAGIC_qr))->mg_obj);
+		    else {
+			if (! SvUTF8(pattern)) {
+			    char *s;
+			    size_t len, i;
+
+			    len = SvCUR(pattern);
+			    s = SvPV(pattern, len);
+			    for (i = 0; i < len; i++)
+			    if (127 < (unsigned char)s[i])
+				croak("Unicode string must be given.");
+			}
+#if ((PERL_VERSION >= 10) || (PERL_VERSION == 9 && PERL_SUBVERSION >= 5))
+			rx = pregcomp(pattern, 0);
+#else /* PERL_VERSION */
+			New(1, pm, 1, PMOP);
+			rx = pregcomp(SvPVX(pattern), SvEND(pattern), pm);
+#endif
+			if (rx != NULL) {
+			    sv_magic(pattern, (SV *)rx, PERL_MAGIC_qr, NULL, 0);
+			    pattern = newRV_noinc(pattern);
+			}
+		    }
+
+		    if (rx == NULL)
+			croak("not a regexp");
+
+		    av = newAV();
+		    av_push(av, pattern);
+		    av_push(av, func);
+		    sv = newRV_noinc((SV *)av);
+		    linebreak_add_prep(lbobj, prep_func, (void *)sv);
+		} else if (SvOK(val)) {
+		    char *s = SvPV_nolen(val);
+
+		    if (strcasecmp(s, "BREAKURI") == 0)
+			linebreak_add_prep(lbobj, linebreak_prep_URIBREAK, val);
+		    else if (strcasecmp(s, "NONBREAKURI") == 0)
+			linebreak_add_prep(lbobj, linebreak_prep_URIBREAK,
+					   NULL);
+		    else
+			croak("Unknown preprocess option: %s", s);
+		} else
+		    linebreak_add_prep(lbobj, NULL, NULL);
 	    } else if (strcmp(key, "Format") == 0) {
 		if (sv_derived_from(val, "CODE"))
 		    linebreak_set_format(lbobj, format_func, (void *)val);

@@ -25,7 +25,7 @@ use Unicode::GCString;
 ### Globals
 
 ### The package version
-our $VERSION = '2011.01';
+our $VERSION = '2011.002_11';
 
 ### Public Configuration Attributes
 our $Config = {
@@ -39,11 +39,11 @@ our $Config = {
     HangulAsAL => 'NO',
     LegacyCM => 'YES',
     Newline => "\n",
+    Prep => undef,
     SizingMethod => 'UAX11',
     TailorEA => [],
     TailorLB => [],
     UrgentBreaking => undef,
-    UserBreaking => [],
 };
 eval { require Unicode::LineBreak::Defaults; };
 
@@ -91,40 +91,6 @@ my $EASTASIAN_LANGUAGES = qr{
     ^ZH\b | ^CHI
 }ix;
 
-# Built-in custom breaking behaviors specified by C<UserBreaking>.
-my $URIre = qr{
-	       \b
-	       (?:url:)?
-	       (?:[a-z][-0-9a-z+.]+://|news:|mailto:)
-	       [\x21-\x7E]+
-}iox;
-my %USER_BREAKING_FUNCS = (
-    'NONBREAKURI' => [ $URIre, sub { ($_[1]) } ],
-    # Breaking URIs according to CMOS:
-    # 17.11 1-1: [/] ÷ [^/]
-    # 17.11 2:   [-] ×
-    # 6.17 2:   [.] ×
-    # 17.11 1-2: ÷ [-~.,_?#%]
-    # 17.11 1-3: ÷ [=&]
-    # 17.11 1-3: [=&] ÷
-    # Default:  ALL × ALL
-    'BREAKURI' => [ $URIre,
-		    sub {
-			my @c = split m{
-			    (?<=^url:) |
-			    (?<=[/]) (?=[^/]) |
-			    (?<=[^-.]) (?=[-~.,_?\#%=&]) |
-			    (?<=[=&]) (?=.)
-			}iox, $_[1];
-			# Won't break punctuations at end of matches.
-			while (2 <= scalar @c and $c[$#c] =~ /^[\".:;,>]+$/) {
-			    my $c = pop @c;
-			    $c[$#c] .= $c;
-			}
-			@c;
-		    }],
-);
-
 use overload
     '%{}' => \&as_hashref,
     '${}' => \&as_scalarref,
@@ -144,7 +110,7 @@ sub config ($@) {
     my $self = shift;
     my @nopts = qw(BreakIndent CharactersMax ColumnsMin ColumnsMax Context
 		   HangulAsAL LegacyCM Newline);
-    my @uopts = qw(Format SizingMethod
+    my @uopts = qw(Prep Format SizingMethod
 		   TailorEA TailorLB UrgentBreaking UserBreaking);
     my %nopts = map { (uc $_ => $_); } @nopts;
     my %uopts = map { (uc $_ => $_); } @uopts;
@@ -160,49 +126,54 @@ sub config ($@) {
     }
 
     # Set config.
-    my %params = @_;
+    my @params = @_;
     my %copts = ();
-    my %config = ();
+    my @config = ();
     my $k;
-    foreach $k (keys %params) {
-	my $v = $params{$k};
+    while (0 < scalar @params) {
+	my $k = shift @params;
+	my $v = shift @params;
 	if ($uopts{uc $k}) {
-	    $self->{$uopts{uc $k}} = $v;
-	    $copts{$uopts{uc $k}} = $v;
+	    if (uc $k eq uc 'Prep') {
+		$self->{$uopts{uc $k}} ||= [];
+		push @{$self->{$uopts{uc $k}}}, $v;
+		$copts{$uopts{uc $k}} = $self->{$uopts{uc $k}};
+	    } else {
+		$self->{$uopts{uc $k}} = $v;
+		$copts{$uopts{uc $k}} = $v;
+	    }
 	} else {
-	    $config{$nopts{uc $k} || $k} = $v;
+	    push @config, ($nopts{uc $k} || $k) => $v;
 	}
     }
 
     ## Utility options.
+    # Preprocessing
+    if (defined $copts{Prep}) {
+	foreach my $v (@{$copts{Prep}}) {
+	    push @config, 'Prep' => $v;
+	}
+    }
     # Format method.
     if (defined $copts{Format}) {
-	$config{Format} = $copts{Format};
+	push @config, 'Format' => $copts{Format};
     }
     # Sizing method
     if (defined $copts{SizingMethod}) {
-	$config{SizingMethod} = $copts{SizingMethod};
+	push @config, 'SizingMethod' => $copts{SizingMethod};
     }
     # Urgent break
     if (defined $copts{UrgentBreaking}) {
-	$config{UrgentBreaking} = $copts{UrgentBreaking};
+	push @config, 'UrgentBreaking' => $copts{UrgentBreaking};
     }
-    # Custom break
+
+    # deprecated option
     if (defined $copts{UserBreaking}) {
-	$copts{UserBreaking} = [$copts{UserBreaking}]
-	    unless ref $copts{UserBreaking} eq 'ARRAY';
-	my @cf = ();
-	foreach my $ub (@{$self->{UserBreaking}}) {
-	    next unless defined $ub;
-	    unless (ref $ub eq 'ARRAY') {
-		$ub = $USER_BREAKING_FUNCS{uc $ub};
-		next unless defined $ub;
-	    }
-	    my ($re, $func) = @{$ub};
-	    push @cf, [qr{$re}o, $func];
-	}
-	$config{UserBreaking} = \@cf;
+        foreach my $v (@{$copts{UserBreaking}}) {
+            push @config, 'Prep' => $v;
+        }
     }
+
     # Character classes
     if (defined $copts{TailorLB} or defined $copts{TailorEA}) {
 	$copts{TailorLB} ||= $self->{TailorLB};
@@ -255,10 +226,10 @@ sub config ($@) {
 	if (defined $beg and defined $end) {
 	    push @map, [$beg, $end, @{$p}];
 	}
-	$config{_map} = \@map;
+	push @config, '_map' => \@map;
     }
 
-    $self->_config((%config)) if scalar keys %config;
+    $self->_config(@config) if scalar @config;
 }
 
 sub context (@) {
@@ -287,60 +258,6 @@ sub context (@) {
 	$context = 'NONEASTASIAN';
     }
     $context;
-}
-
-sub preprocess ($$$) {
-    my $self = shift;
-    my $user_funcs = shift;
-    my $str = shift;
-
-    unless (defined $str and length $str) {
-	$str = '';
-    }
-
-    my @ret = ();
-    while (length $str) {
-	my $func;
-	my ($s, $match, $post) = ($str, '', '');
-	foreach my $ub (@{$user_funcs}) {
-	    my ($re, $fn) = @{$ub};
-	    if ($str =~ /$re/) {
-		if (length $& and length $` < length $s) { #`
-		    ($s, $match, $post) = ($`, $&, $'); #'`
-		    $func = $fn;
-		}
-	    }
-	}
-	if (length $match) {
-	    $str = $post;
-	} else {
-	    $s = $str;
-	    $str = '';
-	}
-
-	push @ret, $s if length $s;
-
-	# Break matched fragment.
-	if (length $match) {
-	    my $first = 1;
-	    foreach my $s (&{$func}($self, $match)) {
-		$s = Unicode::GCString->new($s, $self);
-		my $length = $s->length;
-		if ($length) {
-		    if (!$first) {
-			$s->flag(0, BREAK_BEFORE);
-		    }
-		    for (my $i = 1; $i < $length; $i++) {
-			$s->flag($i, PROHIBIT_BEFORE);
-		    }
-		    push @ret, $s;
-		}
-		$first = 0;
-	    }
-	}
-    }
-
-    @ret;
 }
 
 1;

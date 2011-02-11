@@ -131,7 +131,7 @@ OFFSET を指定しないと、次の位置の書記素クラスタのフラグ�
 
 =over 4
 
-=item Unicode::LineBreak::BREAK_BEFORE
+=item Unicode::LineBreak::ALLOW_BEFORE
 
 この書記素クラスタの直前で行分割を許す。
 

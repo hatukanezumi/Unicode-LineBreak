@@ -222,6 +222,33 @@ Unicode 5.0 版からは、空白文字のこのような使いかたは推奨�
 改行の文字列とする Unicode 文字列。
 初期値は C<"\n">。
 
+=item Prep => METHOD, Prep => METHOD, ...
+
+ユーザ定義の行分割動作を追加する。
+METHOD には以下のものを指定できる。
+
+=over 4
+
+=item C<"NONBREAKURI">
+
+URI を分割しない。
+
+=item C<"BREAKURI">
+
+URI を、印刷物に適した規則で分割する。
+詳しくは [CMOS] の 6.17 節と 17.11 節を参照。
+
+=item C<[> REGEX, SUBREF C<]>
+
+正規表現 REGEX にマッチする文字列を、SUBREF で参照されるサブルーチンで分割する。
+詳細は L</ユーザ定義の行分割動作> を参照。
+
+=item C<undef>
+
+それまでに追加した動作をすべて取り消す。
+
+=back
+
 =item SizingMethod => METHOD
 
 文字列の長さを算出する方法を指定する。
@@ -292,26 +319,7 @@ L</ユーザ定義の行分割動作> を参照。
 
 =item UserBreaking => C<[>METHOD, ...C<]>
 
-ユーザ定義の行分割動作を指定する。
-METHOD には以下のものを指定できる。
-
-=over 4
-
-=item C<"NONBREAKURI">
-
-URI を分割しない。
-
-=item C<"BREAKURI">
-
-URI を、印刷物に適した規則で分割する。
-詳しくは [CMOS] の 6.17 節と 17.11 節を参照。
-
-=item C<[> REGEX, SUBREF C<]>
-
-正規表現 REGEX にマッチする文字列を、SUBREF で参照されるサブルーチンで分割する。
-詳細は L</ユーザ定義の行分割動作> を参照。
-
-=back
+L</Prep> の旧式な形式。
 
 =back
 
@@ -412,7 +420,7 @@ L<Unicode::GCString::JA_JP> 参照。
     my $lb = Unicode::LineBreak->new(UrgentBreaking => \&hyphenize);
     $output = $lb->break("Methionylthreonylthreonylglutaminylarginyl...");
 
-L</UserBreaking> オプションの要素に [REGEX, SUBREF] の配列参照を指定する場合、サブルーチンは 2 つの引数を取らなければならない。
+L</Prep> オプションに [REGEX, SUBREF] の配列参照を指定する場合、サブルーチンは 2 つの引数を取らなければならない。
 
     分割後 = &サブルーチン(SELF, STR);
 
@@ -430,7 +438,7 @@ SELF は Unicode::LineBreak オブジェクト、STR は REGEX にマッチす�
                        (?<=[^-.]) (?=[-~.,_?\#%=&]) |
         	       (?<=[=&]) (?=.)}x, $str;
     }
-    my $lb = Unicode::LineBreak->new(UserBreaking => [$url, \&breakurl]);
+    my $lb = Unicode::LineBreak->new(Prep => [$url, \&breakurl]);
     $output = $lb->break($string);
 
 =head2 文字列長の算出

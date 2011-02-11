@@ -3,9 +3,11 @@
 package Unicode::LineBreak;
 
 use constant { M => 4, D => 3, I => 2, P => 1,};
-use constant { MANDATORY => M, DIRECT => D, INDIRECT => I, PROHIBITED => P, URGENT => 200,};
+use constant { MANDATORY => M, DIRECT => D, INDIRECT => I, PROHIBITED => P,
+	       URGENT => 200,};
 
-use constant { BREAK_BEFORE => 2, PROHIBIT_BEFORE => 1,
+use constant { ALLOW_BEFORE => 2, PROHIBIT_BEFORE => 1,
+	       BREAK_BEFORE => 2, # deprecated.
 	       FLAGS => (2 | 1) };
 
 use constant {

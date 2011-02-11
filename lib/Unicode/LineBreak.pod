@@ -241,6 +241,34 @@ Default is C<"YES">.
 Unicode string to be used for newline sequence.
 Default is C<"\n">.
 
+=item Prep => METHOD, Prep => METHOD, ...
+
+Add user-defined line breaking behavior(s).
+Following methods are available.
+
+=over 4
+
+=item C<"NONBREAKURI">
+
+Won't break URIs.
+
+=item C<"BREAKURI">
+
+Break URIs according to a rule suitable for printed materials.
+For more details see [CMOS], sections 6.17 and 17.11.
+
+=item C<[> REGEX, SUBREF C<]>
+
+The sequences matching regular expression REGEX will be broken by
+subroutine referred by SUBREF.
+For more details see L</User-Defined Breaking Behaviors>.
+
+=item C<undef>
+
+Cancel all methods assigned before.
+
+=back
+
 =item SizingMethod => METHOD
 
 Specify method to calculate size of string.
@@ -312,27 +340,7 @@ See L</User-Defined Breaking Behaviors>.
 
 =item UserBreaking => C<[>METHOD, ...C<]>
 
-Specify user-defined line breaking behavior(s).
-Following methods are available.
-
-=over 4
-
-=item C<"NONBREAKURI">
-
-Won't break URIs.
-
-=item C<"BREAKURI">
-
-Break URIs according to a rule suitable for printed materials.
-For more details see [CMOS], sections 6.17 and 17.11.
-
-=item C<[> REGEX, SUBREF C<]>
-
-The sequences matching regular expression REGEX will be broken by
-subroutine referred by SUBREF.
-For more details see L</User-Defined Breaking Behaviors>.
-
-=back
+Obsoleted equivalent of L</Prep>.
 
 =back
 
@@ -446,8 +454,7 @@ For example, following code inserts hyphen to the name of several chemical subst
     my $lb = Unicode::LineBreak->new(UrgentBreaking => \&hyphenize);
     $output = $lb->break("Methionylthreonylthreonylglutaminylarginyl...");
 
-If you specify [REGEX, SUBREF] array reference as an item of
-L</UserBreaking> option,
+If you specify [REGEX, SUBREF] array reference as any of L</Prep> option,
 subroutine should accept two arguments:
 
     BROKEN = &subroutine(SELF, STR);
@@ -467,7 +474,7 @@ For example, following code will break HTTP URLs using [CMOS] rule.
                        (?<=[^-.]) (?=[-~.,_?\#%=&]) |
                        (?<=[=&]) (?=.)}x, $str;
     }
-    my $lb = Unicode::LineBreak->new(UserBreaking => [$url, \&breakurl]);
+    my $lb = Unicode::LineBreak->new(Prep => [$url, \&breakurl]);
     $output = $lb->break($string);
 
 =head2 Calculating String Size
@@ -557,8 +564,8 @@ neither hiragana nor katakana.
 U+303C MASU MARK.
 
 N.B. Although this character is not kana, it is usually regarded as
-abbreviation to sequence of hiragana C<"ます"> or katakana C<"マス">,
-MA and SU.
+abbreviation to sequence of hiragana E<0x307E> E<0x3059> or
+katakana E<0x30DE> E<0x30B9>, MA and SU.
 
 N.B. This character is classified as nonstarter (NS) by [UAX #14]
 and as Class 13 (corresponding to ID) by [JIS X 4051].

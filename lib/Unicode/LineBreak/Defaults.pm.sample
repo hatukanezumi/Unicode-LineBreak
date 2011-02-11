@@ -37,6 +37,8 @@ Following settings are available.
 
 =item Newline
 
+=item Prep
+
 =item SizingMethod
 
 =item TailorEA
@@ -44,8 +46,6 @@ Following settings are available.
 =item TailorLB
 
 =item UrgentBreaking
-
-=item UserBreaking
 
 =back
 
@@ -70,6 +70,7 @@ L<Unicode::LineBreak>
 # $Config->{HangulAsAL} = 'NO';
 # $Config->{LegacyCM} = 'YES';
 # $Config->{Newline} = "\n";
+# $Config->{Prep} = undef;
 # $Config->{SizingMethod} = 'UAX11';
 # $config->{TailorEA} = [];
 # $config->{TailorLB} = [];

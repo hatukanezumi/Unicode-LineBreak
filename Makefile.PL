@@ -5,7 +5,7 @@ package MY;
 use ExtUtils::MakeMaker;
 
 my $csubdir = 'sombok';
-my $sombok_atleast_version = '2011.0';
+my $sombok_atleast_version = '2011.1';
 my $pkg_config = $ENV{'PKG_CONFIG'} || 'pkg-config';
 my @args = ();
 my $enable_libthai = 'yes';
@@ -93,6 +93,7 @@ if ($bundled_sombok eq 'yes') {
 }
 
 WriteMakefile(
+	'NO_META'	=> 1,
 	'NAME'		=> 'Unicode::LineBreak',
 	'ABSTRACT_FROM'	=> 'lib/Unicode/LineBreak.pod',
 	'VERSION_FROM'	=> 'lib/Unicode/LineBreak.pm',

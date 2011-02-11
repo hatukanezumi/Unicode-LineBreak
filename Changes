@@ -1,3 +1,8 @@
+2011.002_11  Fri Feb 11 2011
+	* Imp: regex matching are moved to XS.
+	* Chg: instead of UserBreaking option, use Prep option.
+	* Requires Sombok >= 2011.1RC.
+
 2011.01  Thu Jan 20 2011
 	* New major release.
 	* Requires Sombok >= 2011.0.
