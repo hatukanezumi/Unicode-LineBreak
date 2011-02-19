@@ -11,12 +11,15 @@ $Unicode::LineBreak::Config = {
     HangulAsAL => 'NO',
     LegacyCM => "YES",
     Newline => "\n",
+    #Prep => undef,
     SizingMethod => "UAX11",
     TailorEA => [],
     TailorLB => [],
-    UrgentBreaking => undef,
+    #UrgentBreaking => undef,
     UserBreaking => [],
 };
+delete $Unicode::LineBreak::Config->{Prep};
+delete $Unicode::LineBreak::Config->{UrgentBreaking};
 
 sub dotest {
     my $in = shift;

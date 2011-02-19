@@ -25,7 +25,7 @@ use Unicode::GCString;
 ### Globals
 
 ### The package version
-our $VERSION = '2011.002_11';
+our $VERSION = '2011.002_19';
 
 ### Public Configuration Attributes
 our $Config = {
@@ -39,11 +39,11 @@ our $Config = {
     HangulAsAL => 'NO',
     LegacyCM => 'YES',
     Newline => "\n",
-    Prep => undef,
+    #Prep => undef,
     SizingMethod => 'UAX11',
     TailorEA => [],
     TailorLB => [],
-    UrgentBreaking => undef,
+    #UrgentBreaking => undef,
 };
 eval { require Unicode::LineBreak::Defaults; };
 
@@ -108,81 +108,51 @@ sub new {
 
 sub config ($@) {
     my $self = shift;
-    my @nopts = qw(BreakIndent CharactersMax ColumnsMin ColumnsMax Context
-		   HangulAsAL LegacyCM Newline);
-    my @uopts = qw(Prep Format SizingMethod
-		   TailorEA TailorLB UrgentBreaking UserBreaking);
-    my %nopts = map { (uc $_ => $_); } @nopts;
-    my %uopts = map { (uc $_ => $_); } @uopts;
 
     # Get config.
     if (scalar @_ == 1) {
 	my $k = shift;
-	if ($uopts{uc $k}) {
-	    return $self->{$uopts{uc $k}};
+	if (uc $k eq uc 'UserBreaking') {
+	    return $self->_config('Prep');
+	} elsif (uc $k eq uc 'TailorEA') {
+	    return $self->{'TailorEA'};
+	} elsif (uc $k eq uc 'TailorLB') {
+	    return $self->{'TailorLB'};
 	} else {
-	    return $self->_config($nopts{uc $k} || $k);
+	    return $self->_config($k);
 	}
     }
 
     # Set config.
-    my @params = @_;
-    my %copts = ();
     my @config = ();
-    my $k;
-    while (0 < scalar @params) {
-	my $k = shift @params;
-	my $v = shift @params;
-	if ($uopts{uc $k}) {
-	    if (uc $k eq uc 'Prep') {
-		$self->{$uopts{uc $k}} ||= [];
-		push @{$self->{$uopts{uc $k}}}, $v;
-		$copts{$uopts{uc $k}} = $self->{$uopts{uc $k}};
+    while (0 < scalar @_) {
+	my $k = shift;
+	my $v = shift;
+	if (uc $k eq uc 'UserBreaking') {
+	    push @config, 'Prep' => undef;
+	    if (! defined $v) {
+		;
+	    } elsif (ref $v eq 'ARRAY') {
+		push @config, map { ('Prep' => $_) } @{$v};
 	    } else {
-		$self->{$uopts{uc $k}} = $v;
-		$copts{$uopts{uc $k}} = $v;
+		push @config, 'Prep' => $v;
 	    }
+	} elsif (uc $k eq uc 'TailorLB') {
+	    $self->{'TailorLB'} = $v;
+	} elsif (uc $k eq uc 'TailorEA') {
+	    $self->{'TailorEA'} = $v;
 	} else {
-	    push @config, ($nopts{uc $k} || $k) => $v;
+	    push @config, $k => $v;
 	}
-    }
-
-    ## Utility options.
-    # Preprocessing
-    if (defined $copts{Prep}) {
-	foreach my $v (@{$copts{Prep}}) {
-	    push @config, 'Prep' => $v;
-	}
-    }
-    # Format method.
-    if (defined $copts{Format}) {
-	push @config, 'Format' => $copts{Format};
-    }
-    # Sizing method
-    if (defined $copts{SizingMethod}) {
-	push @config, 'SizingMethod' => $copts{SizingMethod};
-    }
-    # Urgent break
-    if (defined $copts{UrgentBreaking}) {
-	push @config, 'UrgentBreaking' => $copts{UrgentBreaking};
-    }
-
-    # deprecated option
-    if (defined $copts{UserBreaking}) {
-        foreach my $v (@{$copts{UserBreaking}}) {
-            push @config, 'Prep' => $v;
-        }
     }
 
     # Character classes
-    if (defined $copts{TailorLB} or defined $copts{TailorEA}) {
-	$copts{TailorLB} ||= $self->{TailorLB};
-	$copts{TailorEA} ||= $self->{TailorEA};
+    if (defined $self->{TailorLB} or defined $self->{TailorEA}) {
 	my %map = ();
 	foreach my $o (qw{TailorLB TailorEA}) {
-	    $copts{$o} = [@{$Config->{$o}}]
-		unless defined $copts{$o} and ref $copts{$o} eq 'ARRAY';
-	    my @v = @{$copts{$o}};
+	    $self->{$o} = [@{$Config->{$o}}]
+		unless defined $self->{$o} and ref $self->{$o} eq 'ARRAY';
+	    my @v = @{$self->{$o}};
 	    while (scalar @v) {
 		my $k = shift @v;
 		my $v = shift @v;

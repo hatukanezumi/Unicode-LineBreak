@@ -1,3 +1,8 @@
+2011.002_19  Sat Feb 19 2011
+	* Update ppport.h to 3.19.
+	* Most of config() codes are moved to XS.
+	* Cleanup handling of REGEXP in XS.
+
 2011.002_11  Fri Feb 11 2011
 	* Imp: regex matching are moved to XS.
 	* Chg: instead of UserBreaking option, use Prep option.

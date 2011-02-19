@@ -2,9 +2,9 @@ use strict;
 use Test::More;
 require "t/lb.pl";
 
-BEGIN { plan tests => 8 }
+BEGIN { plan tests => 10 }
 
-foreach my $lang (qw(ar el fr ja ja-a ko ru zh)) {
+foreach my $lang (qw(ar el fr ja ja-a ko ru vi vi-decomp zh)) {
     dotest($lang, $lang);
 }    
 

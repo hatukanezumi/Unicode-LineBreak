@@ -13,6 +13,9 @@
 #include "EXTERN.h"
 #include "perl.h"
 #include "XSUB.h"
+#define NEED_sv_2pv_flags
+#define NEED_newRV_noinc_GLOBAL
+#define NEED_sv_2pv_nolen
 #include "ppport.h"
 #include "sombok.h"
 
@@ -35,6 +38,8 @@ mapent_t *_loadmap(mapent_t *propmap, SV *mapref, size_t *mapsiz)
     if (propmap)
 	free(propmap);
     map = (AV *)SvRV(mapref);
+    if (SvTYPE(map) != SVt_PVAV)
+	croak("_loadmap: mapref argument must be arrayref");
     *mapsiz = av_len(map) + 1;
     if (*mapsiz <= 0) {
 	*mapsiz = 0;
@@ -46,6 +51,8 @@ mapent_t *_loadmap(mapent_t *propmap, SV *mapref, size_t *mapsiz)
     } else {
 	for (n = 0; n < *mapsiz; n++) {
 	    ent = (AV *)SvRV(*av_fetch(map, n, 0));
+	    if (SvTYPE(ent) != SVt_PVAV)
+		croak("_loadmap: entry must be arrayref");
 	    propmap[n].beg = SvUV(*av_fetch(ent, 0, 0));
 	    propmap[n].end = SvUV(*av_fetch(ent, 1, 0));
 	    if ((pp = av_fetch(ent, 2, 0)) == NULL || (p = SvIV(*pp)) < 0)
@@ -169,15 +176,15 @@ SV *unistrtoSV(unistr_t *unistr, size_t uniidx, size_t unilen)
 static
 SV *CtoPerl(char *klass, void *obj)
 {
-    SV *ref, *rv;
+    SV *sv, *rv;
 
-    ref = newSViv(0);
-    rv = newSVrv(ref, klass);
+    sv = newSViv(0);
+    rv = newSVrv(sv, klass);
     sv_setiv(rv, (IV)obj);
 #if 0
     SvREADONLY_on(rv); /* FIXME:Can't bless derived class */
 #endif /* 0 */
-    return ref;
+    return sv;
 }
 
 /*
@@ -254,6 +261,7 @@ void do_pregexec_once(REGEXP *rx, unistr_t *str)
     char *str_arg, *str_beg, *str_end;
 
     screamer = sv_2mortal(unistrtoSV(str, 0, str->len));
+    SvREADONLY_on(screamer);
     str_beg = str_arg = SvPVX(screamer);
     str_end = SvEND(screamer);
 
@@ -262,15 +270,16 @@ void do_pregexec_once(REGEXP *rx, unistr_t *str)
 #if PERL_VERSION >= 11
 	offs_beg = ((regexp *)SvANY(rx))->offs[0].start;
 	offs_end = ((regexp *)SvANY(rx))->offs[0].end;
-#elif ((PERL_VERSION >= 10) || (PERL_VERSION == 9 && PERL_SUBVERSION >= 5))
+#elif ((PERL_VERSION == 10) || (PERL_VERSION == 9 && PERL_SUBVERSION >= 5))
 	offs_beg = rx->offs[0].start;
 	offs_end = rx->offs[0].end;
 #else /* PERL_VERSION */
 	offs_beg = rx->startp[0];
 	offs_end = rx->endp[0];
 #endif
-	str->str += utf8_length(str_beg, str_beg + offs_beg);	
-	str->len = utf8_length(str_beg + offs_beg, str_beg + offs_end);
+	str->str += utf8_length((U8 *)str_beg, (U8 *)(str_beg + offs_beg));	
+	str->len = utf8_length((U8 *)(str_beg + offs_beg),
+			       (U8 *)(str_beg + offs_end));
     } else
 	str->str = NULL;
 }
@@ -311,12 +320,23 @@ gcstring_t *prep_func(linebreak_t *lbobj, void *dataref, unistr_t *str,
 
     /* Pass I */
 
-    if ((pp = av_fetch(data, 0, 0)) == NULL ||
-	! SvROK(*pp) || ! SvMAGICAL(sv = SvRV(*pp)) ||
-	(rx = (REGEXP *)(mg_find(sv, PERL_MAGIC_qr))->mg_obj) == NULL)
-	return (lbobj->errnum = EINVAL), NULL;
-
     if (text != NULL) {
+	if ((pp = av_fetch(data, 0, 0)) == NULL)
+	    return (lbobj->errnum = EINVAL), NULL;
+
+#if ((PERL_VERSION >= 10) || (PERL_VERSION >= 9 && PERL_SUBVERSION >= 5))
+	if (SvRXOK(*pp))
+	    rx = SvRX(*pp);
+#else /* PERL_VERSION */
+	if (SvROK(*pp) && SvMAGICAL(sv = SvRV(*pp))) {
+	    MAGIC *mg;
+	    if ((mg = mg_find(sv, PERL_MAGIC_qr)) != NULL)
+		rx = (REGEXP *)mg->mg_obj;
+	}
+#endif /* PERL_VERSION */
+	if (rx == NULL)
+	    return (lbobj->errnum = EINVAL), NULL;
+
 	do_pregexec_once(rx, str);
 	return NULL;
     }
@@ -593,6 +613,7 @@ _config(self, ...)
 	linebreak_t *lbobj;
 	size_t i;
 	char *key;
+	void *func;
 	SV *val;
 	size_t mapsiz;
 	char *opt;
@@ -624,6 +645,23 @@ _config(self, ...)
 		    RETVAL = newSVpvn("EASTASIAN", 9);
 		else
 		    RETVAL = newSVpvn("NONEASTASIAN", 12);
+	    } else if (strcasecmp(key, "Format") == 0) {
+		func = lbobj->format_func;
+		if (func == NULL)
+		    XSRETURN_UNDEF;
+		else if (func == linebreak_format_NEWLINE)
+		    RETVAL = newSVpvn("NEWLINE", 7);
+		else if (func == linebreak_format_SIMPLE)
+		    RETVAL = newSVpvn("SIMPLE", 6);
+		else if (func == linebreak_format_TRIM)
+		    RETVAL = newSVpvn("TRIM", 4);
+		else if (func == format_func) {
+		    if ((val = (SV *)lbobj->format_data) == NULL)
+			XSRETURN_UNDEF;
+		    ST(0) = val; /* should not be mortal. */
+		    XSRETURN(1);
+		} else
+		    croak("config: internal error");
 	    } else if (strcasecmp(key, "HangulAsAL") == 0)
 		RETVAL = newSVuv(lbobj->options &
 				 LINEBREAK_OPTION_HANGUL_AS_AL);
@@ -635,6 +673,55 @@ _config(self, ...)
 		    RETVAL = unistrtoSV(&unistr, 0, 0);
 		else
 		    RETVAL = unistrtoSV(&unistr, 0, lbobj->newline.len);
+	    } else if (strcasecmp(key, "Prep") == 0) {
+		AV *av;
+		if (lbobj->prep_func == NULL || lbobj->prep_func[0] == NULL)
+		    XSRETURN_UNDEF;
+		av = newAV();
+		for (i = 0; (func = lbobj->prep_func[i]) != NULL; i++)
+		    if (func == linebreak_prep_URIBREAK) {
+			if (lbobj->prep_data == NULL ||
+			    lbobj->prep_data[i] == NULL)
+			    av_push(av, newSVpvn("NONBREAKURI", 11));
+			else
+			    av_push(av, newSVpvn("BREAKURI", 8));
+		    } else if (func == prep_func) {
+			if (lbobj->prep_data == NULL ||
+			    lbobj->prep_data[i] == NULL)
+			    croak("_config: internal error");
+			SvREFCNT_inc(lbobj->prep_data[i]); /* avoid freed */
+			av_push(av, lbobj->prep_data[i]);
+		    } else
+			croak("_config: internal error");
+		RETVAL = newRV_noinc((SV *)av);
+	    } else if (strcasecmp(key, "SizingMethod") == 0) {
+		func = lbobj->sizing_func;
+		if (func == NULL)
+		    XSRETURN_UNDEF;
+		else if (func == linebreak_sizing_UAX11)
+		    RETVAL = newSVpvn("UAX11", 5);
+		else if (func == sizing_func) {
+		    if ((val = (SV *)lbobj->sizing_data) == NULL)
+			XSRETURN_UNDEF;
+		    ST(0) = val; /* should not be mortal. */
+		    XSRETURN(1);
+		} else
+		    croak("config: internal error");
+	    } else if (strcasecmp(key, "UrgentBreaking") == 0) {
+		func = lbobj->urgent_func;
+		if (func == NULL)
+		    XSRETURN_UNDEF;
+		else if (func == linebreak_urgent_ABORT)
+		    RETVAL = newSVpvn("CROAK", 5);
+		else if (func == linebreak_urgent_FORCE)
+		    RETVAL = newSVpvn("FORCE", 5);
+		else if (func == urgent_func) {
+		    if ((val = (SV *)lbobj->urgent_data) == NULL)
+			XSRETURN_UNDEF;
+		    ST(0) = val; /* should not be mortal. */
+		    XSRETURN(1);
+		} else
+		    croak("config: internal error");
 	    } else {
 		warn("_config: Getting unknown option %s", key);
 		XSRETURN_UNDEF;
@@ -647,22 +734,28 @@ _config(self, ...)
 	    key = (char *)SvPV_nolen(ST(i));
 	    val = ST(i + 1);
 
-	    if (strcmp(key, "Prep") == 0) {
+	    if (strcasecmp(key, "Prep") == 0) {
 		SV *sv, *pattern, *func;
 		AV *av;
-		PMOP *pm;
-		REGEXP *rx;
+		REGEXP *rx = NULL;
 
-		if (SvROK(val) && 0 < av_len(av = (AV *)SvRV(val)) + 1) {
+		if (SvROK(val) &&
+		    SvTYPE(av = (AV *)SvRV(val)) == SVt_PVAV &&
+		    0 < av_len(av) + 1) {
 		    pattern = *av_fetch(av, 0, 0);
-		    if (av_fetch(av, 1, 0) == NULL)
-			func = &PL_sv_undef;
-		    else
-			func = *av_fetch(av, 1, 0);
-
-		    if (SvROK(pattern) && SvMAGICAL(sv = SvRV(pattern)))
-			rx = (REGEXP*)((mg_find(sv, PERL_MAGIC_qr))->mg_obj);
-		    else {
+#if ((PERL_VERSION >= 10) || (PERL_VERSION >= 9 && PERL_SUBVERSION >= 5))
+		    if (SvRXOK(pattern))
+			rx = SvRX(pattern);
+#else /* PERL_VERSION */
+		    if (SvROK(pattern) && SvMAGICAL(sv = SvRV(pattern))) {
+			MAGIC *mg;
+			if ((mg = mg_find(sv, PERL_MAGIC_qr)) != NULL)
+			    rx = (REGEXP *)mg->mg_obj;
+		    }
+#endif
+		    if (rx != NULL)
+			SvREFCNT_inc(pattern); /* avoid freed */
+		    else if (SvOK(pattern)) {
 			if (! SvUTF8(pattern)) {
 			    char *s;
 			    size_t len, i;
@@ -670,29 +763,49 @@ _config(self, ...)
 			    len = SvCUR(pattern);
 			    s = SvPV(pattern, len);
 			    for (i = 0; i < len; i++)
-			    if (127 < (unsigned char)s[i])
-				croak("Unicode string must be given.");
+				if (127 < (unsigned char)s[i])
+				    croak("Unicode string must be given.");
 			}
 #if ((PERL_VERSION >= 10) || (PERL_VERSION == 9 && PERL_SUBVERSION >= 5))
 			rx = pregcomp(pattern, 0);
 #else /* PERL_VERSION */
-			New(1, pm, 1, PMOP);
-			rx = pregcomp(SvPVX(pattern), SvEND(pattern), pm);
+			{
+			    PMOP *pm;
+			    New(1, pm, 1, PMOP);
+			    rx = pregcomp(SvPVX(pattern), SvEND(pattern), pm);
+			}
 #endif
 			if (rx != NULL) {
-			    sv_magic(pattern, (SV *)rx, PERL_MAGIC_qr, NULL, 0);
-			    pattern = newRV_noinc(pattern);
+#if PERL_VERSION >= 11
+			    pattern = newRV_noinc((SV *)rx);
+			    sv_bless(pattern, gv_stashpv("Regexp", 0));
+#else /* PERL_VERSION */
+			    sv = newSV(0);
+			    sv_magic(sv, (SV *)rx, PERL_MAGIC_qr, NULL, 0);
+			    pattern = newRV_noinc(sv);
+			    sv_bless(pattern, gv_stashpv("Regexp", 0));
+#endif
 			}
-		    }
+		    } else
+			rx = NULL;
 
 		    if (rx == NULL)
-			croak("not a regexp");
+			croak("not a regex");
+
+		    if (av_fetch(av, 1, 0) == NULL)
+			func = NULL;
+		    else if (SvOK(func = *av_fetch(av, 1, 0)))
+			SvREFCNT_inc(func); /* avoid freed */
+		    else
+			func = NULL;
 
 		    av = newAV();
 		    av_push(av, pattern);
-		    av_push(av, func);
+		    if (func != NULL)
+			av_push(av, func);
 		    sv = newRV_noinc((SV *)av);
 		    linebreak_add_prep(lbobj, prep_func, (void *)sv);
+		    SvREFCNT_dec(sv); /* fixup */
 		} else if (SvOK(val)) {
 		    char *s = SvPV_nolen(val);
 
@@ -705,7 +818,7 @@ _config(self, ...)
 			croak("Unknown preprocess option: %s", s);
 		} else
 		    linebreak_add_prep(lbobj, NULL, NULL);
-	    } else if (strcmp(key, "Format") == 0) {
+	    } else if (strcasecmp(key, "Format") == 0) {
 		if (sv_derived_from(val, "CODE"))
 		    linebreak_set_format(lbobj, format_func, (void *)val);
 		else if (SvOK(val)) {
@@ -729,7 +842,7 @@ _config(self, ...)
 			croak("Unknown Format option: %s", s);
 		} else
 		    linebreak_set_format(lbobj, NULL, NULL);
-	    } else if (strcmp(key, "SizingMethod") == 0) {
+	    } else if (strcasecmp(key, "SizingMethod") == 0) {
 		if (sv_derived_from(val, "CODE"))
 		    linebreak_set_sizing(lbobj, sizing_func, (void *)val);
 		else if (SvOK(val)) {
@@ -747,7 +860,7 @@ _config(self, ...)
 			croak("Unknown SizingMethod option: %s", s);
 		} else
 		    linebreak_set_sizing(lbobj, NULL, NULL);
-	    } else if (strcmp(key, "UrgentBreaking") == 0) {
+	    } else if (strcasecmp(key, "UrgentBreaking") == 0) {
 		if (sv_derived_from(val, "CODE"))
 		    linebreak_set_urgent(lbobj, urgent_func, (void *)val);
 		else if (SvOK(val)) {
@@ -767,7 +880,7 @@ _config(self, ...)
 			croak("Unknown UrgentBreaking option: %s", s);
 		} else
 		    linebreak_set_urgent(lbobj, NULL, NULL);
-	    } else if (strcmp(key, "_map") == 0) {
+	    } else if (strcasecmp(key, "_map") == 0) {
 		if (lbobj->map) {
 		    free(lbobj->map);
 		    lbobj->map = NULL;
