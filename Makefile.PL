@@ -40,7 +40,7 @@ sub postamble {
 \tcd $csubdir && \$(MAKE)
 $csubdir/Makefile: $csubdir/configure
 \tcd $csubdir && \\
-\t./configure --disable-shared --enable-static $args \\
+\tsh ./configure --disable-shared --enable-static $args \\
 \tCC='\$(CC)' CFLAGS='\$(CCFLAGS) \$(OPTIMIZE) \$(CCCDLFLAGS)'
 $csubdir/configure: $csubdir/configure.ac
 \tcd $csubdir && autoreconf
