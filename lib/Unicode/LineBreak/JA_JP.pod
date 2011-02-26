@@ -174,6 +174,19 @@ L</UrgentBreaking> オプションおよび L</ユーザ定義の行分割動作
 現在使える文脈は C<"EASTASIAN"> か C<"NONEASTASIAN">。
 初期の文脈は C<"NONEASTASIAN">。
 
+=item EAWidth => C<[> ORD C<=E<gt>> PROPERTY C<]>
+
+=item EAWidth => C<undef>
+
+個々の文字の East_Asian_Width 特性を手直しする。
+ORD は文字の UCS インデクス値か、それらの配列への参照。
+PROPERTY は East_Asian_Width 特性のいずれか (L</定数> を参照)。
+このオプションは複数回指定できる。
+C<undef> を指定すると、それまでの手直しをすべて取り消す。
+
+初期値では、East_Asian_width 特性の手直しはしない。
+L</文字の特性の手直し> も参照。
+
 =item Format => METHOD
 
 分割した行を整形する方法を指定する。
@@ -211,6 +224,19 @@ L</行の整形> を参照。
 ハングル音節とハングル連結チャモ〔conjoining jamo〕を音素文字的な文字 (AL) と扱う。
 初期値は C<"NO">。
 
+=item LBClass => C<[> ORD C<=E<gt>> CLASS C<]>
+
+=item LBClass => C<undef>
+
+個々の文字の行分割特性 (分類) を手直しする。
+ORD は文字の UCS インデクス値か、それらの配列への参照。
+CLASS は行分割特性のいずれか (L</定数> を参照)。
+このオプションは複数回指定できる。
+C<undef> を指定すると、それまでの手直しをすべて取り消す。
+
+初期値では、行分割特性の手直しはしない。
+L</文字の特性の手直し> も参照。
+
 =item LegacyCM => C<"YES"> | C<"NO">
 
 前に空白文字がついた結合文字を単独の結合文字 (ID) と扱う。
@@ -222,9 +248,10 @@ Unicode 5.0 版からは、空白文字のこのような使いかたは推奨�
 改行の文字列とする Unicode 文字列。
 初期値は C<"\n">。
 
-=item Prep => METHOD, Prep => METHOD, ...
+=item Prep => METHOD
 
 ユーザ定義の行分割動作を追加する。
+このオプションは複数回指定できる。
 METHOD には以下のものを指定できる。
 
 =over 4
@@ -271,25 +298,15 @@ L</文字列長の算出> を参照。
 
 =back
 
-L</TailorEA> オプションも参照。
+L</EAWidth> オプションも参照。
 
-=item TailorEA => C<[> ORD C<=E<gt>> CLASS, ... C<]>
+=item TailorEA => C<[> ORD C<=E<gt>> PROPERTY, ... C<]>
 
-個々の文字の East_Asian_Width 特性を手直しする。
-ORD は文字の UCS インデクス値か、それらの配列への参照。
-CLASS は East_Asian_Width 特性のいずれか (L</定数> を参照)。
-
-初期値では、East_Asian_width 特性の手直しはしない。
-L</文字の特性の手直し> も参照。
+L</EAWidth> の旧式な形式。
 
 =item TailorLB => C<[> ORD C<=E<gt>> CLASS, ... C<]>
 
-個々の文字の行分割特性 (分類) を手直しする。
-ORD は文字の UCS インデクス値か、それらの配列への参照。
-CLASS は行分割特性のいずれか (L</定数> を参照)。
-
-初期値では、行分割特性の手直しはしない。
-L</文字の特性の手直し> も参照。
+L</LBClass> の旧式な形式。
 
 =item UrgentBreaking => METHOD
 
@@ -441,6 +458,10 @@ SELF は Unicode::LineBreak オブジェクト、STR は REGEX にマッチす�
     my $lb = Unicode::LineBreak->new(Prep => [$url, \&breakurl]);
     $output = $lb->break($string);
 
+=head3 状態の保存
+
+XXX.
+
 =head2 文字列長の算出
 
 L</SizingMethod> オプションにサブルーチンへの参照を指定する場合、そのサブルーチンは 5 つの引数を取らなければならない。
@@ -469,20 +490,20 @@ L<Unicode::GCString::JA_JP> 参照。
         $cols += $self->strsize(0, '', '', $spcstr);
         return $cols;
     };
-    my $lb = Unicode::LineBreak->new(TailorLB => [ord("\t") => LB_SP],
+    my $lb = Unicode::LineBreak->new(LBClass => [ord("\t") => LB_SP],
                                      SizingMethod => \&tabbedsizing);
     $output = $lb->break($string);
 
 =head2 文字の特性の手直し
 
-L</TailorLB> オプションおよび L</TailorEA> オプションで個々の文字の行分割特性 (分類) や East_Asian_Width 特性を手直しできる。その際に便利な定数をいくつか定義してある。
+L</LBClass> オプションおよび L</EAWidth> オプションで個々の文字の行分割特性 (分類) や East_Asian_Width 特性を手直しできる。その際に便利な定数をいくつか定義してある。
 
 =head3 行分割特性
 
 =head4 仮名などの行頭禁則文字
 
 初期値では、若干の仮名や仮名に準ずるものを行頭禁則文字 (NS) と扱う。
-以下の対を L<TailorLB> オプションに指定すれば、これらの文字を通常の表語文字的な文字 (ID) と扱える。
+以下の対を L<LBClass> オプションに指定すれば、これらの文字を通常の表語文字的な文字 (ID) と扱える。
 
 =over 4
 
@@ -563,7 +584,7 @@ U+303C ます記号。
 =head3 East_Asian_Width 特性
 
 ラテン、ギリシア、キリルの各用字系では、特定の文字が曖昧 (A) の East_Asian_Width 特性を持っている。このため、こういった文字は C<"EASTASIAN"> 文脈で広い文字と扱われる。
-C<TailorEA =E<gt> [ AMBIGUOUS_>*C<() =E<gt> EA_N ]> と指定することで、そのような文字を常に狭い文字と扱う。
+C<EAWidth =E<gt> [ AMBIGUOUS_>*C<() =E<gt> EA_N ]> と指定することで、そのような文字を常に狭い文字と扱う。
 
 =over 4
 
@@ -581,7 +602,7 @@ C<TailorEA =E<gt> [ AMBIGUOUS_>*C<() =E<gt> EA_N ]> と指定することで、�
 
 =back
 
-いっぽう、東アジアの符号化文字集合に対する多くの実装でたびたび広い文字に描画されてきたにもかかわらず、Unicode 標準では全角 (F) の互換文字を持つがゆえに狭い (Na) 文字とされている文字が若干ある。L<TailorEA> オプションに以下のように指定することで、これらの文字を C<"EASTASIAN"> 文脈で広い文字と扱える。
+いっぽう、東アジアの符号化文字集合に対する多くの実装でたびたび広い文字に描画されてきたにもかかわらず、Unicode 標準では全角 (F) の互換文字を持つがゆえに狭い (Na) 文字とされている文字が若干ある。L<EAWidth> オプションに以下のように指定することで、これらの文字を C<"EASTASIAN"> 文脈で広い文字と扱える。
 
 =over 4
 
@@ -684,6 +705,16 @@ University of Chicago Press, 2003.
 JIS X 4051:2004
 I<日本語文書の組版方法>.
 日本規格協会, 2004.
+
+=begin comment
+
+=item [Kubota]
+
+久保田智広 (2001-2002).
+文字幅問題, I<Unicode (ユニコード) と中日韓 (CJK) エンコーディングとの相互運用の問題>.
+L<http://web.archive.org/web/people.debian.org/~kubota/unicode-symbols-width2.html.ja>.
+
+=cut
 
 =item [UAX #11]
 

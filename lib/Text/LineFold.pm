@@ -48,7 +48,7 @@ use Unicode::LineBreak qw(:all);
 ### Globals
 
 ### The package Version
-our $VERSION = '2011.0';
+our $VERSION = '2011.002_26';
 
 ### Public Configuration Attributes
 our $Config = {
@@ -196,17 +196,17 @@ Default is 8.
 
 =item ColumnsMax
 
+=item EAWidth
+
 =item HangulAsAL
+
+=item LBClass
 
 =item LegacyCM
 
-=item TailorEA
-
-=item TailorLB
+=item Prep
 
 =item UrgentBreaking
-
-=item UserBreaking
 
 See L<Unicode::LineBreak/Options>.
 
@@ -288,8 +288,7 @@ sub config {
     });
 
     ## Classify horizontal tab as line breaking class SP.
-    my @tailor_lb = @{$self->SUPER::config('TailorLB')};
-    $self->SUPER::config(TailorLB => [@tailor_lb, ord("\t") => LB_SP]);
+    $self->SUPER::config(LBClass => [ord("\t") => LB_SP]);
     ## Tab size
     if (defined $self->{TabSize}) {
 	croak "Invalid TabSize option" unless $self->{TabSize} =~ /^\d+$/;
@@ -595,7 +594,7 @@ L<Unicode::LineBreak>, L<Text::Wrap>.
 
 =head1 AUTHOR
 
-Copyright (C) 2009 Hatuka*nezumi - IKEDA Soji <hatuka(at)nezumi.nu>.
+Copyright (C) 2009-2011 Hatuka*nezumi - IKEDA Soji <hatuka(at)nezumi.nu>.
 
 This program is free software; you can redistribute it and/or modify it 
 under the same terms as Perl itself.

@@ -5,7 +5,7 @@ package MY;
 use ExtUtils::MakeMaker;
 
 my $csubdir = 'sombok';
-my $sombok_atleast_version = '2011.1';
+my $sombok_atleast_version = '2011.2';
 my $pkg_config = $ENV{'PKG_CONFIG'} || 'pkg-config';
 my @args = ();
 my $enable_libthai = 'yes';
@@ -40,7 +40,7 @@ sub postamble {
 \tcd $csubdir && \$(MAKE)
 $csubdir/Makefile: $csubdir/configure
 \tcd $csubdir && \\
-\tsh ./configure --disable-shared --enable-static $args \\
+\t\$(SHELL) configure --disable-shared --enable-static $args \\
 \tCC='\$(CC)' CFLAGS='\$(CCFLAGS) \$(OPTIMIZE) \$(CCCDLFLAGS)'
 $csubdir/configure: $csubdir/configure.ac
 \tcd $csubdir && autoreconf

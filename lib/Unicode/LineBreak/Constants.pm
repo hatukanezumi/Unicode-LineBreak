@@ -44,14 +44,21 @@ use constant {
 	@{KANA_SMALL_LETTERS()}, @{MASU_MARK()}, ]
 };
 use constant {
-    LEFT_GUILLEMETS => [
+    BACKWORD_GUILLEMETS => [
 	0x00AB, 0x2039, ],
-    RIGHT_GUILLEMETS => [
+    FORWARD_GUILLEMETS => [
 	0x00BB, 0x203A, ],
-    LEFT_QUOTES => [
+    BACKWORD_QUOTES => [
 	0x2018, 0x201C, ],
-    RIGHT_QUOTES => [
+    FORWARD_QUOTES => [
 	0x2019, 0x201D, ],
+};
+# obsoleted names.
+use constant {
+    LEFT_GUILLEMETS => BACKWORD_GUILLEMETS(),
+    RIGHT_GUILLEMETS => FORWARD_GUILLEMETS(),
+    LEFT_QUOTES => BACKWORD_QUOTES(),
+    RIGHT_QUOTES => FORWARD_QUOTES(),
 };
 
 1;

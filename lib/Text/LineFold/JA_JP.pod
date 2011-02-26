@@ -78,17 +78,17 @@ fold()/unfold() の結果を符号化するキャラクタセット。
 
 =item ColumnsMax
 
+=item EAWidth
+
 =item HangulAsAL
+
+=item LBClass
 
 =item LegacyCM
 
-=item TailorEA
-
-=item TailorLB
+=item Prep
 
 =item UrgentBreaking
-
-=item UserBreaking
 
 L<Unicode::LineBreak::JA_JP/オプション> を参照。
 
@@ -183,7 +183,7 @@ L<Unicode::LineBreak::JA_JP>, L<Text::Wrap>.
 
 =head1 AUTHOR
 
-Copyright (C) 2009 Hatuka*nezumi - IKEDA Soji <hatuka(at)nezumi.nu>.
+Copyright (C) 2009-2011 Hatuka*nezumi - IKEDA Soji <hatuka(at)nezumi.nu>.
 
 This program is free software; you can redistribute it and/or modify it 
 under the same terms as Perl itself.

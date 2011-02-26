@@ -192,6 +192,20 @@ Specify language/region context.
 Currently available contexts are C<"EASTASIAN"> and C<"NONEASTASIAN">.
 Default context is C<"NONEASTASIAN">.
 
+=item EAWidth => C<[> ORD C<=E<gt>> PROPERTY C<]>
+
+=item EAWidth => C<undef>
+
+Tailor classification of East_Asian_Width property.
+ORD is UCS scalar value of character or array reference of them.
+PROPERTY is one of East_Asian_Width property values N, Na, W, F and H
+(See L</Constants>).
+This option may be specified multiple times.
+If C<undef> is specified, all tailoring assigned before will be canceled.
+
+By default, no tailorings are available.
+See also L</Tailoring Character Properties>.
+
 =item Format => METHOD
 
 Specify the method to format broken lines.
@@ -229,6 +243,19 @@ See L</Formatting Lines>.
 Treat hangul syllables and conjoining jamos as alphabetic characters (AL).
 Default is C<"NO">.
 
+=item LBClass => C<[> ORD C<=E<gt>> CLASS C<]>
+
+=item LBClass => undef
+
+Tailor classification of line breaking property.
+ORD is UCS scalar value of character or array reference of them.
+CLASS is one of line breaking classes (See L</Constants>).
+This option may be specified multiple times.
+If C<undef> is specified, all tailoring assigned before will be canceled.
+
+By default, no tailorings are available.
+See also L</Tailoring Character Properties>.
+
 =item LegacyCM => C<"YES"> | C<"NO">
 
 Treat combining characters lead by a SPACE as an isolated combining character
@@ -241,9 +268,10 @@ Default is C<"YES">.
 Unicode string to be used for newline sequence.
 Default is C<"\n">.
 
-=item Prep => METHOD, Prep => METHOD, ...
+=item Prep => METHOD
 
 Add user-defined line breaking behavior(s).
+This option may be specified multiple times.
 Following methods are available.
 
 =over 4
@@ -291,26 +319,15 @@ See L</Calculating String Size>.
 
 =back
 
-See also L</TailorEA> option.
+See also L</EAWidth> option.
 
-=item TailorEA => C<[> ORD C<=E<gt>> CLASS, ... C<]>
+=item TailorEA => C<[> ORD C<=E<gt>> PROPERTY, ... C<]>
 
-Tailor classification of East_Asian_Width property.
-ORD is UCS scalar value of character or array reference of them.
-CLASS is one of East_Asian_Width property values N, Na, W, F and H
-(See L</Constants>).
-
-By default, no tailorings are available.
-See also L</Tailoring Character Properties>.
+Obsoleted equivalent to L</EAWidth>.
 
 =item TailorLB => C<[> ORD C<=E<gt>> CLASS, ... C<]>
 
-Tailor classification of line breaking property.
-ORD is UCS scalar value of character or array reference of them.
-CLASS is one of line breaking classes (See L</Constants>).
-
-By default, no tailorings are available.
-See also L</Tailoring Character Properties>.
+Obsoleted equivalent to L</LBClass>.
 
 =item UrgentBreaking => METHOD
 
@@ -340,7 +357,7 @@ See L</User-Defined Breaking Behaviors>.
 
 =item UserBreaking => C<[>METHOD, ...C<]>
 
-Obsoleted equivalent of L</Prep>.
+Obsoleted equivalent to L</Prep>.
 
 =back
 
@@ -477,6 +494,10 @@ For example, following code will break HTTP URLs using [CMOS] rule.
     my $lb = Unicode::LineBreak->new(Prep => [$url, \&breakurl]);
     $output = $lb->break($string);
 
+=head3 Preserving State
+
+XXX.
+
 =head2 Calculating String Size
 
 If you specify subroutine reference as a value of L</SizingMethod> option,
@@ -508,13 +529,13 @@ For example, following code processes lines with tab stops by each eight columns
         $cols += $self->strsize(0, '', '', $spcstr);
         return $cols;
     };
-    my $lb = Unicode::LineBreak->new(TailorLB => [ord("\t") => LB_SP],
+    my $lb = Unicode::LineBreak->new(LBClass => [ord("\t") => LB_SP],
                                      SizingMethod => \&tabbedsizing);
     $output = $lb->break($string);
 
 =head2 Tailoring Character Properties
 
-Character properties may be tailored by L</TailorLB> and L</TailorEA>
+Character properties may be tailored by L</LBClass> and L</EAWidth>
 options.  Some constants are defined for convenience of tailoring.
 
 =head3 Line Breaking Properties
@@ -523,7 +544,7 @@ options.  Some constants are defined for convenience of tailoring.
 
 By default, several hiragana, katakana and characters corresponding to kana
 are treated as nonstarters (NS).
-When the following pair(s) are specified for value of L</TailorLB> option,
+When the following pair(s) are specified for value of L</LBClass> option,
 these characters are treated as normal ideographic characters (ID).
 
 =over 4
@@ -614,7 +635,7 @@ closing quotation marks.
 Some particular letters of Latin, Greek and Cyrillic scripts have ambiguous
 (A) East_Asian_Width property.  Thus, these characters are treated as wide
 in C<"EASTASIAN"> context.
-Specifying C<TailorEA =E<gt> [ AMBIGUOUS_>*C<() =E<gt> EA_N ]>,
+Specifying C<EAWidth =E<gt> [ AMBIGUOUS_>*C<() =E<gt> EA_N ]>,
 those characters are always treated as narrow.
 
 =over 4
@@ -635,7 +656,7 @@ as neutral (N).
 =back
 
 On the other hand, despite several characters were occasionally rendered as wide characters by number of implementations for East Asian character sets, they are given narrow (Na) East_Asian_Width property just because they have fullwidth (F) compatibility characters.
-Specifying C<TailorEA> as below, those characters are treated as ambiguous
+Specifying C<EAWidth> as below, those characters are treated as ambiguous
 --- wide on C<"EASTASIAN"> context.
 
 =over 4
@@ -746,6 +767,16 @@ University of Chicago Press, 2003.
 JIS X 4051:2004
 I<日本語文書の組版方法> (I<Formatting Rules for Japanese Documents>).
 Japanese Standards Association, 2004.
+
+=begin comment
+
+=item [Kubota]
+
+Kubota, Tomohiro (2001-2002).
+Width problems, "I<Problems on Interoperativity between Unicode and CJK Local Encodings>".
+L<http://web.archive.org/web/people.debian.org/~kubota/unicode-symbols-width2.html>.
+
+=cut
 
 =item [UAX #11]
 

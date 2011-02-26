@@ -7,17 +7,19 @@ $Unicode::LineBreak::Config = {
     ColumnsMin => 0,
     ColumnsMax => 76,
     Context => 'NONEASTASIAN',
+    #EAWidth => undef,
     Format => 'SIMPLE',
     HangulAsAL => 'NO',
+    #LBClass => undef,
     LegacyCM => "YES",
     Newline => "\n",
     #Prep => undef,
     SizingMethod => "UAX11",
-    TailorEA => [],
-    TailorLB => [],
     #UrgentBreaking => undef,
     UserBreaking => [],
 };
+delete $Unicode::LineBreak::Config->{EAWidth};
+delete $Unicode::LineBreak::Config->{LBClass};
 delete $Unicode::LineBreak::Config->{Prep};
 delete $Unicode::LineBreak::Config->{UrgentBreaking};
 

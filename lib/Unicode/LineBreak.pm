@@ -25,7 +25,7 @@ use Unicode::GCString;
 ### Globals
 
 ### The package version
-our $VERSION = '2011.002_19';
+our $VERSION = '2011.002_26';
 
 ### Public Configuration Attributes
 our $Config = {
@@ -35,14 +35,14 @@ our $Config = {
     ColumnsMax => 76,
     ComplexBreaking => 'YES',
     Context => 'NONEASTASIAN',
+    #EAWidth => undef,
     Format => "SIMPLE",
     HangulAsAL => 'NO',
+    #LBClass => undef,
     LegacyCM => 'YES',
     Newline => "\n",
     #Prep => undef,
     SizingMethod => 'UAX11',
-    TailorEA => [],
-    TailorLB => [],
     #UrgentBreaking => undef,
 };
 eval { require Unicode::LineBreak::Defaults; };
@@ -60,9 +60,10 @@ require XSLoader;
 XSLoader::load('Unicode::LineBreak', $VERSION);
 
 ### Load dynamic constants
-foreach my $prop (qw(EA GB LB SC)) {
+foreach my $p ((['EA', EAWidths()], ['LB', LBClasses()])) {
+    my $prop = shift @{$p};
     my $idx = 0;
-    foreach my $val (_propvals($prop)) {
+    foreach my $val (@{$p}) {
 	no strict;
 	my $const = "${prop}_${val}";
 	*{$const} = eval "sub { $idx }";
@@ -112,12 +113,29 @@ sub config ($@) {
     # Get config.
     if (scalar @_ == 1) {
 	my $k = shift;
+	my $ret;
+
 	if (uc $k eq uc 'UserBreaking') {
-	    return $self->_config('Prep');
+	    $ret = $self->_config('Prep');
+	    if (! defined $ret) {
+		return [];
+	    } else {
+		return $ret;
+	    }
 	} elsif (uc $k eq uc 'TailorEA') {
-	    return $self->{'TailorEA'};
+	    $ret = $self->_config('EAWidth');
+	    if (! defined $ret) {
+		return [];
+	    } else {
+		return [map { ($_->[0] => $_->[1]) } @{$ret}];
+	    }
 	} elsif (uc $k eq uc 'TailorLB') {
-	    return $self->{'TailorLB'};
+	    $ret = $self->_config('LBClass');
+	    if (! defined $ret) {
+		return [];
+	    } else {
+		return [map { ($_->[0] => $_->[1]) } @{$ret}];
+	    }
 	} else {
 	    return $self->_config($k);
 	}
@@ -138,65 +156,32 @@ sub config ($@) {
 		push @config, 'Prep' => $v;
 	    }
 	} elsif (uc $k eq uc 'TailorLB') {
-	    $self->{'TailorLB'} = $v;
+	    push @config, 'LBClass' => undef;
+	    if (! defined $v) {
+		;
+	    } else {
+		my @v = @{$v};
+		while (scalar(@v)) {
+		    my $k = shift @v;
+		    my $v = shift @v;
+		    push @config, 'LBClass' => [ $k => $v ];
+		}
+	    }
 	} elsif (uc $k eq uc 'TailorEA') {
-	    $self->{'TailorEA'} = $v;
+	    push @config, 'EAWidth' => undef;
+	    if (! defined $v) {
+		;
+	    } else {
+		my @v = @{$v};
+		while (scalar(@v)) {
+		    my $k = shift @v;
+		    my $v = shift @v;
+		    push @config, 'EAWidth' => [ $k => $v ];
+		}
+	    }
 	} else {
 	    push @config, $k => $v;
 	}
-    }
-
-    # Character classes
-    if (defined $self->{TailorLB} or defined $self->{TailorEA}) {
-	my %map = ();
-	foreach my $o (qw{TailorLB TailorEA}) {
-	    $self->{$o} = [@{$Config->{$o}}]
-		unless defined $self->{$o} and ref $self->{$o} eq 'ARRAY';
-	    my @v = @{$self->{$o}};
-	    while (scalar @v) {
-		my $k = shift @v;
-		my $v = shift @v;
-		next unless defined $k and defined $v;
-		if (ref $k eq 'ARRAY') {
-		    foreach my $c (@{$k}) {
-			$map{$c} ||= [-1, -1];
-			if ($o eq 'TailorLB') {
-			    $map{$c}->[0] = $v;
-			} else {
-			    $map{$c}->[1] = $v;
-			}
-		    }
-		} else {
-		    $map{$k} ||= [-1, -1];
-		    if ($o eq 'TailorLB') {
-			$map{$k}->[0] = $v;
-		    } else {
-			$map{$k}->[1] = $v;
-		    }
-		}
-	    }
-	}
-	my @map = ();
-	my ($beg, $end) = (undef, undef);
-	my $p;
-	foreach my $c (sort {$a <=> $b} keys %map) {
-	    unless ($map{$c}) {
-		next;
-	    } elsif (defined $end and $end + 1 == $c and
-		     $p->[0] == $map{$c}->[0] and $p->[1] == $map{$c}->[1]) {
-		$end = $c;
-	    } else {
-		if (defined $beg and defined $end) {
-		    push @map, [$beg, $end, @{$p}];
-		}
-		$beg = $end = $c;
-		$p = $map{$c};
-	    }
-	}
-	if (defined $beg and defined $end) {
-	    push @map, [$beg, $end, @{$p}];
-	}
-	push @config, '_map' => \@map;
     }
 
     $self->_config(@config) if scalar @config;

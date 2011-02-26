@@ -13,62 +13,15 @@
 #include "EXTERN.h"
 #include "perl.h"
 #include "XSUB.h"
+#define NEED_newRV_noinc
 #define NEED_sv_2pv_flags
-#define NEED_newRV_noinc_GLOBAL
 #define NEED_sv_2pv_nolen
 #include "ppport.h"
 #include "sombok.h"
 
-/***
- *** Utilities.
- ***/
-
-/*
- * Create C property map from Perl arrayref.
- */
-static
-mapent_t *_loadmap(mapent_t *propmap, SV *mapref, size_t *mapsiz)
-{
-    size_t n;
-    AV * map;
-    AV * ent;
-    SV ** pp;
-    IV p;
-
-    if (propmap)
-	free(propmap);
-    map = (AV *)SvRV(mapref);
-    if (SvTYPE(map) != SVt_PVAV)
-	croak("_loadmap: mapref argument must be arrayref");
-    *mapsiz = av_len(map) + 1;
-    if (*mapsiz <= 0) {
-	*mapsiz = 0;
-	propmap = NULL;
-    } else if ((propmap = malloc(sizeof(mapent_t) * (*mapsiz))) == NULL) {
-	*mapsiz = 0;
-	propmap = NULL;
-	croak("_loadmap: Can't allocate memory");
-    } else {
-	for (n = 0; n < *mapsiz; n++) {
-	    ent = (AV *)SvRV(*av_fetch(map, n, 0));
-	    if (SvTYPE(ent) != SVt_PVAV)
-		croak("_loadmap: entry must be arrayref");
-	    propmap[n].beg = SvUV(*av_fetch(ent, 0, 0));
-	    propmap[n].end = SvUV(*av_fetch(ent, 1, 0));
-	    if ((pp = av_fetch(ent, 2, 0)) == NULL || (p = SvIV(*pp)) < 0)
-		propmap[n].lbc = PROP_UNKNOWN;
-	    else
-		propmap[n].lbc = (propval_t)p;
-	    if ((pp = av_fetch(ent, 3, 0)) == NULL || (p = SvIV(*pp)) < 0)
-		propmap[n].eaw = PROP_UNKNOWN;
-	    else
-		propmap[n].eaw = (propval_t)p;
-	    propmap[n].gbc = PROP_UNKNOWN;
-	    propmap[n].scr = PROP_UNKNOWN;
-	}
-    }
-    return propmap;
-}
+/* Type synonyms for typemap. */
+typedef IV swapspec_t;
+typedef gcstring_t *generic_string;
 
 /***
  *** Data conversion.
@@ -92,7 +45,7 @@ unistr_t *SVtounistr(unistr_t *buf, SV *str)
     buf->str = NULL;
     buf->len = 0;
 
-    if (SvOK(str)) /* prevent segfault. */
+    if (SvOK(str))
 	utf8len = SvCUR(str);
     else
 	return buf;
@@ -168,7 +121,7 @@ SV *unistrtoSV(unistr_t *unistr, size_t uniidx, size_t unilen)
  * Convert Perl object to C object
  */
 #define PerltoC(type, self) \
-    ((type)SvIV(SvRV(self)))
+    ((type)SvIV((SV *)SvRV(self)))
 
 /*
  * Create Perl object from C object
@@ -179,8 +132,7 @@ SV *CtoPerl(char *klass, void *obj)
     SV *sv, *rv;
 
     sv = newSViv(0);
-    rv = newSVrv(sv, klass);
-    sv_setiv(rv, (IV)obj);
+    rv = sv_setref_iv(sv, klass, (IV)obj);  
 #if 0
     SvREADONLY_on(rv); /* FIXME:Can't bless derived class */
 #endif /* 0 */
@@ -204,6 +156,7 @@ gcstring_t *SVtogcstring(SV *sv, linebreak_t *lbobj)
 	croak("Unknown object %s", HvNAME(SvSTASH(SvRV(sv))));
 }
 
+#if 0
 /*
  * Convert Perl LineBreak object to C linebreak object.
  */
@@ -217,6 +170,7 @@ linebreak_t *SVtolinebreak(SV *sv)
     else
 	croak("Unknown object %s", HvNAME(SvSTASH(SvRV(sv))));
 }
+#endif /* 0 */
 
 /*
  * Convert Perl SV to boolean (n.b. string "YES" means true).
@@ -550,76 +504,61 @@ gcstring_t *urgent_func(linebreak_t *lbobj, gcstring_t *str)
 MODULE = Unicode::LineBreak	PACKAGE = Unicode::LineBreak	
 
 void
-_propvals(prop)
-	char *prop;
-    PROTOTYPE: $
+EAWidths()
     INIT:
 	char **p;
-	extern char *linebreak_propvals_EA[], *linebreak_propvals_GB[],
-	    *linebreak_propvals_LB[], *linebreak_propvals_SC[];
     PPCODE:
-	if (strcasecmp(prop, "EA") == 0)
-	    for (p = linebreak_propvals_EA; *p; p++)
-		XPUSHs(sv_2mortal(newSVpv(*p, 0)));
-	else if (strcasecmp(prop, "GB") == 0)
-	    for (p = linebreak_propvals_GB; *p; p++)
-		XPUSHs(sv_2mortal(newSVpv(*p, 0)));
-	else if (strcasecmp(prop, "LB") == 0)
-	    for (p = linebreak_propvals_LB; *p; p++)
-		XPUSHs(sv_2mortal(newSVpv(*p, 0)));
-	else if (strcasecmp(prop, "SC") == 0)
-	    for (p = linebreak_propvals_SC; *p; p++)
-		XPUSHs(sv_2mortal(newSVpv(*p, 0)));
-	else
-	    croak("_propvals: Unknown property name: %s", prop);
+	for (p = (char **)linebreak_propvals_EA; *p != NULL; p++)
+	    XPUSHs(sv_2mortal(newSVpv(*p, 0)));
 
-SV *
+void
+LBClasses()
+    INIT:
+	char **p;
+    PPCODE:
+	for (p = (char **)linebreak_propvals_LB; *p != NULL; p++)
+	    XPUSHs(sv_2mortal(newSVpv(*p, 0)));
+
+linebreak_t *
 _new(klass)
 	char *klass;
     PROTOTYPE: $
-    INIT:
-	linebreak_t *lbobj;
     CODE:
-	if ((lbobj = linebreak_new(ref_func)) == NULL)
+	if ((RETVAL = linebreak_new(ref_func)) == NULL)
 	    croak("%s->_new: Can't allocate memory", klass);
-	RETVAL = CtoPerl(klass, lbobj);
+	linebreak_set_stash(RETVAL, newRV_noinc((SV *)newHV()));
+	SvREFCNT_dec(RETVAL->stash); /* fixup */
     OUTPUT:
 	RETVAL
 
-SV *
+linebreak_t *
 copy(self)
-	SV *self;
+	linebreak_t *self;
     PROTOTYPE: $
-    INIT:
-	linebreak_t *lbobj, *ret;
     CODE:
-	lbobj = SVtolinebreak(self);    
-	ret = linebreak_copy(lbobj);
-	RETVAL = CtoPerl("Unicode::LineBreak", ret);
+	RETVAL = linebreak_copy(self);
     OUTPUT:
 	RETVAL
 
 void
 DESTROY(self)
-	SV *self;
+	linebreak_t *self;
     PROTOTYPE: $
     CODE:
-	linebreak_destroy(SVtolinebreak(self));
+	linebreak_destroy(self);
 
 SV *
 _config(self, ...)
-	SV *self;
-    INIT:
-	linebreak_t *lbobj;
+	linebreak_t *self;
+    PREINIT:
 	size_t i;
 	char *key;
 	void *func;
 	SV *val;
-	size_t mapsiz;
 	char *opt;
     CODE:
-	if ((lbobj = SVtolinebreak(self)) == NULL)
-	    if ((lbobj = linebreak_new()) == NULL)
+	if (self == NULL)
+	    if ((self = linebreak_new()) == NULL)
 		croak("_config: Can't allocate memory");
 
 	RETVAL = NULL;
@@ -629,24 +568,51 @@ _config(self, ...)
 	    key = (char *)SvPV_nolen(ST(1));
 
 	    if (strcasecmp(key, "BreakIndent") == 0)
-		RETVAL = newSVuv(lbobj->options &
+		RETVAL = newSVuv(self->options &
 				 LINEBREAK_OPTION_BREAK_INDENT); 
 	    else if (strcasecmp(key, "CharactersMax") == 0)
-		RETVAL = newSVuv(lbobj->charmax);
+		RETVAL = newSVuv(self->charmax);
 	    else if (strcasecmp(key, "ColumnsMax") == 0)
-		RETVAL = newSVnv((NV)lbobj->colmax);
+		RETVAL = newSVnv((NV)self->colmax);
 	    else if (strcasecmp(key, "ColumnsMin") == 0)
-		RETVAL = newSVnv((NV)lbobj->colmin);
+		RETVAL = newSVnv((NV)self->colmin);
 	    else if (strcasecmp(key, "ComplexBreaking") == 0)
-		RETVAL = newSVuv(lbobj->options &
+		RETVAL = newSVuv(self->options &
 				 LINEBREAK_OPTION_COMPLEX_BREAKING);
 	    else if (strcasecmp(key, "Context") == 0) {
-		if (lbobj->options & LINEBREAK_OPTION_EASTASIAN_CONTEXT)
+		if (self->options & LINEBREAK_OPTION_EASTASIAN_CONTEXT)
 		    RETVAL = newSVpvn("EASTASIAN", 9);
 		else
 		    RETVAL = newSVpvn("NONEASTASIAN", 12);
+	    } else if (strcasecmp(key, "EAWidth") == 0) {
+		AV *ret, *av, *codes;
+		propval_t p;
+		unichar_t c;
+		size_t i;
+
+		if (self->map == NULL || self->mapsiz == 0)
+		    XSRETURN_UNDEF;
+
+		ret = NULL;
+		for (i = 0; i < self->mapsiz; i++)
+		    if ((p = self->map[i].eaw) != PROP_UNKNOWN) {
+			codes = newAV();
+			for (c = self->map[i].beg; c <= self->map[i].end;
+			     c++)
+			    av_push(codes, newSVuv(c));
+			av = newAV();
+			av_push(av, newRV_noinc((SV *)codes));
+			av_push(av, newSViv((IV)p));
+			if (ret == NULL)
+			    ret = newAV();
+			av_push(ret, newRV_noinc((SV *)av));
+		    }
+
+		if (ret == NULL)
+		    XSRETURN_UNDEF;
+		RETVAL = newRV_noinc((SV *)ret);
 	    } else if (strcasecmp(key, "Format") == 0) {
-		func = lbobj->format_func;
+		func = self->format_func;
 		if (func == NULL)
 		    XSRETURN_UNDEF;
 		else if (func == linebreak_format_NEWLINE)
@@ -656,59 +622,86 @@ _config(self, ...)
 		else if (func == linebreak_format_TRIM)
 		    RETVAL = newSVpvn("TRIM", 4);
 		else if (func == format_func) {
-		    if ((val = (SV *)lbobj->format_data) == NULL)
+		    if ((val = (SV *)self->format_data) == NULL)
 			XSRETURN_UNDEF;
 		    ST(0) = val; /* should not be mortal. */
 		    XSRETURN(1);
 		} else
 		    croak("config: internal error");
 	    } else if (strcasecmp(key, "HangulAsAL") == 0)
-		RETVAL = newSVuv(lbobj->options &
+		RETVAL = newSVuv(self->options &
 				 LINEBREAK_OPTION_HANGUL_AS_AL);
-	    else if (strcasecmp(key, "LegacyCM") == 0)
-		RETVAL = newSVuv(lbobj->options & LINEBREAK_OPTION_LEGACY_CM);
+	    else if (strcasecmp(key, "LBClass") == 0) {
+		AV *ret, *av, *codes;
+		propval_t p;
+		unichar_t c;
+		size_t i;
+
+		if (self->map == NULL || self->mapsiz == 0)
+		    XSRETURN_UNDEF;
+
+		ret = NULL;
+		for (i = 0; i < self->mapsiz; i++)
+		    if ((p = self->map[i].lbc) != PROP_UNKNOWN) {
+			codes = newAV();
+			for (c = self->map[i].beg; c <= self->map[i].end;
+			     c++)
+			    av_push(codes, newSVuv(c));
+			av = newAV();
+			av_push(av, newRV_noinc((SV *)codes));
+			av_push(av, newSViv((IV)p));
+			if (ret == NULL)
+			    ret = newAV();
+			av_push(ret, newRV_noinc((SV *)av));
+		    }
+
+		if (ret == NULL)
+		    XSRETURN_UNDEF;
+		RETVAL = newRV_noinc((SV *)ret);
+	    } else if (strcasecmp(key, "LegacyCM") == 0)
+		RETVAL = newSVuv(self->options & LINEBREAK_OPTION_LEGACY_CM);
 	    else if (strcasecmp(key, "Newline") == 0) {
-		unistr_t unistr = {lbobj->newline.str, lbobj->newline.len};
-		if (lbobj->newline.str == NULL || lbobj->newline.len == 0)
+		unistr_t unistr = {self->newline.str, self->newline.len};
+		if (self->newline.str == NULL || self->newline.len == 0)
 		    RETVAL = unistrtoSV(&unistr, 0, 0);
 		else
-		    RETVAL = unistrtoSV(&unistr, 0, lbobj->newline.len);
+		    RETVAL = unistrtoSV(&unistr, 0, self->newline.len);
 	    } else if (strcasecmp(key, "Prep") == 0) {
 		AV *av;
-		if (lbobj->prep_func == NULL || lbobj->prep_func[0] == NULL)
+		if (self->prep_func == NULL || self->prep_func[0] == NULL)
 		    XSRETURN_UNDEF;
 		av = newAV();
-		for (i = 0; (func = lbobj->prep_func[i]) != NULL; i++)
+		for (i = 0; (func = self->prep_func[i]) != NULL; i++)
 		    if (func == linebreak_prep_URIBREAK) {
-			if (lbobj->prep_data == NULL ||
-			    lbobj->prep_data[i] == NULL)
+			if (self->prep_data == NULL ||
+			    self->prep_data[i] == NULL)
 			    av_push(av, newSVpvn("NONBREAKURI", 11));
 			else
 			    av_push(av, newSVpvn("BREAKURI", 8));
 		    } else if (func == prep_func) {
-			if (lbobj->prep_data == NULL ||
-			    lbobj->prep_data[i] == NULL)
+			if (self->prep_data == NULL ||
+			    self->prep_data[i] == NULL)
 			    croak("_config: internal error");
-			SvREFCNT_inc(lbobj->prep_data[i]); /* avoid freed */
-			av_push(av, lbobj->prep_data[i]);
+			SvREFCNT_inc(self->prep_data[i]); /* avoid freed */
+			av_push(av, self->prep_data[i]);
 		    } else
 			croak("_config: internal error");
 		RETVAL = newRV_noinc((SV *)av);
 	    } else if (strcasecmp(key, "SizingMethod") == 0) {
-		func = lbobj->sizing_func;
+		func = self->sizing_func;
 		if (func == NULL)
 		    XSRETURN_UNDEF;
 		else if (func == linebreak_sizing_UAX11)
 		    RETVAL = newSVpvn("UAX11", 5);
 		else if (func == sizing_func) {
-		    if ((val = (SV *)lbobj->sizing_data) == NULL)
+		    if ((val = (SV *)self->sizing_data) == NULL)
 			XSRETURN_UNDEF;
 		    ST(0) = val; /* should not be mortal. */
 		    XSRETURN(1);
 		} else
 		    croak("config: internal error");
 	    } else if (strcasecmp(key, "UrgentBreaking") == 0) {
-		func = lbobj->urgent_func;
+		func = self->urgent_func;
 		if (func == NULL)
 		    XSRETURN_UNDEF;
 		else if (func == linebreak_urgent_ABORT)
@@ -716,7 +709,7 @@ _config(self, ...)
 		else if (func == linebreak_urgent_FORCE)
 		    RETVAL = newSVpvn("FORCE", 5);
 		else if (func == urgent_func) {
-		    if ((val = (SV *)lbobj->urgent_data) == NULL)
+		    if ((val = (SV *)self->urgent_data) == NULL)
 			XSRETURN_UNDEF;
 		    ST(0) = val; /* should not be mortal. */
 		    XSRETURN(1);
@@ -804,137 +797,195 @@ _config(self, ...)
 		    if (func != NULL)
 			av_push(av, func);
 		    sv = newRV_noinc((SV *)av);
-		    linebreak_add_prep(lbobj, prep_func, (void *)sv);
+		    linebreak_add_prep(self, prep_func, (void *)sv);
 		    SvREFCNT_dec(sv); /* fixup */
 		} else if (SvOK(val)) {
 		    char *s = SvPV_nolen(val);
 
 		    if (strcasecmp(s, "BREAKURI") == 0)
-			linebreak_add_prep(lbobj, linebreak_prep_URIBREAK, val);
+			linebreak_add_prep(self, linebreak_prep_URIBREAK, val);
 		    else if (strcasecmp(s, "NONBREAKURI") == 0)
-			linebreak_add_prep(lbobj, linebreak_prep_URIBREAK,
+			linebreak_add_prep(self, linebreak_prep_URIBREAK,
 					   NULL);
 		    else
 			croak("Unknown preprocess option: %s", s);
 		} else
-		    linebreak_add_prep(lbobj, NULL, NULL);
+		    linebreak_add_prep(self, NULL, NULL);
 	    } else if (strcasecmp(key, "Format") == 0) {
 		if (sv_derived_from(val, "CODE"))
-		    linebreak_set_format(lbobj, format_func, (void *)val);
+		    linebreak_set_format(self, format_func, (void *)val);
 		else if (SvOK(val)) {
 		    char *s = SvPV_nolen(val);
 
 		    if (strcasecmp(s, "DEFAULT") == 0) {
 			warn("Method name \"DEFAULT\" for Format option was "
 			     "obsoleted. Use \"SIMPLE\"");
-			linebreak_set_format(lbobj, linebreak_format_SIMPLE,
+			linebreak_set_format(self, linebreak_format_SIMPLE,
 					     NULL);
 		    } else if (strcasecmp(s, "SIMPLE") == 0)
-			linebreak_set_format(lbobj, linebreak_format_SIMPLE,
+			linebreak_set_format(self, linebreak_format_SIMPLE,
 					     NULL);
 		    else if (strcasecmp(s, "NEWLINE") == 0)
-			linebreak_set_format(lbobj, linebreak_format_NEWLINE,
+			linebreak_set_format(self, linebreak_format_NEWLINE,
 					     NULL);
 		    else if (strcasecmp(s, "TRIM") == 0)
-			linebreak_set_format(lbobj, linebreak_format_TRIM,
+			linebreak_set_format(self, linebreak_format_TRIM,
 					     NULL);
 		    else
 			croak("Unknown Format option: %s", s);
 		} else
-		    linebreak_set_format(lbobj, NULL, NULL);
+		    linebreak_set_format(self, NULL, NULL);
 	    } else if (strcasecmp(key, "SizingMethod") == 0) {
 		if (sv_derived_from(val, "CODE"))
-		    linebreak_set_sizing(lbobj, sizing_func, (void *)val);
+		    linebreak_set_sizing(self, sizing_func, (void *)val);
 		else if (SvOK(val)) {
 		    char *s = SvPV_nolen(val);
 
 		    if (strcasecmp(s, "DEFAULT") == 0) {
 			warn("Method name \"DEFAULT\" for SizingMethod option "
 			     "was obsoleted. Use \"UAX11\"");
-			linebreak_set_sizing(lbobj, linebreak_sizing_UAX11,
+			linebreak_set_sizing(self, linebreak_sizing_UAX11,
 					     NULL);
 		    } else if (strcasecmp(s, "UAX11") == 0)
-			linebreak_set_sizing(lbobj, linebreak_sizing_UAX11,
+			linebreak_set_sizing(self, linebreak_sizing_UAX11,
 					     NULL);
 		    else
 			croak("Unknown SizingMethod option: %s", s);
 		} else
-		    linebreak_set_sizing(lbobj, NULL, NULL);
+		    linebreak_set_sizing(self, NULL, NULL);
 	    } else if (strcasecmp(key, "UrgentBreaking") == 0) {
 		if (sv_derived_from(val, "CODE"))
-		    linebreak_set_urgent(lbobj, urgent_func, (void *)val);
+		    linebreak_set_urgent(self, urgent_func, (void *)val);
 		else if (SvOK(val)) {
 		    char *s = SvPV_nolen(val);
 
 		    if (strcasecmp(s, "NONBREAK") == 0) {
 			warn("Method name \"NONBREAK\" for UrgentBreaking "
 			     " option was obsoleted. Use undef");
-			linebreak_set_urgent(lbobj, NULL, NULL);
+			linebreak_set_urgent(self, NULL, NULL);
 		    } else if (strcasecmp(s, "CROAK") == 0)
-			linebreak_set_urgent(lbobj, linebreak_urgent_ABORT,
+			linebreak_set_urgent(self, linebreak_urgent_ABORT,
 					     NULL);
 		    else if (strcasecmp(s, "FORCE") == 0)
-			linebreak_set_urgent(lbobj, linebreak_urgent_FORCE,
+			linebreak_set_urgent(self, linebreak_urgent_FORCE,
 					     NULL);
 		    else
 			croak("Unknown UrgentBreaking option: %s", s);
 		} else
-		    linebreak_set_urgent(lbobj, NULL, NULL);
-	    } else if (strcasecmp(key, "_map") == 0) {
-		if (lbobj->map) {
-		    free(lbobj->map);
-		    lbobj->map = NULL;
-		    lbobj->mapsiz = 0;
-		}
-		if (SvOK(val)) {
-		    lbobj->map = _loadmap(lbobj->map, val, &mapsiz);
-		    lbobj->mapsiz = mapsiz;
-		}
+		    linebreak_set_urgent(self, NULL, NULL);
 	    } else if (strcasecmp(key, "BreakIndent") == 0) {
 		if (SVtoboolean(val))
-		    lbobj->options |= LINEBREAK_OPTION_BREAK_INDENT;
+		    self->options |= LINEBREAK_OPTION_BREAK_INDENT;
 		else
-		    lbobj->options &= ~LINEBREAK_OPTION_BREAK_INDENT;
+		    self->options &= ~LINEBREAK_OPTION_BREAK_INDENT;
 	    } else if (strcasecmp(key, "CharactersMax") == 0)
-		lbobj->charmax = SvUV(val);
+		self->charmax = SvUV(val);
 	    else if (strcasecmp(key, "ColumnsMax") == 0)
-		lbobj->colmax = (double)SvNV(val);
+		self->colmax = (double)SvNV(val);
 	    else if (strcasecmp(key, "ColumnsMin") == 0)
-		lbobj->colmin = (double)SvNV(val);
+		self->colmin = (double)SvNV(val);
 	    else if (strcasecmp(key, "ComplexBreaking") == 0) {
 		if (SVtoboolean(val))
-		    lbobj->options |= LINEBREAK_OPTION_COMPLEX_BREAKING;
+		    self->options |= LINEBREAK_OPTION_COMPLEX_BREAKING;
 		else
-		    lbobj->options &= ~LINEBREAK_OPTION_COMPLEX_BREAKING;
+		    self->options &= ~LINEBREAK_OPTION_COMPLEX_BREAKING;
 	    } else if (strcasecmp(key, "Context") == 0) {
 		if (SvOK(val))
 		    opt = (char *)SvPV_nolen(val);
 		else
 		    opt = NULL;
 		if (opt && strcasecmp(opt, "EASTASIAN") == 0)
-		    lbobj->options |= LINEBREAK_OPTION_EASTASIAN_CONTEXT;
+		    self->options |= LINEBREAK_OPTION_EASTASIAN_CONTEXT;
 		else
-		    lbobj->options &= ~LINEBREAK_OPTION_EASTASIAN_CONTEXT;
+		    self->options &= ~LINEBREAK_OPTION_EASTASIAN_CONTEXT;
+	    } else if (strcasecmp(key, "EAWidth") == 0) {
+		AV *av, *codes;
+		SV *sv;
+		propval_t p;
+		size_t i;
+
+		if (! SvOK(val))
+		    linebreak_clear_eawidth(self);
+		else if (SvROK(val) &&
+		    SvTYPE(av = (AV *)SvRV(val)) == SVt_PVAV &&
+		    av_len(av) + 1 == 2 &&
+		    av_fetch(av, 0, 0) != NULL && av_fetch(av, 1, 0) != NULL) {
+		    sv = *av_fetch(av, 1, 0);
+		    if (SvIOK(sv))
+			p = SvIV(sv);
+		    else
+			croak("_config: Invalid argument");
+
+		    sv = *av_fetch(av, 0, 0);
+		    if (SvROK(sv) &&
+			SvTYPE(codes = (AV *)SvRV(sv)) == SVt_PVAV) {
+			for (i = 0; i < av_len(codes) + 1; i++) {
+			    if (av_fetch(codes, i, 0) == NULL)
+				continue;
+			    if (! SvIOK(sv = *av_fetch(codes, i, 0)))
+				croak("_config: Invalid argument");
+			    linebreak_update_eawidth(self, SvUV(sv), p);
+			}
+		    } else if (SvIOK(sv)) {
+			linebreak_update_eawidth(self, SvUV(sv), p);
+		    } else
+			croak("_config: Invalid argument");
+		} else
+		    croak("_config: Invalid argument");
 	    } else if (strcasecmp(key, "HangulAsAL") == 0) {
 		if (SVtoboolean(val))
-		    lbobj->options |= LINEBREAK_OPTION_HANGUL_AS_AL;
+		    self->options |= LINEBREAK_OPTION_HANGUL_AS_AL;
 		else
-		    lbobj->options &= ~LINEBREAK_OPTION_HANGUL_AS_AL;
+		    self->options &= ~LINEBREAK_OPTION_HANGUL_AS_AL;
+	    } else if (strcasecmp(key, "LBClass") == 0) {
+		AV *av, *codes;
+		SV *sv;
+		propval_t p;
+		size_t i;
+
+		if (! SvOK(val))
+		    linebreak_clear_lbclass(self);
+		else if (SvROK(val) &&
+		    SvTYPE(av = (AV *)SvRV(val)) == SVt_PVAV &&
+		    av_len(av) + 1 == 2 &&
+		    av_fetch(av, 0, 0) != NULL && av_fetch(av, 1, 0) != NULL) {
+		    sv = *av_fetch(av, 1, 0);
+		    if (SvIOK(sv))
+			p = SvIV(sv);
+		    else
+			croak("_config: Invalid argument");
+
+		    sv = *av_fetch(av, 0, 0);
+		    if (SvROK(sv) &&
+			SvTYPE(codes = (AV *)SvRV(sv)) == SVt_PVAV) {
+			for (i = 0; i < av_len(codes) + 1; i++) {
+			    if (av_fetch(codes, i, 0) == NULL)
+				continue;
+			    if (! SvIOK(sv = *av_fetch(codes, i, 0)))
+				croak("_config: Invalid argument");
+			    linebreak_update_lbclass(self, SvUV(sv), p);
+			}
+		    } else if (SvIOK(sv)) {
+			linebreak_update_lbclass(self, SvUV(sv), p);
+		    } else
+			croak("_config: Invalid argument");
+		} else
+		    croak("_config: Invalid argument");
 	    } else if (strcasecmp(key, "LegacyCM") == 0) {
 		if (SVtoboolean(val))
-		    lbobj->options |= LINEBREAK_OPTION_LEGACY_CM;
+		    self->options |= LINEBREAK_OPTION_LEGACY_CM;
 		else
-		    lbobj->options &= ~LINEBREAK_OPTION_LEGACY_CM;
+		    self->options &= ~LINEBREAK_OPTION_LEGACY_CM;
 	    } else if (strcasecmp(key, "Newline") == 0) {
 		if (!sv_isobject(val)) {
 		    unistr_t unistr = {NULL, 0};
 		    SVtounistr(&unistr, val);
-		    linebreak_set_newline(lbobj, &unistr);	
+		    linebreak_set_newline(self, &unistr);	
 		    free(unistr.str);
 		} else if (sv_derived_from(val, "Unicode::GCString")) {
 		    gcstring_t *gcstr;
 		    gcstr = PerltoC(gcstring_t *, val);
-		    linebreak_set_newline(lbobj, (unistr_t *)gcstr);
+		    linebreak_set_newline(self, (unistr_t *)gcstr);
 		} else
 		    croak("Unknown object %s", HvNAME(SvSTASH(SvRV(val))));
 	    }
@@ -944,66 +995,53 @@ _config(self, ...)
     OUTPUT:
 	RETVAL
 
-SV*
+void
 as_hashref(self, ...)
-	SV *self;
-    INIT:
-	linebreak_t *lbobj;
+	linebreak_t *self;
     CODE:
-	lbobj = SVtolinebreak(self);
-	if (lbobj->stash == NULL)
-	    lbobj->stash = newRV_noinc((SV *)newHV());
-	RETVAL = lbobj->stash;
-	if (RETVAL == NULL)
+	if (self->stash == NULL)
 	    XSRETURN_UNDEF;
-	if (SvROK(RETVAL)) /* FIXME */
-	    SvREFCNT_inc((SV*)RETVAL);
-    OUTPUT:
-	RETVAL
+	ST(0) = self->stash; /* should not be mortal */
+	XSRETURN(1);
 
 SV*
 as_scalarref(self, ...)
-	SV *self;
-    INIT:
-	linebreak_t *lbobj;
+	linebreak_t *self;
+    PREINIT:
 	char buf[64];
     CODE:
-	lbobj = SVtolinebreak(self);
 	buf[0] = '\0';
-	snprintf(buf, 64, "%s(0x%lx)", HvNAME(SvSTASH(SvRV(self))),
-		 (unsigned long)(void *)lbobj);
+	snprintf(buf, 64, "%s(0x%lx)", HvNAME(SvSTASH(SvRV(ST(0)))),
+		 (unsigned long)(void *)self);
 	RETVAL = newRV_noinc(newSVpv(buf, 0));
     OUTPUT:
 	RETVAL
 
 SV *
 as_string(self, ...)
-	SV *self;
-    INIT:
-	linebreak_t *lbobj;
+	linebreak_t *self;
+    PREINIT:
 	char buf[64];
     CODE:
-	lbobj = SVtolinebreak(self);
 	buf[0] = '\0';
-	snprintf(buf, 64, "%s(0x%lx)", HvNAME(SvSTASH(SvRV(self))),
-		 (unsigned long)(void *)lbobj);
+	snprintf(buf, 64, "%s(0x%lx)", HvNAME(SvSTASH(SvRV(ST(0)))),
+		 (unsigned long)(void *)self);
 	RETVAL = newSVpv(buf, 0);
     OUTPUT:
 	RETVAL
 
 propval_t
 eawidth(self, str)
-	SV *self;
+	linebreak_t *self;
 	SV *str;
     PROTOTYPE: $$
-    INIT:
-	linebreak_t *lbobj;
+    PREINIT:
 	unichar_t c;
-	propval_t prop;
 	gcstring_t *gcstr;
     CODE:
-	lbobj = SVtolinebreak(self);
-	if (!sv_isobject(str)) {
+	if (! SvOK(str))
+	    XSRETURN_UNDEF;
+	else if (!sv_isobject(str)) {
 	    if (!SvCUR(str))
 		XSRETURN_UNDEF;
 	    c = utf8_to_uvuni((U8 *)SvPV_nolen(str), NULL);
@@ -1017,159 +1055,110 @@ eawidth(self, str)
 	}
 	else
 	    croak("Unknown object %s", HvNAME(SvSTASH(SvRV(str))));
-	prop = linebreak_eawidth(lbobj, c);
-	if (prop == PROP_UNKNOWN)
+	RETVAL = linebreak_eawidth(self, c);
+	if (RETVAL == PROP_UNKNOWN)
 	    XSRETURN_UNDEF;
-	RETVAL = prop;	
     OUTPUT:
 	RETVAL
 
 propval_t
 lbclass(self, str)
-	SV *self;
+	linebreak_t *self;
 	SV *str;
     PROTOTYPE: $$
-    INIT:
-	linebreak_t *lbobj;
+    PREINIT:
 	unichar_t c;
-	propval_t prop;
 	gcstring_t *gcstr;
     CODE:
-	lbobj = SVtolinebreak(self);
-	if (!sv_isobject(str)) {
+	if (! SvOK(str))
+	    XSRETURN_UNDEF;
+	else if (!sv_isobject(str)) {
 	    if (!SvCUR(str))
 		XSRETURN_UNDEF;
 	    c = utf8_to_uvuni((U8 *)SvPV_nolen(str), NULL);
-	    prop = linebreak_lbclass(lbobj, c);
+	    RETVAL = linebreak_lbclass(self, c);
 	}
 	else if (sv_derived_from(str, "Unicode::GCString")) {
 	    gcstr = PerltoC(gcstring_t *, str);
 	    if (gcstr->gclen)
-		prop = gcstr->gcstr[0].lbc;
+		RETVAL = gcstr->gcstr[0].lbc;
 	    else
-		prop = PROP_UNKNOWN;
+		RETVAL = PROP_UNKNOWN;
 	}
 	else
 	    croak("Unknown object %s", HvNAME(SvSTASH(SvRV(str))));
-	if (prop == PROP_UNKNOWN)
+	if (RETVAL == PROP_UNKNOWN)
 	    XSRETURN_UNDEF;
-	RETVAL = prop;	
     OUTPUT:
 	RETVAL
 
 propval_t
 lbrule(self, b_idx, a_idx)
-	SV *self;
+	linebreak_t *self;
 	propval_t b_idx;
 	propval_t a_idx;
     PROTOTYPE: $$$
-    INIT:
-	linebreak_t *lbobj;
-	propval_t prop;
     CODE:
 	if (!SvOK(ST(1)) || !SvOK(ST(2)))
 	    XSRETURN_UNDEF;
-	lbobj = SVtolinebreak(self);
-	prop = linebreak_lbrule(b_idx, a_idx);
-
-	if (prop == PROP_UNKNOWN)
+	RETVAL = linebreak_lbrule(b_idx, a_idx);
+	if (RETVAL == PROP_UNKNOWN)
 	    XSRETURN_UNDEF;
-	RETVAL = prop;
     OUTPUT:
 	RETVAL
 
 void
 reset(self)
-	SV *self;
+	linebreak_t *self;
     PROTOTYPE: $
     CODE:
-	linebreak_reset(SVtolinebreak(self));
+	linebreak_reset(self);
 
 double
-strsize(self, len, pre, spc, str, ...)
-	SV *self;
+strsize(lbobj, len, pre, spc, str, ...)
+	linebreak_t *lbobj;
 	double len;
 	SV *pre;
-	SV *spc;
-	SV *str;
+	generic_string spc;
+	generic_string str;
     PROTOTYPE: $$$$$;$
-    INIT:
-	linebreak_t *lbobj;
-	gcstring_t /* *gcpre, */ *gcspc, *gcstr;
     CODE:
-	lbobj = SVtolinebreak(self);
-	/* gcpre = SVtogcstring(pre, lbobj); */
-	gcspc = SVtogcstring(spc, lbobj);
-	gcstr = SVtogcstring(str, lbobj);
-
 	if (5 < items)
 	     warn("``max'' argument of strsize was obsoleted");
 
-	RETVAL = linebreak_sizing_UAX11(lbobj, len, NULL, gcspc, gcstr);
-
-	/* if (!sv_isobject(pre))
-	    gcstring_destroy(gcpre); */
-	if (!sv_isobject(spc))
-	    gcstring_destroy(gcspc);
-	if (!sv_isobject(str))
-	    gcstring_destroy(gcstr);
-	if (RETVAL == -1)
+	RETVAL = linebreak_sizing_UAX11(lbobj, len, NULL, spc, str);
+	if (RETVAL == -1.0)
 	    croak("strsize: Can't allocate memory");
     OUTPUT:
 	RETVAL
 
 void
 break(self, input)
-	SV *self;
-	SV *input;
+	linebreak_t *self;
+	unistr_t *input;
     PROTOTYPE: $$
-    INIT:
-	linebreak_t *lbobj;
-	unistr_t unistr = {NULL, 0}, *str;
+    PREINIT:
 	gcstring_t **ret, *r;
 	size_t i;
     PPCODE:
-	lbobj = SVtolinebreak(self);
-	if (!SvOK(input))
+	if (input == NULL)
 	    XSRETURN_UNDEF;
-	else {
-	    if (!sv_isobject(input)) {
-		if (!SvUTF8(input)) {
-		    char *s;
-		    size_t len, i;
-
-		    len = SvCUR(input);
-		    s = SvPV(input, len);
-		    for (i = 0; i < len; i++)
-			if (127 < (unsigned char)s[i])
-			    croak("Unicode string must be given.");
-		}
-		SVtounistr(&unistr, input);
-		str = &unistr;
-	    } else if (sv_derived_from(input, "Unicode::GCString"))
-		str = (unistr_t *)SVtogcstring(input, lbobj);
-	    else
-		croak("Unknown object %s", HvNAME(SvSTASH(SvRV(input))));
-
-	    ret = linebreak_break(lbobj, str);
-	    if (!sv_isobject(input))
-		free(unistr.str);
-	}
+	ret = linebreak_break(self, input);
 
 	if (ret == NULL) {
-	    if (lbobj->errnum == LINEBREAK_EEXTN)
+	    if (self->errnum == LINEBREAK_EEXTN)
 		croak("%s", SvPV_nolen(ERRSV));
-	    else if (lbobj->errnum == LINEBREAK_ELONG)
+	    else if (self->errnum == LINEBREAK_ELONG)
 		croak("%s", "Excessive line was found");
-	    else if (lbobj->errnum)
-		croak("%s", strerror(lbobj->errnum));
+	    else if (self->errnum)
+		croak("%s", strerror(self->errnum));
 	    else
 		croak("%s", "Unknown error");
 	}
 
 	switch (GIMME_V) {
 	case G_SCALAR:
-	    r = gcstring_new(NULL, lbobj);
+	    r = gcstring_new(NULL, self);
 	    for (i = 0; ret[i] != NULL; i++) {
 		gcstring_append(r, ret[i]);
 		gcstring_destroy(ret[i]);
@@ -1194,55 +1183,29 @@ break(self, input)
 
 void
 break_partial(self, input)
-	SV *self;
-	SV *input;
+	linebreak_t *self;
+	unistr_t *input;
     PROTOTYPE: $$
-    INIT:
-	linebreak_t *lbobj;
-	unistr_t unistr = {NULL, 0}, *str;
+    PREINIT:
 	gcstring_t **ret, *r;
 	size_t i;
     PPCODE:
-	lbobj = SVtolinebreak(self);
-	if (!SvOK(input))
-	    ret = linebreak_break_partial(lbobj, NULL);
-	else {
-	    if (!sv_isobject(input)) {
-		if (!SvUTF8(input)) {
-		    char *s;
-		    size_t len, i;
-
-		    len = SvCUR(input);
-		    s = SvPV(input, len);
-		    for (i = 0; i < len; i++)
-			if (127 < (unsigned char)s[i])
-			    croak("Unicode string must be given.");
-		}
-		SVtounistr(&unistr, input);
-		str = &unistr;
-	    } else
-		str = (unistr_t *)SVtogcstring(input, lbobj);
-
-	    ret = linebreak_break_partial(lbobj, str);
-	    if (!sv_isobject(input))
-		if (str->str != NULL)
-		    free(str->str);
-	}
+	ret = linebreak_break_partial(self, input);
 
 	if (ret == NULL) {
-	    if (lbobj->errnum == LINEBREAK_EEXTN)
+	    if (self->errnum == LINEBREAK_EEXTN)
 		croak("%s", SvPV_nolen(ERRSV));
-	    else if (lbobj->errnum == LINEBREAK_ELONG)
+	    else if (self->errnum == LINEBREAK_ELONG)
 		croak("%s", "Excessive line was found");
-	    else if (lbobj->errnum)
-		croak("%s", strerror(lbobj->errnum));
+	    else if (self->errnum)
+		croak("%s", strerror(self->errnum));
 	    else
 		croak("%s", "Unknown error");
 	}
 
 	switch (GIMME_V) {
 	case G_SCALAR:
-	    r = gcstring_new(NULL, lbobj);
+	    r = gcstring_new(NULL, self);
 	    for (i = 0; ret[i] != NULL; i++) {
 		gcstring_append(r, ret[i]);
 		gcstring_destroy(ret[i]);
@@ -1287,332 +1250,240 @@ supported()
 
 MODULE = Unicode::LineBreak	PACKAGE = Unicode::GCString	
 
-SV *
-new(klass, str, ...)
+gcstring_t *
+new(klass, str, lbobj=NULL)
 	char *klass;
-	SV *str;
-    PROTOTYPE: $$;$
-    INIT:
-	gcstring_t *gcstr;
+	unistr_t *str;
 	linebreak_t *lbobj;
-	unistr_t unistr = {NULL, 0};
+    PROTOTYPE: $$;$
     CODE:
-	if (!SvOK(str)) /* prevent segfault. */
+	if (str == NULL)
 	    XSRETURN_UNDEF;
-	if (2 < items)
-	    lbobj = SVtolinebreak(ST(2));
-	else
-	    lbobj = NULL;
-	SVtounistr(&unistr, str);
-	if ((gcstr = gcstring_new(&unistr, lbobj)) == NULL)
+	/* FIXME:buffer is copied twice. */
+	if ((RETVAL = gcstring_newcopy(str, lbobj)) == NULL)
 	    croak("%s->new: Can't allocate memory", klass);
-	RETVAL = CtoPerl(klass, gcstr);
     OUTPUT:
 	RETVAL
 
 void
 DESTROY(self)
-	SV *self;
+	gcstring_t *self;
     PROTOTYPE: $
     CODE:
-	if (!sv_isobject(self))
-	    croak("Not object");
-	gcstring_destroy(SVtogcstring(self, NULL));
+	gcstring_destroy(self);
 
 void
 as_array(self)
-	SV *self;
+	gcstring_t *self;
     PROTOTYPE: $
-    INIT:
-	gcstring_t *gcstr;
+    PREINIT:
 	size_t i;
     PPCODE:
-	if (!sv_isobject(self))
-	    return;
-	gcstr = SVtogcstring(self, NULL);    
-	if (gcstr != NULL)
-	    for (i = 0; i < gcstr->gclen; i++)
+	if (self != NULL)
+	    for (i = 0; i < self->gclen; i++)
 		XPUSHs(sv_2mortal(
 			   CtoPerl("Unicode::GCString", 
-				   gctogcstring(gcstr, gcstr->gcstr + i))));
+				   gctogcstring(self, self->gcstr + i))));
 
 SV*
 as_scalarref(self, ...)
-	SV *self;
-    INIT:
-	linebreak_t *lbobj;
+	gcstring_t *self;
+    PREINIT:
 	char buf[64];
     CODE:
-	lbobj = SVtolinebreak(self);
 	buf[0] = '\0';
-	snprintf(buf, 64, "%s(0x%lx)", HvNAME(SvSTASH(SvRV(self))),
-		 (unsigned long)(void *)lbobj);
+	snprintf(buf, 64, "%s(0x%lx)", HvNAME(SvSTASH(SvRV(ST(0)))),
+		 (unsigned long)(void *)self);
 	RETVAL = newRV_noinc(newSVpv(buf, 0));
     OUTPUT:
 	RETVAL
 
 SV *
 as_string(self, ...)
-	SV *self;
+	gcstring_t *self;
     PROTOTYPE: $;$;$
-    INIT:
-	gcstring_t *gcstr;
-	unistr_t unistr = {NULL, 0};
     CODE:
-	if (!sv_isobject(self))
-	    XSRETURN_UNDEF;
-	gcstr = SVtogcstring(self, NULL);    
-	if (gcstr == NULL)
-	    RETVAL = unistrtoSV(&unistr, 0, 0);
-	else
-	    RETVAL = unistrtoSV((unistr_t *)gcstr, 0, gcstr->len);
+	RETVAL = unistrtoSV((unistr_t *)self, 0, self->len);
     OUTPUT:
 	RETVAL
 
 size_t
 chars(self)
-	SV *self;
+	gcstring_t *self;
     PROTOTYPE: $
-    INIT:
-	gcstring_t *gcstr;
     CODE:
-	if (!sv_isobject(self))
-	    XSRETURN_UNDEF;
-	gcstr = SVtogcstring(self, NULL);    
-	if (gcstr == NULL)
-	    RETVAL = 0;
-	else
-	    RETVAL = gcstr->len;
+	RETVAL = self->len;
     OUTPUT:
 	RETVAL
 
+#define lbobj self->lbobj
 int
-cmp(self, str, ...)
-	SV *self;
-	SV *str;
+cmp(self, str, swap=FALSE)
+	gcstring_t *self;
+	generic_string str;
+	swapspec_t swap;
     PROTOTYPE: $$;$
-    INIT:
-	gcstring_t *gcstr1, *gcstr2 = NULL;
-	int ret;
     CODE:
-	if (!sv_isobject(self))
-	    XSRETURN_UNDEF;
-	gcstr1 = SVtogcstring(self, NULL);    
-	gcstr2 = SVtogcstring(str, gcstr1->lbobj);
-	if (2 < items && SvOK(ST(2)) && SvIV(ST(2)))
-	    ret = gcstring_cmp(gcstr2, gcstr1);
+	if (swap == TRUE)
+	    RETVAL = gcstring_cmp(str, self);
 	else
-	    ret = gcstring_cmp(gcstr1, gcstr2);
-	if (!sv_isobject(str))
-	    gcstring_destroy(gcstr2);
-	RETVAL = ret;
+	    RETVAL = gcstring_cmp(self, str);
     OUTPUT:
 	RETVAL
 
 size_t
 columns(self)
-	SV *self;
-    INIT:
-	gcstring_t *gcstr;
+	gcstring_t *self;
     CODE:
-	if (!sv_isobject(self))
-	    XSRETURN_UNDEF;
-	gcstr = SVtogcstring(self, NULL);    
-	if (gcstr == NULL)
-	    RETVAL = 0;
-	else
-	    RETVAL = gcstring_columns(gcstr);
+	RETVAL = gcstring_columns(self);
     OUTPUT:
 	RETVAL
 
-SV *
-concat(self, str, ...)
-	SV *self;
-	SV *str;
+#define lbobj self->lbobj
+gcstring_t *
+concat(self, str, swap=FALSE)
+	gcstring_t *self;
+	generic_string str;
+	swapspec_t swap;
     PROTOTYPE: $$;$
-    INIT:
-	gcstring_t *gcstr, *appe, *ret;
     CODE:
-	if (!sv_isobject(self))
-	    XSRETURN_UNDEF;
-	gcstr = SVtogcstring(self, NULL);    
-	appe = SVtogcstring(str, gcstr->lbobj);
-	if (2 < items && SvOK(ST(2)) && SvIV(ST(2)))
-	    ret = gcstring_concat(appe, gcstr);
+	if (swap == TRUE)
+	    RETVAL = gcstring_concat(str, self);
 	else
-	    ret = gcstring_concat(gcstr, appe);
-	if (!sv_isobject(str))
-	    gcstring_destroy(appe);
-	RETVAL = CtoPerl("Unicode::GCString", ret);
+	    RETVAL = gcstring_concat(self, str);
     OUTPUT:
 	RETVAL
 
-SV *
+gcstring_t *
 copy(self)
-	SV *self;
+	gcstring_t *self;
     PROTOTYPE: $
-    INIT:
-	gcstring_t *gcstr, *ret;
     CODE:
-	if (!sv_isobject(self))
-	    XSRETURN_UNDEF;
-	gcstr = SVtogcstring(self, NULL);    
-	ret = gcstring_copy(gcstr);
-	RETVAL = CtoPerl("Unicode::GCString", ret);
+	RETVAL = gcstring_copy(self);
     OUTPUT:
 	RETVAL
 
 int
 eos(self)
-	SV *self;
-    INIT:
-	gcstring_t *gcstr;
+	gcstring_t *self;
     CODE:
-	if (!sv_isobject(self))
-	    XSRETURN_UNDEF;
-	gcstr = SVtogcstring(self, NULL);    
-	if (gcstr == NULL)
-	    RETVAL = 0;
-	else
-	    RETVAL = gcstring_eos(gcstr);
+	RETVAL = gcstring_eos(self);
     OUTPUT:
 	RETVAL
 
 unsigned int
 flag(self, ...)
-	SV *self;
+	gcstring_t *self;
     PROTOTYPE: $;$;$
-    INIT:
+    PREINIT:
 	int i;
 	unsigned int flag;
-	gcstring_t *gcstr;
     CODE:
-	if (!sv_isobject(self))
-	    XSRETURN_UNDEF;
-	gcstr = SVtogcstring(self, NULL);    
 	if (1 < items)
 	    i = SvIV(ST(1));
 	else
-	    i = gcstr->pos;
-	if (i < 0 || gcstr == NULL || gcstr->gclen <= i)
+	    i = self->pos;
+	if (i < 0 || self == NULL || self->gclen <= i)
 	    XSRETURN_UNDEF;
 	if (2 < items) {
 	    flag = SvUV(ST(2));
 	    if (flag == (flag & 255))
-		gcstr->gcstr[i].flag = (unsigned char)flag;
+		self->gcstr[i].flag = (unsigned char)flag;
 	    else
 		warn("flag: unknown flag(s)");
 	}
-	RETVAL = (unsigned int)gcstr->gcstr[i].flag;
+	RETVAL = (unsigned int)self->gcstr[i].flag;
     OUTPUT:
 	RETVAL
 
-SV *
+gcstring_t *
 item(self, ...)
-	SV *self;
+	gcstring_t *self;
     PROTOTYPE: $;$
-    INIT:
+    PREINIT:
 	int i;
-	gcstring_t *gcstr;
     CODE:
-	if (!sv_isobject(self))
-	    XSRETURN_UNDEF;
-	gcstr = SVtogcstring(self, NULL);    
 	if (1 < items)
 	    i = SvIV(ST(1));
 	else
-	    i = gcstr->pos;
-	if (i < 0 || gcstr == NULL || gcstr->gclen <= i)
+	    i = self->pos;
+	if (i < 0 || self == NULL || self->gclen <= i)
 	    XSRETURN_UNDEF;
 
-	RETVAL = CtoPerl("Unicode::GCString",
-			 gctogcstring(gcstr, gcstr->gcstr + i));
+	RETVAL = gctogcstring(self, self->gcstr + i);
     OUTPUT:
 	RETVAL
 
-SV *
+gcstring_t *
 join(self, ...)
-	SV *self;
-    INIT:
+	gcstring_t *self;
+    PREINIT:
 	size_t i;
-	gcstring_t *gcstr, *str, *ret;
+	gcstring_t *str;
     CODE:
-	if (!sv_isobject(self))
-	    croak("Not object");
-	gcstr = SVtogcstring(self, NULL);
-
 	switch (items) {
 	case 0:
 	    croak("Too few arguments");
 	case 1:
-	    ret = gcstring_new(NULL, gcstr->lbobj);
+	    RETVAL = gcstring_new(NULL, self->lbobj);
 	    break;
 	case 2:
-	    ret = SVtogcstring(ST(1), gcstr->lbobj);
+	    RETVAL = SVtogcstring(ST(1), self->lbobj);
 	    if (sv_isobject(ST(1)))
-		ret = gcstring_copy(ret);
+		RETVAL = gcstring_copy(RETVAL);
 	    break;
 	default:
-	    ret = SVtogcstring(ST(1), gcstr->lbobj);
+	    RETVAL = SVtogcstring(ST(1), self->lbobj);
 	    if (sv_isobject(ST(1)))
-		ret = gcstring_copy(ret);
+		RETVAL = gcstring_copy(RETVAL);
 	    for (i = 2; i < items; i++) {
-		gcstring_append(ret, gcstr);
-		str = SVtogcstring(ST(i), gcstr->lbobj);
-		gcstring_append(ret, str);
+		gcstring_append(RETVAL, self);
+		str = SVtogcstring(ST(i), self->lbobj);
+		gcstring_append(RETVAL, str);
 		if (!sv_isobject(ST(i)))
 		    gcstring_destroy(str);
 	    }
 	    break;
 	}
-	RETVAL = CtoPerl("Unicode::GCString", ret);
     OUTPUT:
 	RETVAL
 
 propval_t
 lbclass(self, ...)
-	SV *self;
+	gcstring_t *self;
     PROTOTYPE: $;$
-    INIT:
+    PREINIT:
 	int i;
-	gcstring_t *gcstr;
     CODE:
-	if (!sv_isobject(self))
-	    XSRETURN_UNDEF;
-	gcstr = SVtogcstring(self, NULL);    
 	if (1 < items) {
 	    i = SvIV(ST(1));
 	    if (i < 0)
-		i += gcstr->gclen;
+		i += self->gclen;
 	} else
-	    i = gcstr->pos;
-	if (i < 0 || gcstr == NULL || gcstr->gclen <= i)
+	    i = self->pos;
+	if (i < 0 || self == NULL || self->gclen <= i)
 	    XSRETURN_UNDEF;
-	RETVAL = (propval_t)gcstr->gcstr[i].lbc;
+	RETVAL = (propval_t)self->gcstr[i].lbc;
     OUTPUT:
 	RETVAL
 
 propval_t
 lbclass_ext(self, ...)
-	SV *self;
+	gcstring_t *self;
     PROTOTYPE: $;$
-    INIT:
+    PREINIT:
 	int i;
-	gcstring_t *gcstr;
     CODE:
-	if (!sv_isobject(self))
-	    XSRETURN_UNDEF;
-	gcstr = SVtogcstring(self, NULL);    
 	if (1 < items) {
 	    i = SvIV(ST(1));
 	    if (i < 0)
-		i += gcstr->gclen;
+		i += self->gclen;
 	} else
-	    i = gcstr->pos;
-	if (i < 0 || gcstr == NULL || gcstr->gclen <= i)
+	    i = self->pos;
+	if (i < 0 || self == NULL || self->gclen <= i)
 	    XSRETURN_UNDEF;
-	if ((RETVAL = (propval_t)gcstr->gcstr[i].elbc) == PROP_UNKNOWN)
-	    RETVAL = (propval_t)gcstr->gcstr[i].lbc;
+	if ((RETVAL = (propval_t)self->gcstr[i].elbc) == PROP_UNKNOWN)
+	    RETVAL = (propval_t)self->gcstr[i].lbc;
 	if (RETVAL == PROP_UNKNOWN)
 	    XSRETURN_UNDEF;
     OUTPUT:
@@ -1620,92 +1491,52 @@ lbclass_ext(self, ...)
 
 size_t
 length(self)
-	SV *self;
+	gcstring_t *self;
     PROTOTYPE: $
-    INIT:
-	gcstring_t *gcstr;
     CODE:
-	if (!sv_isobject(self))
-	    XSRETURN_UNDEF;
-	gcstr = SVtogcstring(self, NULL);    
-	if (gcstr == NULL)
-	    RETVAL = 0;
-	else
-	    RETVAL = gcstr->gclen;
+	RETVAL = self->gclen;
     OUTPUT:
 	RETVAL
 
-SV *
+gcstring_t *
 next(self, ...)
-	SV *self;
+	gcstring_t *self;
     PROTOTYPE: $;$;$
-    INIT:
-	gcstring_t *gcstr;
+    PREINIT:
 	gcchar_t *gc;
     CODE:
-	if (!sv_isobject(self))
+	if (gcstring_eos(self))
 	    XSRETURN_UNDEF;
-	gcstr = SVtogcstring(self, NULL);    
-	if (gcstring_eos(gcstr))
-	    XSRETURN_UNDEF;
-	gc = gcstring_next(gcstr);
-	RETVAL = CtoPerl("Unicode::GCString", gctogcstring(gcstr, gc));
+	gc = gcstring_next(self);
+	RETVAL = gctogcstring(self, gc);
     OUTPUT:
 	RETVAL
 
 size_t
 pos(self, ...)
-	SV *self;
+	gcstring_t *self;
     PROTOTYPE: $;$
-    INIT:
-	gcstring_t *gcstr;
     CODE:
-	if (!sv_isobject(self))
-	    XSRETURN_UNDEF;
-	gcstr = SVtogcstring(self, NULL);    
-	
-	if (gcstr == NULL)
-	    RETVAL = 0;
-	else {
-	    if (1 < items)
-		gcstring_setpos(gcstr, SvIV(ST(1)));
-	    RETVAL = gcstr->pos;
-	}
+	if (1 < items)
+	    gcstring_setpos(self, SvIV(ST(1)));
+	RETVAL = self->pos;
     OUTPUT:
 	RETVAL
 
-SV *
-substr(self, offset, ...)
-	SV *self;
+#define lbobj self->lbobj
+gcstring_t *
+substr(self, offset, length=self->gclen, replacement=NULL)
+	gcstring_t *self;
 	int offset;
-    PROTOTYPE: $$;$;$
-    INIT:
 	int length;
-	gcstring_t *gcstr, *replacement, *ret;
+	generic_string replacement;
+    PROTOTYPE: $$;$;$
     CODE:
-	if (!sv_isobject(self))
-	    XSRETURN_UNDEF;
-	gcstr = SVtogcstring(self, NULL);    
-	if (2 < items)
-	    length = SvIV(ST(2));
-	else
-	    length = gcstr->gclen;
-        if (3 < items) {
-	    replacement = SVtogcstring(ST(3), gcstr->lbobj);
-        } else
-            replacement = NULL;
-
-	ret = gcstring_substr(gcstr, offset, length);
+	RETVAL = gcstring_substr(self, offset, length);
 	if (replacement != NULL)
-	    if (gcstring_replace(gcstr, offset, length, replacement) == NULL)
-		croak("%s", strerror(errno));
-
-	if (3 < items && !sv_isobject(ST(3)))
-	    gcstring_destroy(replacement);
-	if (ret == NULL) {
-	    gcstring_destroy(ret);
-	    croak("%s", strerror(errno));
-	} else
-	    RETVAL = CtoPerl("Unicode::GCString", ret);
+	    if (gcstring_replace(self, offset, length, replacement) == NULL)
+		croak("substr: %s", strerror(errno));
+	if (RETVAL == NULL)
+	    croak("substr: %s", strerror(errno));
     OUTPUT:
 	RETVAL

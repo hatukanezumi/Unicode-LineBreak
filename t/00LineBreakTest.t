@@ -65,7 +65,7 @@ my $lb = Unicode::LineBreak->new(
 				 ColumnsMax => 1,
 				 Format => \&format,
 				 LegacyCM => 'NO',
-				 TailorEA => [[1..65532] => EA_N],
+				 EAWidth => [[1..65532] => EA_N],
 			      );
 
 open IN, 'test-data/LineBreakTest.txt';

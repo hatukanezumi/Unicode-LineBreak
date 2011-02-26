@@ -1,3 +1,26 @@
+2011.002_26  Sat Feb 26 2011
+! lib/Unicode/LineBreak/Constants.pm
+  - ``LEFT_'' and ``RIGHT_'' are inappropriate on right-to-left contexts.
+    Use ``BACKWORD_'' and ``FORWARD_'' instead.
+! lib/Unicode/LineBreak.pm
+  - Moved codes for custom property maps to XS.
+  - Chg: TailorEA & TailorLB options are obsoleted. Use EAWidth & LBClass
+    options instead.
+! LineBreak.xs
+  - Removed _loadmap(): use linebreak_update_*().
+  - Removed _propvals(): Added EAWidths() and LBClasses() to get prop. vals.
+  - Fix: Stash (instance of hashref) was not allocated at construction time.
+  - Most of conversions between C and Perl are moved to typemap.
+! typemap
+  - Added typemap for linebreak_t *, gcstring_t *, unistr_t *, generic string
+    etc.
+! t/03ns.t
+  - Added tests for obsoleted TailorLB option.
+! t/06context.t
+  - Added tests for obsoleted TailorEA option.
+! Makefile.PL
+  - Requires sombok >= 2011.2beta1.
+
 2011.002_19  Sat Feb 19 2011
 	* Update ppport.h to 3.19.
 	* Most of config() codes are moved to XS.

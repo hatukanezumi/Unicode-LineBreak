@@ -1,4 +1,76 @@
 TYPEMAP
 unichar_t	T_UV
 propval_t	T_U_CHAR
+swapspec_t	T_SWAPSPEC
+linebreak_t *	T_UNICODE_LINEBREAK
+generic_string	T_UNICODE_GCSTRING
+gcstring_t *	T_UNICODE_GCSTRING
+unistr_t *	T_UNISTR
+
+INPUT
+T_SWAPSPEC
+	if (SvOK($arg))
+	    $var = (IV)SvIV($arg);
+	else
+	    $var = -1
+T_UNICODE_LINEBREAK
+	if (! sv_isobject($arg))
+	    croak(\"Not object\");
+	else if (sv_derived_from($arg, \"Unicode::LineBreak\"))
+	    $var = INT2PTR(linebreak_t *, SvIV((SV *)SvRV($arg)));
+	else
+	    croak(\"Unknown object \%s\", HvNAME(SvSTASH(SvRV($arg))))
+T_UNICODE_GCSTRING
+	${my $mycode = ($type eq q<generic_string>) ? qq<
+	if (! SvOK($arg))
+	    $var = NULL;
+	else if (! sv_isobject($arg)) {
+	    unistr_t unistr = { NULL, 0 };
+	    SV *sv;
+	    SVtounistr(&unistr, $arg);
+	    $var = gcstring_new(&unistr, lbobj);
+	    sv = sv_newmortal(); /* let Unicode buffer be mortal. */
+	    sv_setref_iv(sv, \"Unicode::GCString\", (IV)$var);
+	    \#undef lbobj
+	} else> :
+	q<>; \$mycode}
+	if (sv_derived_from($arg, \"Unicode::GCString\"))
+	    $var = INT2PTR(gcstring_t *, SvIV((SV *)SvRV($arg)));
+	else
+	    croak(\"Unknown object \%s\", HvNAME(SvSTASH(SvRV($arg))))
+T_UNISTR
+	if (! SvOK($arg))
+	    $var = NULL;
+	else if (! sv_isobject($arg)) {
+	    gcstring_t *gcstr;
+	    SV *sv;
+
+	    if (! SvUTF8($arg)) {
+		char *s;
+		size_t len, i;
+
+		len = SvCUR($arg);
+		s = SvPV($arg, len);
+		for (i = 0; i < len; i++)
+		    if (127 < (unsigned char)s[i])
+			croak(\"Unicode string must be given.\");
+	    }
+
+	    gcstr = malloc(sizeof(gcstring_t)); /* container of buffer. */
+	    memset(gcstr, 0, sizeof(gcstring_t));
+	    SVtounistr((unistr_t *)gcstr, $arg);
+	    $var = (unistr_t *)gcstr;
+	    sv = sv_newmortal(); /* let Unicode buffer be mortal. */
+	    sv_setref_iv(sv, \"Unicode::GCString\", (IV)gcstr);
+
+	} else if (sv_derived_from($arg, \"Unicode::GCString\"))
+	    $var = (unistr_t *)INT2PTR(gcstring_t *, SvIV((SV *)SvRV($arg)));
+	else
+	    croak(\"Unknown object %s\", HvNAME(SvSTASH(SvRV($arg))))
+
+OUTPUT
+T_UNICODE_LINEBREAK
+	sv_setref_iv($arg, \"Unicode::LineBreak\", (IV)$var);	
+T_UNICODE_GCSTRING
+	sv_setref_iv($arg, \"Unicode::GCString\", (IV)$var);
 
