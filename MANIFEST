@@ -53,6 +53,11 @@ sombok/lib/gcstring.c
 sombok/lib/linebreak.c
 sombok/lib/southeastasian.c
 sombok/lib/utils.c
+sombok/m4/libtool.m4
+sombok/m4/ltoptions.m4
+sombok/m4/ltsugar.m4
+sombok/m4/ltversion.m4
+sombok/m4/lt~obsolete.m4
 sombok/sombok.pc.in
 sombok/sombok.spec.in
 sombok/ltmain.sh
