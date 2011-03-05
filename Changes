@@ -1,4 +1,4 @@
-2011.03  Sat Mar 05 2011
+2011.03.05  Sat Mar 05 2011
 ! lib/Unicode/LineBreak.pm
   - Chg: CharactersMax, ColumnsMax, ColumnsMin, SizingMethod & UrgentBreaking
     are renamed to CharMax, ColMax, ColMin, Sizing & Urgent, respectively.
@@ -20,6 +20,11 @@
 ! t/lf.pl
 ! t/04fold.t
   - Added tests.
+! lib/Unicode/LineBreak.pod
+! lib/Unicode/LineBreak/JA_JP.pod
+  - Updated.
+
+2011.03  Sat Mar 05 2011 - Withdrawn.
 
 2011.002_26  Sat Feb 26 2011
 ! lib/Unicode/LineBreak/Constants.pm

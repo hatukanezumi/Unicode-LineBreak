@@ -460,7 +460,8 @@ SELF は Unicode::LineBreak オブジェクト、STR は REGEX にマッチす�
 
 =head3 状態の保存
 
-XXX.
+Unicode::LineBreak オブジェクトはハッシュ参照としてふるまう。
+任意の要素を、オブジェクトの存在期間中保存できる。
 
 =head2 文字列長の算出
 
@@ -551,26 +552,26 @@ U+303C ます記号。
 
 =over 4
 
-=item C<LEFT_QUOTES() =E<gt> LB_OP, RIGHT_QUOTES() =E<gt> LB_CL>
+=item C<BACKWARD_QUOTES() =E<gt> LB_OP, FORWARD_QUOTES() =E<gt> LB_CL>
 
 ある言語 (オランダ語、英語、イタリア語、ポルトガル語、スペイン語、トルコ語、
 および東アジアの多くの言語) では、開き記号に 9 が回転した形状の引用符
 (E<0x2018> E<0x201C>) を、閉じ記号に 9 の形状の引用符
 (E<0x2019> E<0x201D>) を用いる。
 
-=item C<RIGHT_QUOTES() =E<gt> LB_OP, LEFT_QUOTES() =E<gt> LB_CL>
+=item C<FORWARD_QUOTES() =E<gt> LB_OP, BACKWARD_QUOTES() =E<gt> LB_CL>
 
 ほかの言語 (チェコ語、ドイツ語、スロヴァク語) では、9 の形状の引用符
 (E<0x2019> E<0x201D>) を開き記号に、9 が回転した形状の引用符
 (E<0x2018> E<0x201C>) を閉じ記号に用いる。
 
-=item C<LEFT_GUILLEMETS() =E<gt> LB_OP, RIGHT_GUILLEMETS() =E<gt> LB_CL>
+=item C<BACKWARD_GUILLEMETS() =E<gt> LB_OP, FORWARD_GUILLEMETS() =E<gt> LB_CL>
 
 フランス語、ギリシャ語、ロシア語などでは、左向きのギュメ
 (E<0x00AB> E<0x2039>) を開き記号に、右向きのギュメ
 (E<0x00BB> E<0x203A>) を閉じ記号に用いる。
 
-=item C<RIGHT_GUILLEMETS() =E<gt> LB_OP, LEFT_GUILLEMETS() =E<gt> LB_CL>
+=item C<FORWARD_GUILLEMETS() =E<gt> LB_OP, BACKWARD_GUILLEMETS() =E<gt> LB_CL>
 
 ドイツ語やスロヴァク語では、右向きのギュメ (E<0x00BB> E<0x203A>)
 を開き記号に、左向きのギュメ (E<0x00AB> E<0x2039>) を閉じ記号に用いる。
@@ -714,7 +715,7 @@ I<日本語文書の組版方法>.
 文字幅問題, I<Unicode (ユニコード) と中日韓 (CJK) エンコーディングとの相互運用の問題>.
 L<http://web.archive.org/web/people.debian.org/~kubota/unicode-symbols-width2.html.ja>.
 
-=cut
+=end comment
 
 =item [UAX #11]
 

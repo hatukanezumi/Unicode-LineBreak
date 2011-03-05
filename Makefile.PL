@@ -96,7 +96,8 @@ WriteMakefile(
 	'NO_META'	=> 1,
 	'NAME'		=> 'Unicode::LineBreak',
 	'ABSTRACT_FROM'	=> 'lib/Unicode/LineBreak.pod',
-	'VERSION_FROM'	=> 'lib/Unicode/LineBreak.pm',
+	#'VERSION_FROM'	=> 'lib/Unicode/LineBreak.pm',
+	'VERSION'	=> '2011.03.05',
 	'AUTHOR'	=> q{Hatuka*nezumi - IKEDA Soji <hatuka@nezumi.nu>},
 	'LICENSE'	=> 'perl',
 	'PREREQ_PM'	=> {

@@ -496,7 +496,8 @@ For example, following code will break HTTP URLs using [CMOS] rule.
 
 =head3 Preserving State
 
-XXX.
+Unicode::LineBreak object can behave as hash reference.
+Any items may be preserved throughout its life.
 
 =head2 Calculating String Size
 
@@ -599,26 +600,26 @@ By default, some punctuations are ambiguous quotation marks (QU).
 
 =over 4
 
-=item C<LEFT_QUOTES() =E<gt> LB_OP, RIGHT_QUOTES() =E<gt> LB_CL>
+=item C<BACKWARD_QUOTES() =E<gt> LB_OP, FORWARD_QUOTES() =E<gt> LB_CL>
 
 Some languages (Dutch, English, Italian, Portugese, Spanish, Turkish and
 most East Asian) use rotated-9-style punctuations (E<0x2018> E<0x201C>) as
 opening and 9-style punctuations (E<0x2019> E<0x201D>) as closing quotation
 marks.
 
-=item C<RIGHT_QUOTES() =E<gt> LB_OP, LEFT_QUOTES() =E<gt> LB_CL>
+=item C<FORWARD_QUOTES() =E<gt> LB_OP, BACKWARD_QUOTES() =E<gt> LB_CL>
 
 Some others (Czech, German and Slovak) use 9-style punctuations
 (E<0x2019> E<0x201D>) as opening and rotated-9-style punctuations
 (E<0x2018> E<0x201C>) as closing quotation marks.
 
-=item C<LEFT_GUILLEMETS() =E<gt> LB_OP, RIGHT_GUILLEMETS() =E<gt> LB_CL>
+=item C<BACKWARD_GUILLEMETS() =E<gt> LB_OP, FORWARD_GUILLEMETS() =E<gt> LB_CL>
 
 French, Greek, Russian etc. use left-pointing guillemets (E<0x00AB> E<0x2039>)
 as opening and right-pointing guillemets (E<0x00BB> E<0x203A>) as closing
 quotation marks.
 
-=item C<RIGHT_GUILLEMETS() =E<gt> LB_OP, LEFT_GUILLEMETS() =E<gt> LB_CL>
+=item C<FORWARD_GUILLEMETS() =E<gt> LB_OP, BACKWARD_GUILLEMETS() =E<gt> LB_CL>
 
 German and Slovak use right-pointing guillemets (E<0x00BB> E<0x203A>) as
 opening and left-pointing guillemets (E<0x00AB> E<0x2039>) as closing
@@ -776,7 +777,7 @@ Kubota, Tomohiro (2001-2002).
 Width problems, "I<Problems on Interoperativity between Unicode and CJK Local Encodings>".
 L<http://web.archive.org/web/people.debian.org/~kubota/unicode-symbols-width2.html>.
 
-=cut
+=end comment
 
 =item [UAX #11]
 
