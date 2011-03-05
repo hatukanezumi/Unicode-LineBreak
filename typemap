@@ -1,3 +1,21 @@
+# Typemap for Unicode-LineBreak
+# =============================
+#
+# Copyright (C) 2009-2011 by Hatuka*nezumi - IKEDA Soji <hatuka(at)nezumi.nu>.
+# 
+# This package is free software; you can redistribute it and/or modify it 
+# under the same terms as Perl itself.
+#
+# Notes
+# -----
+# - A type generic_string has INPUT map from generic string (utf8-flagged
+#   string or Unicode::GCString object) to gcstring_t *.  When mapped from
+#   utf8-flagged string, result is ``mortal''.
+# - A type unistr_t * has INPUT map from Perl string (string must be
+#   UTF8-flagged or must contain 7-bit chars only).  Result is ``mortal''.
+# - generic_string has OUTPUT map to Unicode::GCString.  For unistr_t *
+#   OUTPUT map has not been implemented yet.
+
 TYPEMAP
 unichar_t	T_UV
 propval_t	T_U_CHAR
@@ -5,7 +23,7 @@ swapspec_t	T_SWAPSPEC
 linebreak_t *	T_UNICODE_LINEBREAK
 generic_string	T_UNICODE_GCSTRING
 gcstring_t *	T_UNICODE_GCSTRING
-unistr_t *	T_UNISTR
+unistr_t *	T_UNICODE_GCSTRING
 
 INPUT
 T_SWAPSPEC
@@ -15,62 +33,64 @@ T_SWAPSPEC
 	    $var = -1
 T_UNICODE_LINEBREAK
 	if (! sv_isobject($arg))
-	    croak(\"Not object\");
+	    croak(\"$func_name: Not object\");
 	else if (sv_derived_from($arg, \"Unicode::LineBreak\"))
-	    $var = INT2PTR(linebreak_t *, SvIV((SV *)SvRV($arg)));
+	    $var = PerltoC(linebreak_t *, $arg);
 	else
-	    croak(\"Unknown object \%s\", HvNAME(SvSTASH(SvRV($arg))))
+	    croak(\"$func_name: Unknown object \%s\",
+		  HvNAME(SvSTASH(SvRV($arg))))
 T_UNICODE_GCSTRING
-	${my $mycode = ($type eq q<generic_string>) ? qq<
 	if (! SvOK($arg))
 	    $var = NULL;
-	else if (! sv_isobject($arg)) {
+	else${ my $mycode = ($type eq q<generic_string>) ? qq<
+	if (! sv_isobject($arg)) {
 	    unistr_t unistr = { NULL, 0 };
-	    SV *sv;
-	    SVtounistr(&unistr, $arg);
-	    $var = gcstring_new(&unistr, lbobj);
-	    sv = sv_newmortal(); /* let Unicode buffer be mortal. */
-	    sv_setref_iv(sv, \"Unicode::GCString\", (IV)$var);
-	    \#undef lbobj
-	} else> :
-	q<>; \$mycode}
-	if (sv_derived_from($arg, \"Unicode::GCString\"))
-	    $var = INT2PTR(gcstring_t *, SvIV((SV *)SvRV($arg)));
-	else
-	    croak(\"Unknown object \%s\", HvNAME(SvSTASH(SvRV($arg))))
-T_UNISTR
-	if (! SvOK($arg))
-	    $var = NULL;
-	else if (! sv_isobject($arg)) {
-	    gcstring_t *gcstr;
-	    SV *sv;
 
+	    /* Generic string must be well-formed. */
+	    SVtounistr(&unistr, $arg);
+	    if (($var = gcstring_new(&unistr, lbobj)) == NULL)
+		croak(\"$func_name: %s\", strerror(errno));
+	    /* let Unicode buffer be mortal. */
+	    sv_2mortal(CtoPerl(\"Unicode::GCString\", $var));
+	    \#undef lbobj
+	} else> : q<>; \$mycode
+	}${ my $mycode = ($type =~ /^unistr_t\s*\*$/) ? qq<
+	if (! sv_isobject($arg)) {
+	    gcstring_t *gcstr; /* container of buffer. */
+
+	    /* String not being decoded must not be allowed. */
 	    if (! SvUTF8($arg)) {
 		char *s;
 		size_t len, i;
 
 		len = SvCUR($arg);
 		s = SvPV($arg, len);
-		for (i = 0; i < len; i++)
-		    if (127 < (unsigned char)s[i])
-			croak(\"Unicode string must be given.\");
+		for (i = 0; i \< len; i++)
+		    if (127 \< (unsigned char)s[i])
+			croak(\"$func_name: Unicode string must be given.\");
 	    }
 
-	    gcstr = malloc(sizeof(gcstring_t)); /* container of buffer. */
+	    if ((gcstr = malloc(sizeof(gcstring_t))) == NULL)
+		croak(\"$func_name: %s\", strerror(errno));
 	    memset(gcstr, 0, sizeof(gcstring_t));
+
 	    SVtounistr((unistr_t *)gcstr, $arg);
 	    $var = (unistr_t *)gcstr;
-	    sv = sv_newmortal(); /* let Unicode buffer be mortal. */
-	    sv_setref_iv(sv, \"Unicode::GCString\", (IV)gcstr);
-
-	} else if (sv_derived_from($arg, \"Unicode::GCString\"))
-	    $var = (unistr_t *)INT2PTR(gcstring_t *, SvIV((SV *)SvRV($arg)));
+	    /* let Unicode buffer be mortal. */
+	    sv_2mortal(CtoPerl(\"Unicode::GCString\", gcstr));
+	} else> : q<>; \$mycode}
+	if (sv_derived_from($arg, \"Unicode::GCString\"))
+	    $var = ($type)PerltoC(gcstring_t *, $arg);
 	else
-	    croak(\"Unknown object %s\", HvNAME(SvSTASH(SvRV($arg))))
+	    croak(\"$func_name: Unknown object \%s\",
+		  HvNAME(SvSTASH(SvRV($arg))))
 
 OUTPUT
 T_UNICODE_LINEBREAK
-	sv_setref_iv($arg, \"Unicode::LineBreak\", (IV)$var);	
+	setCtoPerl($arg, \"Unicode::LineBreak\", $var);	
 T_UNICODE_GCSTRING
-	sv_setref_iv($arg, \"Unicode::GCString\", (IV)$var);
+	${ my $mycode = ($type =~ /^unistr_t\s*\*$/) ?
+	qq<\#error OUTPUT typemap has not been implemented yet.> :
+	qq<setCtoPerl($arg, \"Unicode::GCString\", $var);>;
+	\$mycode }
 

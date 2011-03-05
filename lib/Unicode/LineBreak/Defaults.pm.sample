@@ -39,13 +39,13 @@ Following settings are available.
 
 =item Prep
 
-=item SizingMethod
+=item Sizing
 
 =item TailorEA
 
 =item TailorLB
 
-=item UrgentBreaking
+=item Urgent
 
 =back
 
@@ -71,10 +71,10 @@ L<Unicode::LineBreak>
 # $Config->{LegacyCM} = 'YES';
 # $Config->{Newline} = "\n";
 # $Config->{Prep} = undef;
-# $Config->{SizingMethod} = 'UAX11';
-# $config->{TailorEA} = [];
-# $config->{TailorLB} = [];
-# $Config->{UrgentBreaking} = undef;
+# $Config->{Sizing} = 'UAX11';
+# $Config->{TailorEA} = [];
+# $Config->{TailorLB} = [];
+# $Config->{Urgent} = undef;
 # $Config->{UserBreaking} = [];
 
 1;

@@ -135,6 +135,11 @@ test-data/ko.al.out
 test-data/ko.in
 test-data/ko.newline.out
 test-data/ko.out
+test-data/quotes.fixed.out
+test-data/quotes.flowed.out
+test-data/quotes.in
+test-data/quotes.norm.in
+test-data/quotes.plain.out
 test-data/README.test-data
 test-data/ru.in
 test-data/ru.out

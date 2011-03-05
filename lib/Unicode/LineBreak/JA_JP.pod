@@ -139,26 +139,26 @@ L</new>、L</config> の両メソッドには以下の対を指定できる。
 B<注>:
 このオプションはリリース 1.011 で導入された。
 
-=item CharactersMax => NUMBER
+=item CharMax => NUMBER
 
 行に含みうる最大の文字数。行末の空白文字と改行の文字列を除く。
 文字数は一般に行の長さを表さないことに注意。
 初期値は C<998>。
 C<0> にはできない。
 
-=item ColumnsMin => NUMBER
+=item ColMin => NUMBER
 
 任意分割された行の、改行の文字列と行末の空白文字を含めない最小桁数。
 初期値は C<0>。
 
-=item ColumnsMax => NUMBER
+=item ColMax => NUMBER
 
 行の、改行の文字列と行末の空白文字を含めない最大桁数。つまり、行の最大長。
 初期値は C<76>。
 
 =back
 
-L</UrgentBreaking> オプションおよび L</ユーザ定義の行分割動作> も参照。
+L</Urgent> オプションおよび L</ユーザ定義の行分割動作> も参照。
 
 =over 4
 
@@ -276,7 +276,7 @@ URI を、印刷物に適した規則で分割する。
 
 =back
 
-=item SizingMethod => METHOD
+=item Sizing => METHOD
 
 文字列の長さを算出する方法を指定する。
 以下のオプションが使える。
@@ -308,7 +308,7 @@ L</EAWidth> の旧式な形式。
 
 L</LBClass> の旧式な形式。
 
-=item UrgentBreaking => METHOD
+=item Urgent => METHOD
 
 長すぎる行の扱いかたを指定する。
 以下のオプションが使える。
@@ -416,8 +416,8 @@ L<Unicode::GCString::JA_JP> 参照。
 
 =head2 ユーザ定義の行分割動作
 
-任意分割によって生じる行が CharactersMax、ColumnsMax、ColumnsMin のいずれかの制限を超えると見込まれるときは、引き続く文字列に対してB<緊急分割>を実行できる。
-L</UrgentBreaking> オプションにサブルーチンへの参照を指定する場合、そのサブルーチンは 2 つの引数を取らなければならない。
+任意分割によって生じる行が CharMax、ColMax、ColMin のいずれかの制限を超えると見込まれるときは、引き続く文字列に対してB<緊急分割>を実行できる。
+L</Urgent> オプションにサブルーチンへの参照を指定する場合、そのサブルーチンは 2 つの引数を取らなければならない。
 
     分割後 = &サブルーチン(SELF, STR);
 
@@ -434,7 +434,7 @@ L<Unicode::GCString::JA_JP> 参照。
     sub hyphenize {
 	return map {$_ =~ s/yl$/yl-/; $_} split /(\w+?yl(?=\w))/, $_[1];
     }
-    my $lb = Unicode::LineBreak->new(UrgentBreaking => \&hyphenize);
+    my $lb = Unicode::LineBreak->new(Urgent => \&hyphenize);
     $output = $lb->break("Methionylthreonylthreonylglutaminylarginyl...");
 
 L</Prep> オプションに [REGEX, SUBREF] の配列参照を指定する場合、サブルーチンは 2 つの引数を取らなければならない。
@@ -464,14 +464,14 @@ XXX.
 
 =head2 文字列長の算出
 
-L</SizingMethod> オプションにサブルーチンへの参照を指定する場合、そのサブルーチンは 5 つの引数を取らなければならない。
+L</Sizing> オプションにサブルーチンへの参照を指定する場合、そのサブルーチンは 5 つの引数を取らなければならない。
 
     桁数 = &サブルーチン(SELF, LEN, PRE, SPC, STR);
 
 SELF は Unicode::LineBreak オブジェクト、LEN は先行する文字列の長さ、PRE は先行する Unicode 文字列、SPC は追加される空白文字、STR は処理する Unicode 文字列。
 
 サブルーチンは C<PRE.SPC.STR> の桁数を算出して返さなければならない。
-桁数は整数でなくてもよい。桁数の単位は随意に選べるが、L</ColumnsMin> オプションおよび L</ColumnsMax> オプションのそれと一致させなければならない。
+桁数は整数でなくてもよい。桁数の単位は随意に選べるが、L</ColMin> オプションおよび L</ColMax> オプションのそれと一致させなければならない。
 
 B<注意>:
 文字列の引数は実際には書記素クラスタ列である。
@@ -491,7 +491,7 @@ L<Unicode::GCString::JA_JP> 参照。
         return $cols;
     };
     my $lb = Unicode::LineBreak->new(LBClass => [ord("\t") => LB_SP],
-                                     SizingMethod => \&tabbedsizing);
+                                     Sizing => \&tabbedsizing);
     $output = $lb->break($string);
 
 =head2 文字の特性の手直し

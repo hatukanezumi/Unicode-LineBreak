@@ -99,6 +99,7 @@ I<インスタンスメソッド>。
 書記素クラスタ文字列の部分文字列を返す。
 OFFSET と LENGTH は書記素クラスタで数える。
 REPLACEMENT を指定すると、部分文字列をそれで置き換える。
+REPLACEMENT は Unicode文字列でもよい。
 
 =back
 

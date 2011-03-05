@@ -11,13 +11,13 @@ foreach my $lang (qw(ar el fr ja ja-a ko ru zh)) {
 
 # urgent
 dotest_array('ecclesiazusae', 'ecclesiazusae');
-dotest_array('ecclesiazusae', 'ecclesiazusae.ColumnsMax', UrgentBreaking => 'FORCE');
-dotest_array('ecclesiazusae', 'ecclesiazusae.CharactersMax', CharactersMax => 79);
+dotest_array('ecclesiazusae', 'ecclesiazusae.ColumnsMax', Urgent => 'FORCE');
+dotest_array('ecclesiazusae', 'ecclesiazusae.CharactersMax', CharMax => 79);
 dotest_array('ecclesiazusae', 'ecclesiazusae.ColumnsMin',
-       ColumnsMin => 7, ColumnsMax => 66, UrgentBreaking => 'FORCE');
+       ColMin => 7, ColMax => 66, Urgent => 'FORCE');
 
 eval {
-    dotest_array('ecclesiazusae', 'ecclesiazusae', UrgentBreaking => 'CROAK');
+    dotest_array('ecclesiazusae', 'ecclesiazusae', Urgent => 'CROAK');
 };
 ok($@ =~ /^Excessive line was found/, 'CROAK');
 

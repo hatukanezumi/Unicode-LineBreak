@@ -1,3 +1,26 @@
+2011.03  Sat Mar 05 2011
+! lib/Unicode/LineBreak.pm
+  - Chg: CharactersMax, ColumnsMax, ColumnsMin, SizingMethod & UrgentBreaking
+    are renamed to CharMax, ColMax, ColMin, Sizing & Urgent, respectively.
+    Old names may also be used.
+! LineBreak.xs
+  - Bug Fix: Unicode::LineBreak: Cannot update config from inside Perl
+    callbacks.
+  - Fix: Unicode::LineBreak::_config(): Suppress ``Use of uninitialized value
+    in subroutine entry'' warning.
+  - Imp: Unicode::GCString::substr(): replacement may be also Unicode
+    string.
+  - Imp: Functions croak using strerror().
+  - Imp: Now Unicode::LineBreak & Unicode::GCString are SvREADONLY_on()'ed.
+! typemap
+  - Unify maps for unistr_t * and gcstring_t *.
+  - Added notes.
+! t/00LineBreakTest.t
+  - Simplified code.
+! t/lf.pl
+! t/04fold.t
+  - Added tests.
+
 2011.002_26  Sat Feb 26 2011
 ! lib/Unicode/LineBreak/Constants.pm
   - ``LEFT_'' and ``RIGHT_'' are inappropriate on right-to-left contexts.

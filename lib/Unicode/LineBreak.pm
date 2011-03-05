@@ -6,7 +6,7 @@ require 5.008;
 ### Pragmas:
 use strict;
 use warnings;
-use vars qw($VERSION @EXPORT_OK @ISA $Config);
+use vars qw($VERSION @EXPORT_OK @ISA $Config @Config);
 
 ### Exporting:
 use Exporter;
@@ -25,27 +25,29 @@ use Unicode::GCString;
 ### Globals
 
 ### The package version
-our $VERSION = '2011.002_30';
+our $VERSION = '2011.03';
 
 ### Public Configuration Attributes
-our $Config = {
+our @Config = (
     BreakIndent => 'YES',
-    CharactersMax => 998,
-    ColumnsMin => 0,
-    ColumnsMax => 76,
+    CharMax => 998,
+    ColMax => 76,
+    ColMin => 0,
     ComplexBreaking => 'YES',
     Context => 'NONEASTASIAN',
-    #EAWidth => undef,
-    Format => "SIMPLE",
+    EAWidth => undef,
+    Format => 'SIMPLE',
     HangulAsAL => 'NO',
-    #LBClass => undef,
+    LBClass => undef,
     LegacyCM => 'YES',
     Newline => "\n",
-    #Prep => undef,
-    SizingMethod => 'UAX11',
-    #UrgentBreaking => undef,
-};
+    Prep => undef,
+    Sizing => 'UAX11',
+    Urgent => undef,
+);
+our $Config = {};
 eval { require Unicode::LineBreak::Defaults; };
+push @Config, (%$Config);
 
 ### Exportable constants
 use Unicode::LineBreak::Constants;
@@ -102,7 +104,7 @@ sub new {
     my $class = shift;
 
     my $self = __PACKAGE__->_new();
-    $self->config((%$Config));
+    $self->config(@Config);
     $self->config(@_);
     $self;
 }
@@ -115,13 +117,14 @@ sub config ($@) {
 	my $k = shift;
 	my $ret;
 
-	if (uc $k eq uc 'UserBreaking') {
-	    $ret = $self->_config('Prep');
-	    if (! defined $ret) {
-		return [];
-	    } else {
-		return $ret;
-	    }
+	if (uc $k eq uc 'CharactersMax') {
+	    return $self->_config('CharMax');
+	} elsif (uc $k eq uc 'ColumnsMax') {
+	    return $self->_config('ColMax');
+	} elsif (uc $k eq uc 'ColumnsMin') {
+	    return $self->_config('ColMin');
+	} elsif (uc $k eq uc 'SizingMethod') {
+	    return $self->_config('Sizing');
 	} elsif (uc $k eq uc 'TailorEA') {
 	    $ret = $self->_config('EAWidth');
 	    if (! defined $ret) {
@@ -136,6 +139,15 @@ sub config ($@) {
 	    } else {
 		return [map { ($_->[0] => $_->[1]) } @{$ret}];
 	    }
+	} elsif (uc $k eq uc 'UrgentBreaking') {
+	    return $self->_config('Urgent');
+	} elsif (uc $k eq uc 'UserBreaking') {
+	    $ret = $self->_config('Prep');
+	    if (! defined $ret) {
+		return [];
+	    } else {
+		return $ret;
+	    }
 	} else {
 	    return $self->_config($k);
 	}
@@ -146,15 +158,15 @@ sub config ($@) {
     while (0 < scalar @_) {
 	my $k = shift;
 	my $v = shift;
-	if (uc $k eq uc 'UserBreaking') {
-	    push @config, 'Prep' => undef;
-	    if (! defined $v) {
-		;
-	    } elsif (ref $v eq 'ARRAY') {
-		push @config, map { ('Prep' => $_) } @{$v};
-	    } else {
-		push @config, 'Prep' => $v;
-	    }
+
+        if (uc $k eq uc 'CharactersMax') {
+	    push @config, 'CharMax' => $v;
+	} elsif (uc $k eq uc 'ColumnsMax') {
+	    push @config, 'ColMax' => $v;
+	} elsif (uc $k eq uc 'ColumnsMin') {
+	    push @config, 'ColMin' => $v;
+	} elsif (uc $k eq uc 'SizingMethod') {
+	    push @config, 'Sizing' => $v;
 	} elsif (uc $k eq uc 'TailorLB') {
 	    push @config, 'LBClass' => undef;
 	    if (! defined $v) {
@@ -179,6 +191,17 @@ sub config ($@) {
 		    push @config, 'EAWidth' => [ $k => $v ];
 		}
 	    }
+	} elsif (uc $k eq uc 'UserBreaking') {
+	    push @config, 'Prep' => undef;
+	    if (! defined $v) {
+		;
+	    } elsif (ref $v eq 'ARRAY') {
+		push @config, map { ('Prep' => $_) } @{$v};
+	    } else {
+		push @config, 'Prep' => $v;
+	    }
+	} elsif (uc $k eq uc 'UrgentBreaking') {
+	    push @config, 'Urgent' => $v;
 	} else {
 	    push @config, $k => $v;
 	}

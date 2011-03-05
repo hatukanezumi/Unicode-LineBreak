@@ -2,26 +2,21 @@ use strict;
 use Encode qw(decode_utf8 encode_utf8);
 use Unicode::LineBreak qw(:all);
 
-$Unicode::LineBreak::Config = {
-    CharactersMax => 998,
-    ColumnsMin => 0,
-    ColumnsMax => 76,
+@Unicode::LineBreak::Config = (
+    CharMax => 998,
+    ColMax => 76,
+    ColMin => 0,
     Context => 'NONEASTASIAN',
-    #EAWidth => undef,
+    EAWidth => undef,
     Format => 'SIMPLE',
     HangulAsAL => 'NO',
-    #LBClass => undef,
+    LBClass => undef,
     LegacyCM => "YES",
     Newline => "\n",
-    #Prep => undef,
-    SizingMethod => "UAX11",
-    #UrgentBreaking => undef,
-    UserBreaking => [],
-};
-delete $Unicode::LineBreak::Config->{EAWidth};
-delete $Unicode::LineBreak::Config->{LBClass};
-delete $Unicode::LineBreak::Config->{Prep};
-delete $Unicode::LineBreak::Config->{UrgentBreaking};
+    Prep => undef,
+    Sizing => "UAX11",
+    Urgent => undef,
+);
 
 sub dotest {
     my $in = shift;

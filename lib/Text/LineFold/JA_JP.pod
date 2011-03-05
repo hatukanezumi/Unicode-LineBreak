@@ -72,11 +72,11 @@ fold()/unfold() の結果を符号化するキャラクタセット。
 0 を指定すると、水平タブ文字を無視する。
 初期値は 8。
 
-=item CharactersMax
+=item CharMax
 
-=item ColumnsMin
+=item ColMax
 
-=item ColumnsMax
+=item ColMin
 
 =item EAWidth
 
@@ -88,7 +88,7 @@ fold()/unfold() の結果を符号化するキャラクタセット。
 
 =item Prep
 
-=item UrgentBreaking
+=item Urgent
 
 L<Unicode::LineBreak::JA_JP/オプション> を参照。
 

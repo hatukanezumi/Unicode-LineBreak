@@ -49,6 +49,10 @@ sub do5tests {
     }
     foreach my $method (qw(FIXED FLOWED)) {
 	my $outstring = $lf->unfold($folded{$method}, $method);
+	if (open IN, "<test-data/$in.norm.in") {
+	    $instring = join '', <IN>;
+	    close IN;
+	}
 	is($outstring, $instring);
 	#XXXopen XXX, ">test-data/$out.".(lc $method).".xxx";
 	#XXXprint XXX $outstring;

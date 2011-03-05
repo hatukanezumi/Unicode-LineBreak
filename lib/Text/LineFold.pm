@@ -48,7 +48,7 @@ use Unicode::LineBreak qw(:all);
 ### Globals
 
 ### The package Version
-our $VERSION = '2011.002_26';
+our $VERSION = '2011.03';
 
 ### Public Configuration Attributes
 our $Config = {
@@ -68,19 +68,19 @@ my %FORMAT_FUNCS = (
 	my $str = shift;
 	if ($action =~ /^so[tp]/) {
 	    $self->{_} = {};
-	    $self->{_}->{'ColumnsMax'} = $self->config('ColumnsMax');
-	    $self->config('ColumnsMax' => 0) if $str =~ /^>/;
+	    $self->{_}->{'ColMax'} = $self->config('ColMax');
+	    $self->config('ColMax' => 0) if $str =~ /^>/;
 	} elsif ($action eq "") {
 	    $self->{_}->{line} = $str;
 	} elsif ($action eq "eol") {
 	    return $self->config('Newline');
 	} elsif ($action =~ /^eo/) {
-	    if (length $self->{_}->{line} and $self->config('ColumnsMax')) {
+	    if (length $self->{_}->{line} and $self->config('ColMax')) {
 		$str = $self->config('Newline').$self->config('Newline');
 	    } else {
 		$str = $self->config('Newline');
 	    }
-	    $self->config('ColumnsMax' => $self->{_}->{'ColumnsMax'});
+	    $self->config('ColMax' => $self->{_}->{'ColMax'});
 	    delete $self->{_};
 	    return $str;
 	}
@@ -190,11 +190,11 @@ Column width of tab stops.
 When 0 is specified, horizontal tab characters are ignored.
 Default is 8.
 
-=item CharactersMax
+=item CharMax
 
-=item ColumnsMin
+=item ColMax
 
-=item ColumnsMax
+=item ColMin
 
 =item EAWidth
 
@@ -206,7 +206,7 @@ Default is 8.
 
 =item Prep
 
-=item UrgentBreaking
+=item Urgent
 
 See L<Unicode::LineBreak/Options>.
 
@@ -270,7 +270,7 @@ sub config {
     ## Set sizing method.
     ## Note: Example in Unicode::LineBreak POD treats $spcstr as Perl string.
     ## Following code is more efficient.
-    $self->SUPER::config(SizingMethod => sub {
+    $self->SUPER::config(Sizing => sub {
 	my ($self, $cols, $pre, $spc, $str) = @_;
 
 	my $tabsize = $self->{TabSize};

@@ -105,6 +105,7 @@ I<Instance method>.
 Returns substring of grapheme cluster string.
 OFFSET and LENGTH are based on grapheme clusters.
 If REPLACEMENT is specified, substring is replaced by it.
+REPLACEMENT may be Unicode string.
 
 =back
 

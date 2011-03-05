@@ -26,7 +26,7 @@ use Unicode::LineBreak;
 ### Globals
 
 # The package version
-our $VERSION = '2011.0';
+our $VERSION = '2011.03';
 
 use overload 
     '@{}' => \&as_arrayref,

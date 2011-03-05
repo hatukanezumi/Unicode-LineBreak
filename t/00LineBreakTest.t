@@ -13,7 +13,7 @@
 
 use strict;
 use Test::More;
-use Encode qw(decode is_utf8 encode_utf8);
+use Encode qw(decode is_utf8);
 use Unicode::LineBreak qw(:all);
 
 BEGIN {
@@ -32,40 +32,12 @@ BEGIN {
     }
 }
 
-sub format {
-    my $self = shift;
-    my $ev = shift;
-    my $str = shift;
-
-    if ($ev eq 'sot') {
-	$self->{'T'} = [];
-    }
-    if ($ev =~ /^so/) {
-	$self->{'L'} = '';
-    } elsif ($ev eq '') {
-	$self->{'L'} = $str;
-	return '';
-    } elsif ($ev =~ /^eo/) {
-	$self->{'L'} .= $str;
-	push @{$self->{'T'}}, $self->{'L'};
-	if ($ev eq 'eot') {
-	    return join ' ÷ ',
-	    map { join ' × ',
-		  map { sprintf '%04X', ord $_ }
-		  split //s, "$_" }
-	    @{$self->{'T'}};
-	}
-	return '';
-    }
-    undef;
-}
-
 my $lb = Unicode::LineBreak->new(
 				 BreakIndent => 'NO',
-				 ColumnsMax => 1,
-				 Format => \&format,
-				 LegacyCM => 'NO',
+				 ColMax => 1,
 				 EAWidth => [[1..65532] => EA_N],
+				 Format => undef,
+				 LegacyCM => 'NO',
 			      );
 
 open IN, 'test-data/LineBreakTest.txt';
@@ -77,6 +49,7 @@ while (<IN>) {
 
     s/\s*÷$//;
     s/^×\s*//;
+
     my $s = join '',
 	    map {
 		$_ = chr hex "0x$_";
@@ -85,7 +58,14 @@ while (<IN>) {
 	    }
 	    split /\s*(?:÷|×)\s*/, $_;
 
-    is encode_utf8($lb->break($s)), $_;
+    is join(' ÷ ',
+	    map {
+		 join ' × ',
+		 map { sprintf '%04X', ord $_ }
+		 split //, $_;
+	    }
+	    $lb->break($s)
+       ), $_;
 }
 
 close IN;
