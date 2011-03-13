@@ -1,3 +1,13 @@
+2011.003_13  Sun Mar 13 2011
+! lib/Unicode/GCString/JA_JP.pod
+! lib/Unicode/LineBreak.pod
+! lib/Unicode/LineBreak/JA_JP.pod
+  - Update REFERENCES.
+! Makefile.PL
+  - removed sombok/configure dependency.
+  - added dist PREOP to correct timestamp of files included into distribution.
+  - possible fix for RT #61922, about libthai.  Requires sombok >= 2011.3.
+
 2011.03.05  Sat Mar 05 2011
 ! lib/Unicode/LineBreak.pm
   - Chg: CharactersMax, ColumnsMax, ColumnsMin, SizingMethod & UrgentBreaking

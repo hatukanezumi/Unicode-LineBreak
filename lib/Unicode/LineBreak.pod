@@ -781,8 +781,8 @@ L<http://web.archive.org/web/people.debian.org/~kubota/unicode-symbols-width2.ht
 
 =item [UAX #11]
 
-A. Freytag (2008-2009).
-I<Unicode Standard Annex #11: East Asian Width>, Revision 17-19.
+A. Freytag (2008-2010).
+I<Unicode Standard Annex #11: East Asian Width>, Revision 17-21.
 L<http://unicode.org/reports/tr11/>.
 
 =item [UAX #14]

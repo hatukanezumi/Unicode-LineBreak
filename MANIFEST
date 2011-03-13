@@ -41,7 +41,7 @@ sombok/data/Rules-6.0.0.txt
 sombok/depcomp
 sombok/doc/doxyfile.in
 sombok/include/sombok_constants.h
-sombok/include/sombok.h
+sombok/include/sombok.h.in
 sombok/INSTALL
 sombok/install-sh
 sombok/lib/5.1.0.c

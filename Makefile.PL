@@ -5,7 +5,7 @@ package MY;
 use ExtUtils::MakeMaker;
 
 my $csubdir = 'sombok';
-my $sombok_atleast_version = '2011.2';
+my $sombok_atleast_version = '2011.3';
 my $pkg_config = $ENV{'PKG_CONFIG'} || 'pkg-config';
 my @args = ();
 my $enable_libthai = 'yes';
@@ -42,8 +42,6 @@ $csubdir/Makefile: $csubdir/configure
 \tcd $csubdir && \\
 \t\$(SHELL) configure --disable-shared --enable-static $args \\
 \tCC='\$(CC)' CFLAGS='\$(CCFLAGS) \$(OPTIMIZE) \$(CCCDLFLAGS)'
-$csubdir/configure: $csubdir/configure.ac
-\tcd $csubdir && autoreconf
 EOF
 }
 
@@ -104,7 +102,8 @@ WriteMakefile(
 	    'MIME::Charset'	=> '1.006.2',
 	    'Test::More'	=> '0.45',
 	},
-	# Un-comment this if you add C files to link with later:
-	# 'OBJECT'	=> '$(O_FILES)', # link all the C files too
 	@opts,
+	'dist'		=> {
+	    'PREOP'		=> "cd $csubdir && \$(TOUCH) aclocal.m4 configure config.h.in Makefile.in",
+	},
 );
