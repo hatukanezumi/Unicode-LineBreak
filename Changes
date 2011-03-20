@@ -1,3 +1,10 @@
+2011.03.21  Mon Mar 21 2011
+! Makefile.PL
+  - MYEXTLIB: avoid compilation failure due to parallel execution by make.
+! lib/Unicode/LineBreak.pod
+! lib/Unicode/LineBreak/JA_JP.pod
+  - Doc: U+3xxxx (a.k.a. Tertiary Ideographic Plane) contains old hanzi.
+
 2011.003_13  Sun Mar 13 2011
 ! lib/Unicode/GCString/JA_JP.pod
 ! lib/Unicode/LineBreak.pod

@@ -740,7 +740,7 @@ if they have not been assigned any characers.
     U+E000..U+F8FF     | AL (XX)    | F or N (A) | Private use
     U+F900..U+FAFF     | ID         | W          | CJK ideographs
     U+20000..U+2FFFD   | ID         | W          | CJK ideographs
-    U+30000..U+3FFFD   | ID         | W          | CJK ideographs
+    U+30000..U+3FFFD   | ID         | W          | Old hanzi
     U+F0000..U+FFFFD   | AL (XX)    | F or N (A) | Private use
     U+100000..U+10FFFD | AL (XX)    | F or N (A) | Private use
     Other unassigned   | AL (XX)    | N          | Unassigned

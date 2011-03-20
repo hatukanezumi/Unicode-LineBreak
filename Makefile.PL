@@ -36,12 +36,11 @@ EOF
 sub postamble {
     my $args = join ' ', map {s/\'/\\\'/g; "'$_'"; } @args;
     return <<EOF;
-\$(MYEXTLIB): $csubdir/Makefile
-\tcd $csubdir && \$(MAKE)
-$csubdir/Makefile: $csubdir/configure
+\$(MYEXTLIB): $csubdir/configure
 \tcd $csubdir && \\
 \t\$(SHELL) configure --disable-shared --enable-static $args \\
 \tCC='\$(CC)' CFLAGS='\$(CCFLAGS) \$(OPTIMIZE) \$(CCCDLFLAGS)'
+\tcd $csubdir && \$(MAKE)
 EOF
 }
 
@@ -85,6 +84,7 @@ if ($enable_malloc_debug eq 'yes') {
 if ($bundled_sombok eq 'yes') {
     push @opts, ('MYEXTLIB' => "$csubdir/.libs/libsombok\$(LIB_EXT)");
     push @opts, ('INC' => "-I$csubdir/include -I$csubdir");
+    push @opts, ('depend' => { '$(OBJECT)' => '$(MYEXTLIB)' } );
 } else {
     push @opts, ('LIBS' => `$pkg_config --libs sombok`);
     push @opts, ('INC' => `$pkg_config --cflags sombok`); 

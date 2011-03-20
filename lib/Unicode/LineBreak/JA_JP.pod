@@ -680,7 +680,7 @@ SG や XX に分類される文字は AL に解決する。
     U+E000..U+F8FF     | AL (XX)    | F か N (A) | 私用領域
     U+F900..U+FAFF     | ID         | W          | CJK漢字
     U+20000..U+2FFFD   | ID         | W          | CJK漢字
-    U+30000..U+3FFFD   | ID         | W          | CJK漢字
+    U+30000..U+3FFFD   | ID         | W          | 古漢字
     U+F0000..U+FFFFD   | AL (XX)    | F か N (A) | 私用領域
     U+100000..U+10FFFD | AL (XX)    | F か N (A) | 私用領域
     その他未割り当て   | AL (XX)    | N          | 未割り当て
