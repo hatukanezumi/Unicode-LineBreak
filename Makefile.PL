@@ -5,7 +5,7 @@ package MY;
 use ExtUtils::MakeMaker;
 
 my $csubdir = 'sombok';
-my $sombok_atleast_version = '2011.3';
+my $sombok_atleast_version = '2011.4';
 my $pkg_config = $ENV{'PKG_CONFIG'} || 'pkg-config';
 my @args = ();
 my $enable_libthai = 'yes';
@@ -38,7 +38,7 @@ sub postamble {
     return <<EOF;
 \$(MYEXTLIB): $csubdir/configure
 \tcd $csubdir && \\
-\t\$(SHELL) configure --disable-shared --enable-static $args \\
+\t\$(SHELL) configure --disable-shared --disable-doc $args \\
 \tCC='\$(CC)' CFLAGS='\$(CCFLAGS) \$(OPTIMIZE) \$(CCCDLFLAGS)'
 \tcd $csubdir && \$(MAKE)
 EOF
@@ -82,10 +82,14 @@ if ($enable_malloc_debug eq 'yes') {
     push @opts, ('DEFINE' => '-DMALLOC_DEBUG');
 }
 if ($bundled_sombok eq 'yes') {
+    print "Use bundled sombok\n";
     push @opts, ('MYEXTLIB' => "$csubdir/.libs/libsombok\$(LIB_EXT)");
     push @opts, ('INC' => "-I$csubdir/include -I$csubdir");
     push @opts, ('depend' => { '$(OBJECT)' => '$(MYEXTLIB)' } );
 } else {
+    my $sombok = `$pkg_config --modversion sombok`;
+    chomp $sombok;
+    print "Use sombok $sombok\n";
     push @opts, ('LIBS' => `$pkg_config --libs sombok`);
     push @opts, ('INC' => `$pkg_config --cflags sombok`); 
 }
@@ -104,6 +108,6 @@ WriteMakefile(
 	},
 	@opts,
 	'dist'		=> {
-	    'PREOP'		=> "cd $csubdir && \$(TOUCH) aclocal.m4 configure config.h.in Makefile.in",
+	    'PREOP'		=> "\$(PERL) -i -pe \'s/^(version:\\s+).*/\$\${1}\$(VERSION)/\' META.yml; \$(PERL) -i -pe \'s/^(%define version\\s+).*/\$\${1}\$(VERSION)/\' perl-Unicode-LineBreak.spec; cd $csubdir && \$(TOUCH) aclocal.m4 configure config.h.in Makefile.in",
 	},
 );

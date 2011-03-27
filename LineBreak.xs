@@ -1252,6 +1252,13 @@ UNICODE_VERSION()
     OUTPUT:
 	RETVAL
 
+const char *
+SOMBOK_VERSION()
+    CODE:
+	RETVAL = SOMBOK_VERSION;
+    OUTPUT:
+	RETVAL
+
 
 MODULE = Unicode::LineBreak	PACKAGE = Unicode::LineBreak::SouthEastAsian
 

@@ -13,6 +13,12 @@ lib/Unicode/LineBreak/Constants.pm
 lib/Unicode/LineBreak/Defaults.pm.sample
 lib/Unicode/LineBreak/JA_JP.pod
 LineBreak.xs
+Makefile.PL
+MANIFEST			This list of files
+META.yml
+perl-Unicode-LineBreak.spec
+ppport.h
+README
 sombok/aclocal.m4
 sombok/AUTHORS
 sombok/ChangeLog
@@ -72,11 +78,6 @@ sombok/src/mymalloc.h
 sombok/src/sombok.c
 sombok/src/strcasecmp.c
 sombok/src/strerror.c
-Makefile.PL
-MANIFEST			This list of files
-META.yml
-ppport.h
-README
 t/00LineBreakTest.t
 t/01break.t
 t/02hangul.t

@@ -10,7 +10,7 @@ use vars qw($VERSION @EXPORT_OK @ISA $Config @Config);
 
 ### Exporting:
 use Exporter;
-our @EXPORT_OK = qw(UNICODE_VERSION context);
+our @EXPORT_OK = qw(UNICODE_VERSION SOMBOK_VERSION context);
 our %EXPORT_TAGS = ('all' => [@EXPORT_OK]);
 
 ### Inheritance:
@@ -25,7 +25,7 @@ use Unicode::GCString;
 ### Globals
 
 ### The package version
-our $VERSION = '2011.03.21';
+our $VERSION = '2011.04';
 
 ### Public Configuration Attributes
 our @Config = (
