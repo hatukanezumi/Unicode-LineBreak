@@ -1,5 +1,6 @@
-2011.04  Xxx Apr XX 2011
+2011.04  Fri Apr 01 2011
 + perl-Unicode-LineBreak.spec
+  - RPM spec file.
 ! LineBreak.xs
   - New constant SOMBOK_VERSION.
 ! Makefile.PL
