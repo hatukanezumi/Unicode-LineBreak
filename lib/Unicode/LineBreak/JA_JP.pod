@@ -133,7 +133,7 @@ L</new>、L</config> の両メソッドには以下の対を指定できる。
 =item BreakIndent => C<"YES"> | C<"NO">
 
 行頭の SPACE の並び (インデント) の後では常に分割を許す。
-[UAX #14] はこのような用法を考慮していない。
+[UAX #14] は SPACE のこのような用法を考慮していない。
 初期値は C<"YES">。
 
 B<注>:
@@ -166,7 +166,7 @@ L</Urgent> オプションおよび L</ユーザ定義の行分割動作> も参
 =item ComplexBreaking => C<"YES"> | C<"NO">
 
 東南アジアの複雑な文脈で、発見的な行折りを行う。
-初期値は、東南アジアの表記体系での語分割が有効なら C<"YES">。
+初期値は、東南アジアの表記体系での単語分節が有効なら C<"YES">。
 
 =item Context => CONTEXT
 
@@ -381,7 +381,7 @@ B<注>: 現リリースでは現代タイ語のタイ文字にのみ対応して
 
 L</Format> オプションにサブルーチンへの参照を指定する場合、そのサブルーチンは 3 つの引数を取らなければならない。
 
-    修正後 = &サブルーチン(SELF, EVENT, STR);
+    $修正後 = &サブルーチン(SELF, EVENT, STR);
 
 SELF は Unicode::LineBreak オブジェクト、EVENT はサブルーチンが呼ばれた文脈を表す文字列、STR は分割位置の前または後の Unicode 文字列の断片。
 
@@ -419,7 +419,7 @@ L<Unicode::GCString::JA_JP> 参照。
 任意分割によって生じる行が CharMax、ColMax、ColMin のいずれかの制限を超えると見込まれるときは、引き続く文字列に対してB<緊急分割>を実行できる。
 L</Urgent> オプションにサブルーチンへの参照を指定する場合、そのサブルーチンは 2 つの引数を取らなければならない。
 
-    分割後 = &サブルーチン(SELF, STR);
+    @分割後 = &サブルーチン(SELF, STR);
 
 SELF は Unicode::LineBreak オブジェクト、STR は分割すべき Unicode 文字列。
 
@@ -439,7 +439,7 @@ L<Unicode::GCString::JA_JP> 参照。
 
 L</Prep> オプションに [REGEX, SUBREF] の配列参照を指定する場合、サブルーチンは 2 つの引数を取らなければならない。
 
-    分割後 = &サブルーチン(SELF, STR);
+    @分割後 = &サブルーチン(SELF, STR);
 
 SELF は Unicode::LineBreak オブジェクト、STR は REGEX にマッチする分割すべき Unicode 文字列。
 
@@ -463,11 +463,37 @@ SELF は Unicode::LineBreak オブジェクト、STR は REGEX にマッチす�
 Unicode::LineBreak オブジェクトはハッシュ参照としてふるまう。
 任意の要素を、オブジェクトの存在期間中保存できる。
 
+たとえば次のコードは、段落を空行で分ける。
+
+        my $self = shift;
+        my $action = shift;
+        my $str = shift;
+        
+        if ($action eq 'sot' or $action eq 'sop') {
+            $self->{'line'} = '';
+        } elsif ($action eq '') {
+            $self->{'line'} = $str;
+        } elsif ($action eq 'eol') {
+            return "\n";
+        } elsif ($action eq 'eop') {
+            if (length $self->{'line'}) {
+                return "\n\n";
+            } else {
+                return "\n";
+            }
+        } elsif ($action eq 'eot') {
+            return "\n";
+        }
+        return undef;
+    }
+    my $lb = Unicode::LineBreak->new(Format => \&paraformat);
+    $output = $lb->break($string);
+
 =head2 文字列長の算出
 
 L</Sizing> オプションにサブルーチンへの参照を指定する場合、そのサブルーチンは 5 つの引数を取らなければならない。
 
-    桁数 = &サブルーチン(SELF, LEN, PRE, SPC, STR);
+    $桁数 = &サブルーチン(SELF, LEN, PRE, SPC, STR);
 
 SELF は Unicode::LineBreak オブジェクト、LEN は先行する文字列の長さ、PRE は先行する Unicode 文字列、SPC は追加される空白文字、STR は処理する Unicode 文字列。
 

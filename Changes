@@ -1,3 +1,16 @@
+2011.04.26  Sat Apr 16 2011
+! lib/Text/LineFold.pm
+! lib/Text/LineFold/JA_JP.pod
+  - Small fixes.
+! lib/Unicode/LineBreak.pod
+! lib/Unicode/LineBreak/JA_JP.pod
+  - Added example usage of hashref override.  Small fixes.
+! sombok
+  - Update to 2011.5RC: Fix CPAN RT #67505 Long URLs cause infinite loop.
+! MANIFEST
+  - Eliminate sombok/data and some of sombok/src/* from CPAN distribution.
+    To get full package of Sombok see <http://sf.net/projects/linefold/>.
+
 2011.04  Fri Apr 01 2011
 + perl-Unicode-LineBreak.spec
   - RPM spec file.

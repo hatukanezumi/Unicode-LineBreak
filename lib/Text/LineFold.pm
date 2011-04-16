@@ -187,14 +187,18 @@ Default is the value of Charset option.
 =item TabSize => NUMBER
 
 Column width of tab stops.
-When 0 is specified, horizontal tab characters are ignored.
+When 0 is specified, tab stops are ignored.
 Default is 8.
+
+=item BreakIndent
 
 =item CharMax
 
 =item ColMax
 
 =item ColMin
+
+=item ComplexBreaking
 
 =item EAWidth
 

@@ -148,7 +148,7 @@ L</new> and L</config> methods accept following pairs.
 =item BreakIndent => C<"YES"> | C<"NO">
 
 Always allows break after SPACEs at beginning of line, a.k.a. indent.
-[UAX #14] does not take account of such usage.
+[UAX #14] does not take account of such usage of SPACE.
 Default is C<"YES">.
 
 B<Note>:
@@ -406,7 +406,7 @@ A string to specify version of Unicode standard this module refers.
 If you specify subroutine reference as a value of L</Format> option,
 it should accept three arguments:
 
-    MODIFIED = &subroutine(SELF, EVENT, STR);
+    $MODIFIED = &subroutine(SELF, EVENT, STR);
 
 SELF is a Unicode::LineBreak object,
 EVENT is a string to determine the context that subroutine was called in,
@@ -453,7 +453,7 @@ performed on successive string.
 If you specify subroutine reference as a value of L</Urgent> option,
 it should accept two arguments:
 
-    BROKEN = &subroutine(SELF, STR);
+    @BROKEN = &subroutine(SELF, STR);
 
 SELF is a Unicode::LineBreak object and STR is a Unicode string to be broken.
 
@@ -474,7 +474,7 @@ For example, following code inserts hyphen to the name of several chemical subst
 If you specify [REGEX, SUBREF] array reference as any of L</Prep> option,
 subroutine should accept two arguments:
 
-    BROKEN = &subroutine(SELF, STR);
+    @BROKEN = &subroutine(SELF, STR);
 
 SELF is a Unicode::LineBreak object and
 STR is a Unicode string matched with REGEX.
@@ -499,12 +499,39 @@ For example, following code will break HTTP URLs using [CMOS] rule.
 Unicode::LineBreak object can behave as hash reference.
 Any items may be preserved throughout its life.
 
+For example, following code will separate paragraphs with empty lines.
+
+    sub paraformat {
+        my $self = shift;
+        my $action = shift;
+        my $str = shift;
+        
+        if ($action eq 'sot' or $action eq 'sop') {
+            $self->{'line'} = '';
+        } elsif ($action eq '') {
+            $self->{'line'} = $str;
+        } elsif ($action eq 'eol') {
+            return "\n";
+        } elsif ($action eq 'eop') {
+            if (length $self->{'line'}) {
+                return "\n\n";
+            } else {
+                return "\n";
+            }
+        } elsif ($action eq 'eot') {
+            return "\n";
+        }
+        return undef;
+    }
+    my $lb = Unicode::LineBreak->new(Format => \&paraformat);
+    $output = $lb->break($string);
+
 =head2 Calculating String Size
 
 If you specify subroutine reference as a value of L</Sizing> option,
 it will be called with five arguments:
 
-    COLS = &subroutine(SELF, LEN, PRE, SPC, STR);
+    $COLS = &subroutine(SELF, LEN, PRE, SPC, STR);
 
 SELF is a Unicode::LineBreak object, LEN is size of preceding string,
 PRE is preceding Unicode string, SPC is additional SPACEs and STR is a
