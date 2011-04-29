@@ -1,3 +1,18 @@
+2011.05  Sun May 01 2011
+! Makefile.PL
+  - Pass (full) names of ar & ranlib to configure: link fails if they were not
+    found in PATH (e.g. Solaris; ar is under /usr/ccs/bin).
+  - New versioning scheme of Sombok.  See sombok/ChangeLog.
+! lib/Text/LineFold/JA_JP.pod
+  - typo.
+! perl-Unicode-LineBreak.spec
+  - Update %{sombok_version}. increased epoch.
+! t/07sea.t
+! t/08partial.t
+  - Skip tests with older libthai: see CPAN RT #61922.
+! t/16regex.t
+  - Skip tests when perlbug #82302 was detected (Perl 5.13.8 302-388).
+
 2011.04.26  Sat Apr 16 2011
 ! lib/Text/LineFold.pm
 ! lib/Text/LineFold/JA_JP.pod

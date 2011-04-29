@@ -1,7 +1,7 @@
 %define module  Unicode-LineBreak
-%define version 2011.04.26
+%define version 2011.05
 %define release 1%{?dist}
-%define sombok_version 2011.5
+%define sombok_version 1:2.0.5
 
 Name:       perl-%{module}
 Version:    %{version}
@@ -47,7 +47,7 @@ make test
 rm -rf %buildroot
 make install DESTDIR=%buildroot
 rm -f %{buildroot}%{perl_archlib}/perllocal.pod
-rm -f %{buildroot}%{perl_archlib}/auto/Unicode/LineBreak/.packlist
+rm -f %{buildroot}%{perl_vendorarch}/auto/Unicode/LineBreak/.packlist
 
 %clean
 rm -rf %buildroot

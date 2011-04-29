@@ -5,26 +5,14 @@ package MY;
 use ExtUtils::MakeMaker;
 
 my $csubdir = 'sombok';
-my $sombok_atleast_version = '2011.5';
+my $sombok_atleast_version = '2.0.5';
+my $sombok_max_version = '2.99.99';
 my $pkg_config = $ENV{'PKG_CONFIG'} || 'pkg-config';
 my @args = ();
 my $enable_libthai = 'yes';
 my $bundled_sombok = 'no';
 my $libthai;
 my $enable_malloc_debug = 'no';
-
-sub top_targets {
-    my $inherited = shift->SUPER::top_targets(@_);
-    if ($libthai and $enable_libthai eq 'yes') {
-	$inherited =~ s{^(all ::.*?)\n.*?$}{<<EOF}em;
-$1
-\t\$(NOECHO) \$(MAKE) test TEST_FILES=t/07sea.t >/dev/null || \\
-\t( \$(ECHO) "Your libthai is broken.  Rebuild it then try again."; \\
-\texit 1 )
-EOF
-    }
-    $inherited;
-}
 
 sub clean_subdirs {
     return <<EOF;
@@ -34,12 +22,16 @@ EOF
 }
 
 sub postamble {
+    my $self = shift;
     my $args = join ' ', map {s/\'/\\\'/g; "'$_'"; } @args;
+    my $tools = "CC='\$(CC)' CFLAGS='\$(CCFLAGS) \$(OPTIMIZE) \$(CCCDLFLAGS)'";
+    $tools .= $self->{'FULL_AR'}? " AR='\$(FULL_AR)'":
+	      ($self->{'AR'}? " AR='\$(AR)'": '');
+    $tools .= $self->{'RANLIB'}? " RANLIB='\$(RANLIB)'": '';
     return <<EOF;
 \$(MYEXTLIB): $csubdir/configure
 \tcd $csubdir && \\
-\t\$(SHELL) configure --disable-shared --disable-doc $args \\
-\tCC='\$(CC)' CFLAGS='\$(CCFLAGS) \$(OPTIMIZE) \$(CCCDLFLAGS)'
+\t\$(SHELL) configure --disable-shared --disable-doc $tools $args
 \tcd $csubdir && \$(MAKE)
 EOF
 }
@@ -73,7 +65,8 @@ if ($libthai and $enable_libthai eq 'yes') {
     push @args, '--disable-libthai';
 }
 if (system("$pkg_config --atleast-version=$sombok_atleast_version sombok")
-    >> 8) {
+    >> 8 or
+    system("$pkg_config --max-version=$sombok_max_version sombok") >> 8) {
     $bundled_sombok = 'yes';
 }
 if ($enable_malloc_debug eq 'yes') {

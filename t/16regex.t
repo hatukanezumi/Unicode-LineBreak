@@ -2,7 +2,21 @@ use strict;
 use Test::More;
 require "t/lb.pl";
 
-BEGIN { plan tests => 6 }
+my $splitre;
+BEGIN {
+    $splitre = eval q{ qr{
+        (?<=^url:) |
+            (?<=[/]) (?=[^/]) |
+            (?<=[^-.]) (?=[-~.,_?\#%=&]) |
+            (?<=[=&]) (?=.)
+        }iox };
+    if ($@) {
+	diag $@;
+	plan skip_all => "Perl may have a bug (cf. perlbug #82302).";
+    } else {
+	plan tests => 6;
+    }
+}
 
 # Regex matching most of URL-like strings.
 my $URIre = qr{
@@ -21,12 +35,7 @@ sub breakURI {
     # 17.11 1.3: ÷ [=&]
     # 17.11 1.3: [=&] ÷
     # Default:  ALL × ALL
-    my @c = split m{
-	(?<=^url:) |
-	    (?<=[/]) (?=[^/]) |
-	    (?<=[^-.]) (?=[-~.,_?\#%=&]) |
-	    (?<=[=&]) (?=.)
-	}iox, $_[1];
+    my @c = split m{$splitre}, $_[1];
     # Won't break punctuations at end of matches.
     while (2 <= scalar @c and $c[$#c] =~ /^[\".:;,>]+$/) {
 	my $c = pop @c;

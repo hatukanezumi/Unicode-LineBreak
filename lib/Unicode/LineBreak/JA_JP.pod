@@ -465,6 +465,7 @@ Unicode::LineBreak オブジェクトはハッシュ参照としてふるまう�
 
 たとえば次のコードは、段落を空行で分ける。
 
+    sub paraformat {
         my $self = shift;
         my $action = shift;
         my $str = shift;
