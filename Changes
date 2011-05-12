@@ -11,7 +11,7 @@
 ! t/08partial.t
   - Skip tests with older libthai: see CPAN RT #61922.
 ! t/16regex.t
-  - Skip tests when perlbug #82302 was detected (Perl 5.13.8 302-388).
+  - Skip tests when perlbug #82302 was detected (Perl 5.13.8 around 300-388).
 
 2011.04.26  Sat Apr 16 2011
 ! lib/Text/LineFold.pm
