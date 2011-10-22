@@ -370,12 +370,13 @@ Obsoleted equivalent to L</Prep>.
 Index values to specify 6 East_Asian_Width properties
 defined by [UAX #11], and EA_Z to specify nonspacing.
 
-=item C<LB_BK>, C<LB_CR>, C<LB_LF>, C<LB_NL>, C<LB_SP>, C<LB_OP>, C<LB_CL>, C<LB_CP>, C<LB_QU>, C<LB_GL>, C<LB_NS>, C<LB_EX>, C<LB_SY>, C<LB_IS>, C<LB_PR>, C<LB_PO>, C<LB_NU>, C<LB_AL>, C<LB_ID>, C<LB_IN>, C<LB_HY>, C<LB_BA>, C<LB_BB>, C<LB_B2>, C<LB_CB>, C<LB_ZW>, C<LB_CM>, C<LB_WJ>, C<LB_H2>, C<LB_H3>, C<LB_JL>, C<LB_JV>, C<LB_JT>, C<LB_SG>, C<LB_AI>, C<LB_SA>, C<LB_XX>
+=item C<LB_BK>, C<LB_CR>, C<LB_LF>, C<LB_NL>, C<LB_SP>, C<LB_OP>, C<LB_CL>, C<LB_CP>, C<LB_QU>, C<LB_GL>, C<LB_NS>, C<LB_EX>, C<LB_SY>, C<LB_IS>, C<LB_PR>, C<LB_PO>, C<LB_NU>, C<LB_AL>, C<LB_ID>, C<LB_HL>, C<LB_IN>, C<LB_HY>, C<LB_BA>, C<LB_BB>, C<LB_B2>, C<LB_CB>, C<LB_ZW>, C<LB_CM>, C<LB_WJ>, C<LB_H2>, C<LB_H3>, C<LB_JL>, C<LB_JV>, C<LB_JT>, C<LB_SG>, C<LB_AI>, C<LB_SA>, C<LB_XX>
 
-Index values to specify 37 line breaking properties (classes)
+Index values to specify 38 line breaking properties (classes)
 defined by [UAX #14].
 
 B<Note>: Property value CP was introduced by Unicode 5.2.0.
+Property value HL may be introduced by Unicode 6.1.0.
 
 =item C<MANDATORY>, C<DIRECT>, C<INDIRECT>, C<PROHIBITED>
 
@@ -720,7 +721,8 @@ L<http://hatuka.nezumi.nu/repos/Unicode-LineBreak/>.
 =head2 Conformance to Standards
 
 Character properties this module is based on are defined by
-Unicode Standards version 6.0.0.
+Unicode Standards version 6.1.0-beta at 19 Sep. 2011.
+B<This data is beta release.  Do not use for production system>.
 
 This module is intended to implement UAX14-C2.
 
@@ -770,7 +772,9 @@ if they have not been assigned any characers.
     U+30000..U+3FFFD   | ID         | W          | Old hanzi
     U+F0000..U+FFFFD   | AL (XX)    | F or N (A) | Private use
     U+100000..U+10FFFD | AL (XX)    | F or N (A) | Private use
-    Other unassigned   | AL (XX)    | N          | Unassigned
+    Other unassigned   | AL (XX)    | N          | Unassigned,
+                       |            |            | reserved or
+                       |            |            | noncharacters
     -------------------------------------------------------------
 
 =item *
@@ -808,14 +812,14 @@ L<http://web.archive.org/web/people.debian.org/~kubota/unicode-symbols-width2.ht
 
 =item [UAX #11]
 
-A. Freytag (2008-2010).
-I<Unicode Standard Annex #11: East Asian Width>, Revision 17-21.
+A. Freytag (2008-2011).
+I<Unicode Standard Annex #11: East Asian Width>, Revision 17-22.
 L<http://unicode.org/reports/tr11/>.
 
 =item [UAX #14]
 
-A. Freytag and A. Heninger (2008-2010).
-I<Unicode Standard Annex #14: Unicode Line Breaking Algorithm>, Revision 22-26.
+A. Freytag and A. Heninger (2008-2011).
+I<Unicode Standard Annex #14: Unicode Line Breaking Algorithm>, Revision 22-27.
 L<http://unicode.org/reports/tr14/>.
 
 =back

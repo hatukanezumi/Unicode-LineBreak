@@ -1,3 +1,18 @@
+2011.010_21  Fri Oct 21 2011
+! GPL
+  - Street address of FSF: CPAN RT #69999.
+! lib/Unicode/LineBreak.pod
+! lib/Unicode/LineBreak/JA_JP.pod
+  - Some updates.
+! Makefile.PL
+  - Requires Sombok >= 2.0.6.
+! META.yml
+  - Quote abstract containing `#'.
+! t/00LineBreakTest.t
+  - Add test names.
+! t/01break.t
+  - Added Hebrew (he) test.
+
 2011.05  Sun May 01 2011
 ! Makefile.PL
   - Pass (full) names of ar & ranlib to configure: link fails if they were not

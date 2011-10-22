@@ -5,7 +5,7 @@ package MY;
 use ExtUtils::MakeMaker;
 
 my $csubdir = 'sombok';
-my $sombok_atleast_version = '2.0.5';
+my $sombok_atleast_version = '2.0.6';
 my $sombok_max_version = '2.99.99';
 my $pkg_config = $ENV{'PKG_CONFIG'} || 'pkg-config';
 my @args = ();

@@ -348,12 +348,13 @@ L</Prep> の旧式な形式。
 
 [UAX #11] で定義される 6 つの East_Asian_Width 特性を表す値と、前進を伴わないことを表す EA_Z。
 
-=item C<LB_BK>, C<LB_CR>, C<LB_LF>, C<LB_NL>, C<LB_SP>, C<LB_OP>, C<LB_CL>, C<LB_CP>, C<LB_QU>, C<LB_GL>, C<LB_NS>, C<LB_EX>, C<LB_SY>, C<LB_IS>, C<LB_PR>, C<LB_PO>, C<LB_NU>, C<LB_AL>, C<LB_ID>, C<LB_IN>, C<LB_HY>, C<LB_BA>, C<LB_BB>, C<LB_B2>, C<LB_CB>, C<LB_ZW>, C<LB_CM>, C<LB_WJ>, C<LB_H2>, C<LB_H3>, C<LB_JL>, C<LB_JV>, C<LB_JT>, C<LB_SG>, C<LB_AI>, C<LB_SA>, C<LB_XX>
+=item C<LB_BK>, C<LB_CR>, C<LB_LF>, C<LB_NL>, C<LB_SP>, C<LB_OP>, C<LB_CL>, C<LB_CP>, C<LB_QU>, C<LB_GL>, C<LB_NS>, C<LB_EX>, C<LB_SY>, C<LB_IS>, C<LB_PR>, C<LB_PO>, C<LB_NU>, C<LB_AL>, C<LB_ID>, C<LB_HL>, C<LB_IN>, C<LB_HY>, C<LB_BA>, C<LB_BB>, C<LB_B2>, C<LB_CB>, C<LB_ZW>, C<LB_CM>, C<LB_WJ>, C<LB_H2>, C<LB_H3>, C<LB_JL>, C<LB_JV>, C<LB_JT>, C<LB_SG>, C<LB_AI>, C<LB_SA>, C<LB_XX>
 
-[UAX #14] で定義される 37 の行分割特性 (分類) を表す値。
+[UAX #14] で定義される 38 の行分割特性 (分類) を表す値。
 
 B<注>:
 特性値 CP はUnicode 5.2.0版で導入された。
+特性値 HL はUnicode 6.1.0版で導入されそう。
 
 =item C<MANDATORY>, C<DIRECT>, C<INDIRECT>, C<PROHIBITED>
 
@@ -663,7 +664,8 @@ L<http://hatuka.nezumi.nu/repos/Unicode-LineBreak/>
 
 =head2 標準への適合性
 
-このモジュールで用いている文字の特性値は、Unicode 標準 6.0.0 版による。
+このモジュールで用いている文字の特性値は、Unicode 標準 6.1.0ベータ版 (2011-09-19現在) による。
+B<このデータはベータ公開版である。本番システムで使わないように>。
 
 このモジュールでは、実装水準 UAX14-C2 を実装しているつもり。
 
@@ -710,7 +712,8 @@ SG や XX に分類される文字は AL に解決する。
     U+30000..U+3FFFD   | ID         | W          | 古漢字
     U+F0000..U+FFFFD   | AL (XX)    | F か N (A) | 私用領域
     U+100000..U+10FFFD | AL (XX)    | F か N (A) | 私用領域
-    その他未割り当て   | AL (XX)    | N          | 未割り当て
+    その他未割り当て   | AL (XX)    | N          | 未割り当て、
+                       |            |            | 予約、非文字
     -------------------------------------------------------------
 
 =item *
@@ -746,14 +749,14 @@ L<http://web.archive.org/web/people.debian.org/~kubota/unicode-symbols-width2.ht
 
 =item [UAX #11]
 
-A. Freytag (2008-2010).
-I<Unicode Standard Annex #11: East Asian Width>, Revision 17-21.
+A. Freytag (2008-2011).
+I<Unicode Standard Annex #11: East Asian Width>, Revision 17-22.
 L<http://unicode.org/reports/tr11/>.
 
 =item [UAX #14]
 
-A. Freytag and A. Heninger (2008-2010).
-I<Unicode Standard Annex #14: Unicode Line Breaking Algorithm>, Revision 22-26.
+A. Freytag and A. Heninger (2008-2011).
+I<Unicode Standard Annex #14: Unicode Line Breaking Algorithm>, Revision 22-27.
 L<http://unicode.org/reports/tr14/>.
 
 =back
