@@ -1,6 +1,14 @@
 ARTISTIC
 Changes
 Changes.REL1
+debian/changelog
+debian/compat
+debian/control
+debian/copyright
+debian/libunicode-linebreak-perl.docs
+debian/rules
+debian/source/format
+debian/watch
 GPL
 lib/Text/LineFold.pm
 lib/Text/LineFold/JA_JP.pod

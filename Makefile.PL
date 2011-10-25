@@ -14,6 +14,15 @@ my $bundled_sombok = 'no';
 my $libthai;
 my $enable_malloc_debug = 'no';
 
+# temp.
+sub top_targets {
+    my $inherited = shift->SUPER::top_targets(@_);
+    $inherited =~
+	s{^(all\b.*)}
+	{$1\n\t[ -e test-data/LineBreakTest.txt ] || wget -q -O test-data/LineBreakTest.txt ftp://ftp.unicode.org/Public/6.1.0/ucd/auxiliary/LineBreakTest\\*.txt 2>/dev/null || true};
+    $inherited;
+}
+
 sub clean_subdirs {
     return <<EOF;
 clean_subdirs:

@@ -48,7 +48,7 @@ use Unicode::LineBreak qw(:all);
 ### Globals
 
 ### The package Version
-our $VERSION = '2011.03';
+our $VERSION = '2011.10';
 
 ### Public Configuration Attributes
 our $Config = {
@@ -572,9 +572,7 @@ sub _is_indirect {
     my $self = shift;
     my $b = Unicode::GCString->new(shift, $self)->lbclass_ext(-1);
     my $a = Unicode::GCString->new(shift, $self)->lbclass(0);
-    $b = LB_AL if $b == LB_CM or $b == LB_SA; # FIXME: SA vs. SA
-    $a = LB_AL if $a == LB_CM or $a == LB_SA;
-    return $self->lbrule($b, $a) == INDIRECT;
+    return $self->lbrule($b, $a) == INDIRECT; # FIXME: SA vs. SA
 }
 
 

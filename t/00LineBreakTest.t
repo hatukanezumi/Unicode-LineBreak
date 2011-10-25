@@ -1,25 +1,10 @@
+# -*- perl -*-
+# -*- coding: utf-8 -*-
 #
 # 00LineBreakTest.txt - Test suite provided by Unicode Consortium.
 #
-# Result with LineBreakTest-6.0.0.txt (2010-08-30, 21:08:43 UTC):
+# Passed by LineBreakTest-6.1.0d12.txt (2011-09-16, 22:24:58 UTC).
 #
-#Failed Test         Stat Wstat Total Fail  Failed  List of Failed
-#-------------------------------------------------------------------------------
-#t/00LineBreakTest.t   30  7680  5401   30   0.56%  969 971 973 975 1113 1115
-#                                                   1117 1119 2545 2547 3845
-#                                                   3847 3989 3991 4417 4419
-#                                                   5203 5212 5217 5303-5308
-#                                                   5310-5314
-#
-# Result with LineBreakTest-6.1.0d12.txt (2011-09-16, 22:24:58 UTC):
-#
-#Failed Test         Stat Wstat Total Fail  Failed  List of Failed
-#-------------------------------------------------------------------------------
-#t/00LineBreakTest.t   30  7680  5693   30   0.53%  997 999 1001 1003 1145 1147
-#                                                   1149 1151 2765 2767 4101
-#                                                   4103 4249 4251 4689 4691
-#                                                   5495 5504 5509 5595-5600
-#                                                   5602-5606
 
 use strict;
 use Test::More;
@@ -29,13 +14,19 @@ use Unicode::LineBreak qw(:all);
 BEGIN {
     my $tests = 0;
     if (open IN, 'test-data/LineBreakTest.txt') {
+	my $desc = '';
 	while (<IN>) {
-	    s/\s*#.*//;
+	    s/\s*#\s*(.*)//;
+	    if ($. <= 2) {
+		$desc .= " $1";
+		chomp $desc;
+	    }
 	    next unless /\S/;
 	    $tests++;
 	}
 	close IN;
 	plan tests => $tests;
+	diag $desc;
     } else {
 	plan skip_all => 'test-data/LineBreakTest.txt found at '.
 	    'http://www.unicode.org/Public/ is required.';

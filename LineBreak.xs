@@ -15,6 +15,8 @@
 #include "XSUB.h"
 #define NEED_newRV_noinc
 #define NEED_sv_2pv_flags
+#define NEED_newRV_noinc_GLOBAL
+#define NEED_sv_2pv_flags_GLOBAL
 #define NEED_sv_2pv_nolen
 #include "ppport.h"
 #include "sombok.h"
@@ -1118,7 +1120,9 @@ lbrule(self, b_idx, a_idx)
     CODE:
 	if (!SvOK(ST(1)) || !SvOK(ST(2)))
 	    XSRETURN_UNDEF;
-	RETVAL = linebreak_lbrule(b_idx, a_idx);
+	if (self == NULL)
+	    XSRETURN_UNDEF;
+	RETVAL = linebreak_get_lbrule(self, b_idx, a_idx);
 	if (RETVAL == PROP_UNKNOWN)
 	    XSRETURN_UNDEF;
     OUTPUT:

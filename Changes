@@ -1,3 +1,18 @@
+2011.010_26  Wed Oct 26 2011
++ debian/*
+  - Added Debian packaging info at Debian sid, packaged by Emmanuel Bouthenot.
+! lib/Text/LineFold.pm:
+  - Bump up version to 2011.10.
+  - _is_indirect(): Simplified as enhancement of lbrule().
+! LineBreak.xs:
+  - lbrule(): Use new linebreak_get_lbrule() instead of linebreak_lbrule().
+! Makefile.PL
+  - Try getting LineBreakTest.txt for test #00.
+! t/00LineBreakText.t
+  - Now all tests shall be past.
+! sombok/*
+  - Bundled Sombok 2.0.6beta2.
+
 2011.010_21  Fri Oct 21 2011
 ! GPL
   - Street address of FSF: CPAN RT #69999.
