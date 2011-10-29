@@ -3,6 +3,7 @@
 #
 # 00LineBreakTest.txt - Test suite provided by Unicode Consortium.
 #
+# Passed by LineBreakTest-6.0.0.txt (2010-08-30, 21:08:43 UTC).
 # Passed by LineBreakTest-6.1.0d12.txt (2011-09-16, 22:24:58 UTC).
 #
 
@@ -25,8 +26,12 @@ BEGIN {
 	    $tests++;
 	}
 	close IN;
-	plan tests => $tests;
-	diag $desc;
+	if ($tests) {
+	    plan tests => $tests;
+	    diag $desc;
+	} else {
+	    plan skip_all => 'test-data/LineBreakTest.txt is empty.';
+	}
     } else {
 	plan skip_all => 'test-data/LineBreakTest.txt found at '.
 	    'http://www.unicode.org/Public/ is required.';

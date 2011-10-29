@@ -5,7 +5,7 @@ package MY;
 use ExtUtils::MakeMaker;
 
 my $csubdir = 'sombok';
-my $sombok_atleast_version = '2.0.6';
+my $sombok_atleast_version = '2.1.0';
 my $sombok_max_version = '2.99.99';
 my $pkg_config = $ENV{'PKG_CONFIG'} || 'pkg-config';
 my @args = ();
@@ -19,7 +19,11 @@ sub top_targets {
     my $inherited = shift->SUPER::top_targets(@_);
     $inherited =~
 	s{^(all\b.*)}
-	{$1\n\t[ -e test-data/LineBreakTest.txt ] || wget -q -O test-data/LineBreakTest.txt ftp://ftp.unicode.org/Public/6.1.0/ucd/auxiliary/LineBreakTest\\*.txt 2>/dev/null || true};
+	{$1
+\t[ -f test-data/LineBreakTest.txt ] || \\
+\twget -q -O test-data/LineBreakTest.txt \\
+\tftp://ftp.unicode.org/Public/6.1.0/ucd/auxiliary/LineBreakTest\\*.txt \\
+\t2>/dev/null || true};
     $inherited;
 }
 

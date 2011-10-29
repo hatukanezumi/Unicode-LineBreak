@@ -1,3 +1,10 @@
+201X.0XX_XX  Xxx Xxx XX 201X
+! Makefile.PL
+  - Needs Sombok >= 2.1.0.
+  - fix: Solaris sh blames test with ``-e''.  Use ``-f''.
+! t/00LineBreakText.t
+  - skip empty data.
+
 2011.010_26  Wed Oct 26 2011
 + debian/*
   - Added Debian packaging info at Debian sid, packaged by Emmanuel Bouthenot.
