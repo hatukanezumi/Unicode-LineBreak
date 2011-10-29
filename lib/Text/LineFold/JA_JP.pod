@@ -69,26 +69,30 @@ fold()/unfold() の結果を符号化するキャラクタセット。
 =item TabSize => NUMBER
 
 タブストップの桁数。
-0 を指定すると、水平タブ文字を無視する。
+0 を指定すると、タブストップを無視する。
 初期値は 8。
 
-=item CharactersMax
+=item BreakIndent
 
-=item ColumnsMin
+=item CharMax
 
-=item ColumnsMax
+=item ColMax
+
+=item ColMin
+
+=item ComplexBreaking
+
+=item EAWidth
 
 =item HangulAsAL
 
+=item LBClass
+
 =item LegacyCM
 
-=item TailorEA
+=item Prep
 
-=item TailorLB
-
-=item UrgentBreaking
-
-=item UserBreaking
+=item Urgent
 
 L<Unicode::LineBreak::JA_JP/オプション> を参照。
 
@@ -183,7 +187,7 @@ L<Unicode::LineBreak::JA_JP>, L<Text::Wrap>.
 
 =head1 AUTHOR
 
-Copyright (C) 2009 Hatuka*nezumi - IKEDA Soji <hatuka(at)nezumi.nu>.
+Copyright (C) 2009-2011 Hatuka*nezumi - IKEDA Soji <hatuka(at)nezumi.nu>.
 
 This program is free software; you can redistribute it and/or modify it 
 under the same terms as Perl itself.

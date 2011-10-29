@@ -37,15 +37,15 @@ Following settings are available.
 
 =item Newline
 
-=item SizingMethod
+=item Prep
+
+=item Sizing
 
 =item TailorEA
 
 =item TailorLB
 
-=item UrgentBreaking
-
-=item UserBreaking
+=item Urgent
 
 =back
 
@@ -70,10 +70,11 @@ L<Unicode::LineBreak>
 # $Config->{HangulAsAL} = 'NO';
 # $Config->{LegacyCM} = 'YES';
 # $Config->{Newline} = "\n";
-# $Config->{SizingMethod} = 'UAX11';
-# $config->{TailorEA} = [];
-# $config->{TailorLB} = [];
-# $Config->{UrgentBreaking} = undef;
+# $Config->{Prep} = undef;
+# $Config->{Sizing} = 'UAX11';
+# $Config->{TailorEA} = [];
+# $Config->{TailorLB} = [];
+# $Config->{Urgent} = undef;
 # $Config->{UserBreaking} = [];
 
 1;

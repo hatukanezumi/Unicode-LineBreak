@@ -99,6 +99,7 @@ I<インスタンスメソッド>。
 書記素クラスタ文字列の部分文字列を返す。
 OFFSET と LENGTH は書記素クラスタで数える。
 REPLACEMENT を指定すると、部分文字列をそれで置き換える。
+REPLACEMENT は Unicode文字列でもよい。
 
 =back
 
@@ -120,8 +121,6 @@ I<インスタンスメソッド>。
 I<インスタンスメソッド>。
 現在の位置が書記素クラスタ文字列の最後かどうか調べる。
 
-=begin comment
-
 =item flag ([OFFSET, [VALUE]])
 
 I<インスタンスメソッド>。
@@ -129,7 +128,19 @@ OFFSET番めの書記素クラスタのフラグ値を取得、設定する。
 OFFSET を指定しないと、次の位置の書記素クラスタのフラグ値を返す。
 フラグ値は 255 を超えない非負整数で、はじめは 0。
 
-=end comment
+定義ずみのフラグには次のものがある。
+
+=over 4
+
+=item Unicode::LineBreak::ALLOW_BEFORE
+
+この書記素クラスタの直前で行分割を許す。
+
+=item Unicode::LineBreak::PROHIBIT_BEFORE
+
+この書記素クラスタの直前での行分割を禁ずる。
+
+=back
 
 =item item ([OFFSET])
 
@@ -137,21 +148,17 @@ I<インスタンスメソッド>。
 OFFSET番めの書記素クラスタを返す。
 OFFSET を指定しないと、次の位置の書記素クラスタの情報を返す。
 
-=begin comment
-
 =item lbclass ([OFFSET])
 
-I<Undocumented>.
-
-=end comment
-
-=begin comment
+OFFSET番めの書記素クラスタの最初の文字の行分割クラス
+(L<Unicode::LineBreak::JA_JP> 参照) を返す。
+OFFSET を指定しないと、次の位置の書記素クラスタの情報を返す。
 
 =item lbclass_ext ([OFFSET])
 
-I<Undocumented>.
-
-=end comment
+OFFSET番めの書記素クラスタの最後の書記素エキステンダの行分割クラス
+(L<Unicode::LineBreak> 参照) を返す。
+書記素エキステンダがないか、またはクラスが CM の場合は、lbclass() の値を返す。
 
 =item next
 
@@ -205,7 +212,7 @@ L<http://hatuka.nezumi.nu/repos/Unicode-LineBreak/>
 
 [UAX #29]
 Mark Davis (2009-2010).
-I<Unicode Standard Annex #29: Unicode Text Segmentation>, Revision 15-16.
+I<Unicode Standard Annex #29: Unicode Text Segmentation>, Revision 15-17.
 L<http://www.unicode.org/reports/tr29/>.
 
 =head1 AUTHOR
@@ -214,7 +221,7 @@ Hatuka*nezumi - IKEDA Soji <hatuka(at)nezumi.nu>
 
 =head1 COPYRIGHT
 
-Copyright (C) 2009, 2010 Hatuka*nezumi - IKEDA Soji.
+Copyright (C) 2009-2011 Hatuka*nezumi - IKEDA Soji.
 
 This program is free software; you can redistribute it and/or modify it
 under the same terms as Perl itself.

@@ -12,10 +12,10 @@ Unicode::LineBreak - UAX #14 Unicode Line Breaking Algorithm
 
 =head1 DESCRIPTION
 
-Unicode::LineBreak performs Line Breaking Algorithm described in
-Unicode Standards Annex #14 [UAX #14].
-East_Asian_Width informative properties defined by Annex #11 [UAX #11] will
-be concerned to determin breaking positions.
+Unicode::LineBreak performs Line Breaking Algorithm described in Unicode
+Standards Annex #14 [UAX #14]. East_Asian_Width informative properties
+defined by Annex #11 [UAX #11] will be concerned to determine breaking
+positions.
 
 =head2 Terminology
 
@@ -126,10 +126,8 @@ Get line breaking action between class BEFORE and class AFTER.
 See L</Constants> for returned value.
 
 B<Note>:
-This method might not give appropriate value related to classes
-BK, CM, CR, LF, NL and SP,
-and won't give meaningful value related to classes
-AI, SA, SG and XX. 
+This method gives just approximate description of line breaking behavior.
+Especially, it won't give meaningful value related to class AI.
 
 =item $self->strsize (LEN, PRE, SPC, STR)
 
@@ -148,13 +146,13 @@ L</new> and L</config> methods accept following pairs.
 =item BreakIndent => C<"YES"> | C<"NO">
 
 Always allows break after SPACEs at beginning of line, a.k.a. indent.
-[UAX #14] does not take account of such usage.
+[UAX #14] does not take account of such usage of SPACE.
 Default is C<"YES">.
 
 B<Note>:
 This option was introduced at release 1.011.
 
-=item CharactersMax => NUMBER
+=item CharMax => NUMBER
 
 Possible maximum number of characters in one line,
 not counting trailing SPACEs and newline sequence.
@@ -162,13 +160,13 @@ Note that number of characters generally doesn't represent length of line.
 Default is C<998>.
 Should not be C<0>.
 
-=item ColumnsMin => NUMBER
+=item ColMin => NUMBER
 
 Minimum number of columns which line broken arbitrarily may include, not
 counting trailing spaces and newline sequences.
 Default is C<0>.
 
-=item ColumnsMax => NUMBER
+=item ColMax => NUMBER
 
 Maximum number of columns line may include not counting trailing spaces and
 newline sequence.  In other words, maximum length of line.
@@ -176,7 +174,7 @@ Default is C<76>.
 
 =back
 
-See also L</UrgentBreaking> option and L</User-Defined Breaking Behaviors>.
+See also L</Urgent> option and L</User-Defined Breaking Behaviors>.
 
 =over 4
 
@@ -191,6 +189,20 @@ enabled, C<"YES">.
 Specify language/region context.
 Currently available contexts are C<"EASTASIAN"> and C<"NONEASTASIAN">.
 Default context is C<"NONEASTASIAN">.
+
+=item EAWidth => C<[> ORD C<=E<gt>> PROPERTY C<]>
+
+=item EAWidth => C<undef>
+
+Tailor classification of East_Asian_Width property.
+ORD is UCS scalar value of character or array reference of them.
+PROPERTY is one of East_Asian_Width property values N, Na, W, F and H
+(See L</Constants>).
+This option may be specified multiple times.
+If C<undef> is specified, all tailoring assigned before will be canceled.
+
+By default, no tailorings are available.
+See also L</Tailoring Character Properties>.
 
 =item Format => METHOD
 
@@ -229,6 +241,19 @@ See L</Formatting Lines>.
 Treat hangul syllables and conjoining jamos as alphabetic characters (AL).
 Default is C<"NO">.
 
+=item LBClass => C<[> ORD C<=E<gt>> CLASS C<]>
+
+=item LBClass => undef
+
+Tailor classification of line breaking property.
+ORD is UCS scalar value of character or array reference of them.
+CLASS is one of line breaking classes (See L</Constants>).
+This option may be specified multiple times.
+If C<undef> is specified, all tailoring assigned before will be canceled.
+
+By default, no tailorings are available.
+See also L</Tailoring Character Properties>.
+
 =item LegacyCM => C<"YES"> | C<"NO">
 
 Treat combining characters lead by a SPACE as an isolated combining character
@@ -241,7 +266,36 @@ Default is C<"YES">.
 Unicode string to be used for newline sequence.
 Default is C<"\n">.
 
-=item SizingMethod => METHOD
+=item Prep => METHOD
+
+Add user-defined line breaking behavior(s).
+This option may be specified multiple times.
+Following methods are available.
+
+=over 4
+
+=item C<"NONBREAKURI">
+
+Won't break URIs.
+
+=item C<"BREAKURI">
+
+Break URIs according to a rule suitable for printed materials.
+For more details see [CMOS], sections 6.17 and 17.11.
+
+=item C<[> REGEX, SUBREF C<]>
+
+The sequences matching regular expression REGEX will be broken by
+subroutine referred by SUBREF.
+For more details see L</User-Defined Breaking Behaviors>.
+
+=item C<undef>
+
+Cancel all methods assigned before.
+
+=back
+
+=item Sizing => METHOD
 
 Specify method to calculate size of string.
 Following options are available.
@@ -263,28 +317,17 @@ See L</Calculating String Size>.
 
 =back
 
-See also L</TailorEA> option.
+See also L</EAWidth> option.
 
-=item TailorEA => C<[> ORD C<=E<gt>> CLASS, ... C<]>
+=item TailorEA => C<[> ORD C<=E<gt>> PROPERTY, ... C<]>
 
-Tailor classification of East_Asian_Width property.
-ORD is UCS scalar value of character or array reference of them.
-CLASS is one of East_Asian_Width property values N, Na, W, F and H
-(See L</Constants>).
-
-By default, no tailorings are available.
-See also L</Tailoring Character Properties>.
+Obsoleted equivalent to L</EAWidth>.
 
 =item TailorLB => C<[> ORD C<=E<gt>> CLASS, ... C<]>
 
-Tailor classification of line breaking property.
-ORD is UCS scalar value of character or array reference of them.
-CLASS is one of line breaking classes (See L</Constants>).
+Obsoleted equivalent to L</LBClass>.
 
-By default, no tailorings are available.
-See also L</Tailoring Character Properties>.
-
-=item UrgentBreaking => METHOD
+=item Urgent => METHOD
 
 Specify method to handle excessing lines.
 Following options are available.
@@ -312,27 +355,7 @@ See L</User-Defined Breaking Behaviors>.
 
 =item UserBreaking => C<[>METHOD, ...C<]>
 
-Specify user-defined line breaking behavior(s).
-Following methods are available.
-
-=over 4
-
-=item C<"NONBREAKURI">
-
-Won't break URIs.
-
-=item C<"BREAKURI">
-
-Break URIs according to a rule suitable for printed materials.
-For more details see [CMOS], sections 6.17 and 17.11.
-
-=item C<[> REGEX, SUBREF C<]>
-
-The sequences matching regular expression REGEX will be broken by
-subroutine referred by SUBREF.
-For more details see L</User-Defined Breaking Behaviors>.
-
-=back
+Obsoleted equivalent to L</Prep>.
 
 =back
 
@@ -381,7 +404,7 @@ A string to specify version of Unicode standard this module refers.
 If you specify subroutine reference as a value of L</Format> option,
 it should accept three arguments:
 
-    MODIFIED = &subroutine(SELF, EVENT, STR);
+    $MODIFIED = &subroutine(SELF, EVENT, STR);
 
 SELF is a Unicode::LineBreak object,
 EVENT is a string to determine the context that subroutine was called in,
@@ -423,12 +446,12 @@ For example, following code folds lines removing trailing spaces:
 =head2 User-Defined Breaking Behaviors
 
 When a line generated by arbitrary break is expected to be beyond measure of
-either CharactersMax, ColumnsMax or ColumnsMin, B<urgent break> may be
+either CharMax, ColMax or ColMin, B<urgent break> may be
 performed on successive string.
-If you specify subroutine reference as a value of L</UrgentBreaking> option,
+If you specify subroutine reference as a value of L</Urgent> option,
 it should accept two arguments:
 
-    BROKEN = &subroutine(SELF, STR);
+    @BROKEN = &subroutine(SELF, STR);
 
 SELF is a Unicode::LineBreak object and STR is a Unicode string to be broken.
 
@@ -443,14 +466,13 @@ For example, following code inserts hyphen to the name of several chemical subst
     sub hyphenize {
         return map {$_ =~ s/yl$/yl-/; $_} split /(\w+?yl(?=\w))/, $_[1];
     }
-    my $lb = Unicode::LineBreak->new(UrgentBreaking => \&hyphenize);
+    my $lb = Unicode::LineBreak->new(Urgent => \&hyphenize);
     $output = $lb->break("Methionylthreonylthreonylglutaminylarginyl...");
 
-If you specify [REGEX, SUBREF] array reference as an item of
-L</UserBreaking> option,
+If you specify [REGEX, SUBREF] array reference as any of L</Prep> option,
 subroutine should accept two arguments:
 
-    BROKEN = &subroutine(SELF, STR);
+    @BROKEN = &subroutine(SELF, STR);
 
 SELF is a Unicode::LineBreak object and
 STR is a Unicode string matched with REGEX.
@@ -467,22 +489,54 @@ For example, following code will break HTTP URLs using [CMOS] rule.
                        (?<=[^-.]) (?=[-~.,_?\#%=&]) |
                        (?<=[=&]) (?=.)}x, $str;
     }
-    my $lb = Unicode::LineBreak->new(UserBreaking => [$url, \&breakurl]);
+    my $lb = Unicode::LineBreak->new(Prep => [$url, \&breakurl]);
+    $output = $lb->break($string);
+
+=head3 Preserving State
+
+Unicode::LineBreak object can behave as hash reference.
+Any items may be preserved throughout its life.
+
+For example, following code will separate paragraphs with empty lines.
+
+    sub paraformat {
+        my $self = shift;
+        my $action = shift;
+        my $str = shift;
+        
+        if ($action eq 'sot' or $action eq 'sop') {
+            $self->{'line'} = '';
+        } elsif ($action eq '') {
+            $self->{'line'} = $str;
+        } elsif ($action eq 'eol') {
+            return "\n";
+        } elsif ($action eq 'eop') {
+            if (length $self->{'line'}) {
+                return "\n\n";
+            } else {
+                return "\n";
+            }
+        } elsif ($action eq 'eot') {
+            return "\n";
+        }
+        return undef;
+    }
+    my $lb = Unicode::LineBreak->new(Format => \&paraformat);
     $output = $lb->break($string);
 
 =head2 Calculating String Size
 
-If you specify subroutine reference as a value of L</SizingMethod> option,
+If you specify subroutine reference as a value of L</Sizing> option,
 it will be called with five arguments:
 
-    COLS = &subroutine(SELF, LEN, PRE, SPC, STR);
+    $COLS = &subroutine(SELF, LEN, PRE, SPC, STR);
 
 SELF is a Unicode::LineBreak object, LEN is size of preceding string,
 PRE is preceding Unicode string, SPC is additional SPACEs and STR is a
 Unicode string to be processed.
 
 Subroutine should return calculated number of columns of C<PRE.SPC.STR>.
-The number of columns may not be an integer: Unit of the number may be freely chosen, however, it should be same as those of L</ColumnsMin> and L</ColumnsMax> option.
+The number of columns may not be an integer: Unit of the number may be freely chosen, however, it should be same as those of L</ColMin> and L</ColMax> option.
 
 B<Note>:
 String arguments are actually sequences of grapheme clusters.
@@ -501,13 +555,13 @@ For example, following code processes lines with tab stops by each eight columns
         $cols += $self->strsize(0, '', '', $spcstr);
         return $cols;
     };
-    my $lb = Unicode::LineBreak->new(TailorLB => [ord("\t") => LB_SP],
-                                     SizingMethod => \&tabbedsizing);
+    my $lb = Unicode::LineBreak->new(LBClass => [ord("\t") => LB_SP],
+                                     Sizing => \&tabbedsizing);
     $output = $lb->break($string);
 
 =head2 Tailoring Character Properties
 
-Character properties may be tailored by L</TailorLB> and L</TailorEA>
+Character properties may be tailored by L</LBClass> and L</EAWidth>
 options.  Some constants are defined for convenience of tailoring.
 
 =head3 Line Breaking Properties
@@ -516,7 +570,7 @@ options.  Some constants are defined for convenience of tailoring.
 
 By default, several hiragana, katakana and characters corresponding to kana
 are treated as nonstarters (NS).
-When the following pair(s) are specified for value of L</TailorLB> option,
+When the following pair(s) are specified for value of L</LBClass> option,
 these characters are treated as normal ideographic characters (ID).
 
 =over 4
@@ -557,8 +611,8 @@ neither hiragana nor katakana.
 U+303C MASU MARK.
 
 N.B. Although this character is not kana, it is usually regarded as
-abbreviation to sequence of hiragana C<"ます"> or katakana C<"マス">,
-MA and SU.
+abbreviation to sequence of hiragana E<0x307E> E<0x3059> or
+katakana E<0x30DE> E<0x30B9>, MA and SU.
 
 N.B. This character is classified as nonstarter (NS) by [UAX #14]
 and as Class 13 (corresponding to ID) by [JIS X 4051].
@@ -571,26 +625,26 @@ By default, some punctuations are ambiguous quotation marks (QU).
 
 =over 4
 
-=item C<LEFT_QUOTES() =E<gt> LB_OP, RIGHT_QUOTES() =E<gt> LB_CL>
+=item C<BACKWARD_QUOTES() =E<gt> LB_OP, FORWARD_QUOTES() =E<gt> LB_CL>
 
 Some languages (Dutch, English, Italian, Portugese, Spanish, Turkish and
 most East Asian) use rotated-9-style punctuations (E<0x2018> E<0x201C>) as
 opening and 9-style punctuations (E<0x2019> E<0x201D>) as closing quotation
 marks.
 
-=item C<RIGHT_QUOTES() =E<gt> LB_OP, LEFT_QUOTES() =E<gt> LB_CL>
+=item C<FORWARD_QUOTES() =E<gt> LB_OP, BACKWARD_QUOTES() =E<gt> LB_CL>
 
 Some others (Czech, German and Slovak) use 9-style punctuations
 (E<0x2019> E<0x201D>) as opening and rotated-9-style punctuations
 (E<0x2018> E<0x201C>) as closing quotation marks.
 
-=item C<LEFT_GUILLEMETS() =E<gt> LB_OP, RIGHT_GUILLEMETS() =E<gt> LB_CL>
+=item C<BACKWARD_GUILLEMETS() =E<gt> LB_OP, FORWARD_GUILLEMETS() =E<gt> LB_CL>
 
 French, Greek, Russian etc. use left-pointing guillemets (E<0x00AB> E<0x2039>)
 as opening and right-pointing guillemets (E<0x00BB> E<0x203A>) as closing
 quotation marks.
 
-=item C<RIGHT_GUILLEMETS() =E<gt> LB_OP, LEFT_GUILLEMETS() =E<gt> LB_CL>
+=item C<FORWARD_GUILLEMETS() =E<gt> LB_OP, BACKWARD_GUILLEMETS() =E<gt> LB_CL>
 
 German and Slovak use right-pointing guillemets (E<0x00BB> E<0x203A>) as
 opening and left-pointing guillemets (E<0x00AB> E<0x2039>) as closing
@@ -607,7 +661,7 @@ closing quotation marks.
 Some particular letters of Latin, Greek and Cyrillic scripts have ambiguous
 (A) East_Asian_Width property.  Thus, these characters are treated as wide
 in C<"EASTASIAN"> context.
-Specifying C<TailorEA =E<gt> [ AMBIGUOUS_>*C<() =E<gt> EA_N ]>,
+Specifying C<EAWidth =E<gt> [ AMBIGUOUS_>*C<() =E<gt> EA_N ]>,
 those characters are always treated as narrow.
 
 =over 4
@@ -628,7 +682,7 @@ as neutral (N).
 =back
 
 On the other hand, despite several characters were occasionally rendered as wide characters by number of implementations for East Asian character sets, they are given narrow (Na) East_Asian_Width property just because they have fullwidth (F) compatibility characters.
-Specifying C<TailorEA> as below, those characters are treated as ambiguous
+Specifying C<EAWidth> as below, those characters are treated as ambiguous
 --- wide on C<"EASTASIAN"> context.
 
 =over 4
@@ -711,10 +765,12 @@ if they have not been assigned any characers.
     U+E000..U+F8FF     | AL (XX)    | F or N (A) | Private use
     U+F900..U+FAFF     | ID         | W          | CJK ideographs
     U+20000..U+2FFFD   | ID         | W          | CJK ideographs
-    U+30000..U+3FFFD   | ID         | W          | CJK ideographs
+    U+30000..U+3FFFD   | ID         | W          | Old hanzi
     U+F0000..U+FFFFD   | AL (XX)    | F or N (A) | Private use
     U+100000..U+10FFFD | AL (XX)    | F or N (A) | Private use
-    Other unassigned   | AL (XX)    | N          | Unassigned
+    Other unassigned   | AL (XX)    | N          | Unassigned,
+                       |            |            | reserved or
+                       |            |            | noncharacters
     -------------------------------------------------------------
 
 =item *
@@ -740,16 +796,26 @@ JIS X 4051:2004
 I<日本語文書の組版方法> (I<Formatting Rules for Japanese Documents>).
 Japanese Standards Association, 2004.
 
+=begin comment
+
+=item [Kubota]
+
+Kubota, Tomohiro (2001-2002).
+Width problems, "I<Problems on Interoperativity between Unicode and CJK Local Encodings>".
+L<http://web.archive.org/web/people.debian.org/~kubota/unicode-symbols-width2.html>.
+
+=end comment
+
 =item [UAX #11]
 
-A. Freytag (2008-2009).
-I<Unicode Standard Annex #11: East Asian Width>, Revision 17-19.
+A. Freytag (2008-2011).
+I<Unicode Standard Annex #11: East Asian Width>, Revision 17-22.
 L<http://unicode.org/reports/tr11/>.
 
 =item [UAX #14]
 
-A. Freytag and A. Heninger (2008-2010).
-I<Unicode Standard Annex #14: Unicode Line Breaking Algorithm>, Revision 22-26.
+A. Freytag and A. Heninger (2008-2011).
+I<Unicode Standard Annex #14: Unicode Line Breaking Algorithm>, Revision 22-27.
 L<http://unicode.org/reports/tr14/>.
 
 =back

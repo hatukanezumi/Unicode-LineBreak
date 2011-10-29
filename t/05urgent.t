@@ -5,13 +5,13 @@ require "t/lb.pl";
 BEGIN { plan tests => 5 }
 
 dotest('ecclesiazusae', 'ecclesiazusae');
-dotest('ecclesiazusae', 'ecclesiazusae.ColumnsMax', UrgentBreaking => 'FORCE');
-dotest('ecclesiazusae', 'ecclesiazusae.CharactersMax', CharactersMax => 79);
+dotest('ecclesiazusae', 'ecclesiazusae.ColumnsMax', Urgent => 'FORCE');
+dotest('ecclesiazusae', 'ecclesiazusae.CharactersMax', CharMax => 79);
 dotest('ecclesiazusae', 'ecclesiazusae.ColumnsMin',
-       ColumnsMin => 7, ColumnsMax => 66, UrgentBreaking => 'FORCE');
+       ColMin => 7, ColMax => 66, Urgent => 'FORCE');
 
 eval {
-    dotest('ecclesiazusae', 'ecclesiazusae', UrgentBreaking => 'CROAK');
+    dotest('ecclesiazusae', 'ecclesiazusae', Urgent => 'CROAK');
 };
 ok($@ =~ /^Excessive line was found/, 'CROAK');
 

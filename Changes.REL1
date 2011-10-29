@@ -13,7 +13,9 @@
 	* Chg: Linebreak library package was renamed to Sombok.
 	* Requires Sombok >= 2011.0.
 	* Doc: some typos.
-	* Bump package versions to 2011.
+	* Doc: Unicode::GCString:
+	- split POD and code.
+	- added docs on undocumented things.
 
 1.011  Sat Jan 01 2011
 	* Updated linebreak library (improved conformance to UAX #14).

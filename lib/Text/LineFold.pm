@@ -48,7 +48,7 @@ use Unicode::LineBreak qw(:all);
 ### Globals
 
 ### The package Version
-our $VERSION = '2011.0';
+our $VERSION = '2011.10';
 
 ### Public Configuration Attributes
 our $Config = {
@@ -68,19 +68,19 @@ my %FORMAT_FUNCS = (
 	my $str = shift;
 	if ($action =~ /^so[tp]/) {
 	    $self->{_} = {};
-	    $self->{_}->{'ColumnsMax'} = $self->config('ColumnsMax');
-	    $self->config('ColumnsMax' => 0) if $str =~ /^>/;
+	    $self->{_}->{'ColMax'} = $self->config('ColMax');
+	    $self->config('ColMax' => 0) if $str =~ /^>/;
 	} elsif ($action eq "") {
 	    $self->{_}->{line} = $str;
 	} elsif ($action eq "eol") {
 	    return $self->config('Newline');
 	} elsif ($action =~ /^eo/) {
-	    if (length $self->{_}->{line} and $self->config('ColumnsMax')) {
+	    if (length $self->{_}->{line} and $self->config('ColMax')) {
 		$str = $self->config('Newline').$self->config('Newline');
 	    } else {
 		$str = $self->config('Newline');
 	    }
-	    $self->config('ColumnsMax' => $self->{_}->{'ColumnsMax'});
+	    $self->config('ColMax' => $self->{_}->{'ColMax'});
 	    delete $self->{_};
 	    return $str;
 	}
@@ -187,26 +187,30 @@ Default is the value of Charset option.
 =item TabSize => NUMBER
 
 Column width of tab stops.
-When 0 is specified, horizontal tab characters are ignored.
+When 0 is specified, tab stops are ignored.
 Default is 8.
 
-=item CharactersMax
+=item BreakIndent
 
-=item ColumnsMin
+=item CharMax
 
-=item ColumnsMax
+=item ColMax
+
+=item ColMin
+
+=item ComplexBreaking
+
+=item EAWidth
 
 =item HangulAsAL
 
+=item LBClass
+
 =item LegacyCM
 
-=item TailorEA
+=item Prep
 
-=item TailorLB
-
-=item UrgentBreaking
-
-=item UserBreaking
+=item Urgent
 
 See L<Unicode::LineBreak/Options>.
 
@@ -270,7 +274,7 @@ sub config {
     ## Set sizing method.
     ## Note: Example in Unicode::LineBreak POD treats $spcstr as Perl string.
     ## Following code is more efficient.
-    $self->SUPER::config(SizingMethod => sub {
+    $self->SUPER::config(Sizing => sub {
 	my ($self, $cols, $pre, $spc, $str) = @_;
 
 	my $tabsize = $self->{TabSize};
@@ -288,8 +292,7 @@ sub config {
     });
 
     ## Classify horizontal tab as line breaking class SP.
-    my @tailor_lb = @{$self->SUPER::config('TailorLB')};
-    $self->SUPER::config(TailorLB => [@tailor_lb, ord("\t") => LB_SP]);
+    $self->SUPER::config(LBClass => [ord("\t") => LB_SP]);
     ## Tab size
     if (defined $self->{TabSize}) {
 	croak "Invalid TabSize option" unless $self->{TabSize} =~ /^\d+$/;
@@ -569,9 +572,7 @@ sub _is_indirect {
     my $self = shift;
     my $b = Unicode::GCString->new(shift, $self)->lbclass_ext(-1);
     my $a = Unicode::GCString->new(shift, $self)->lbclass(0);
-    $b = LB_AL if $b == LB_CM or $b == LB_SA; # FIXME: SA vs. SA
-    $a = LB_AL if $a == LB_CM or $a == LB_SA;
-    return $self->lbrule($b, $a) == INDIRECT;
+    return $self->lbrule($b, $a) == INDIRECT; # FIXME: SA vs. SA
 }
 
 
@@ -595,7 +596,7 @@ L<Unicode::LineBreak>, L<Text::Wrap>.
 
 =head1 AUTHOR
 
-Copyright (C) 2009 Hatuka*nezumi - IKEDA Soji <hatuka(at)nezumi.nu>.
+Copyright (C) 2009-2011 Hatuka*nezumi - IKEDA Soji <hatuka(at)nezumi.nu>.
 
 This program is free software; you can redistribute it and/or modify it 
 under the same terms as Perl itself.

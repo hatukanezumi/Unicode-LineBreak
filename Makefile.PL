@@ -5,25 +5,14 @@ package MY;
 use ExtUtils::MakeMaker;
 
 my $csubdir = 'sombok';
-my $sombok_atleast_version = '2011.0';
+my $sombok_atleast_version = '2.0.6';
+my $sombok_max_version = '2.99.99';
 my $pkg_config = $ENV{'PKG_CONFIG'} || 'pkg-config';
 my @args = ();
 my $enable_libthai = 'yes';
 my $bundled_sombok = 'no';
 my $libthai;
-
-sub top_targets {
-    my $inherited = shift->SUPER::top_targets(@_);
-    if ($libthai and $enable_libthai eq 'yes') {
-	$inherited =~ s{^(all ::.*?)\n.*?$}{<<EOF}em;
-$1
-\t\$(NOECHO) \$(MAKE) test TEST_FILES=t/07sea.t >/dev/null || \\
-\t( \$(ECHO) "Your libthai is broken.  Rebuild it then try again."; \\
-\texit 1 )
-EOF
-    }
-    $inherited;
-}
+my $enable_malloc_debug = 'no';
 
 sub clean_subdirs {
     return <<EOF;
@@ -33,16 +22,17 @@ EOF
 }
 
 sub postamble {
+    my $self = shift;
     my $args = join ' ', map {s/\'/\\\'/g; "'$_'"; } @args;
+    my $tools = "CC='\$(CC)' CFLAGS='\$(CCFLAGS) \$(OPTIMIZE) \$(CCCDLFLAGS)'";
+    $tools .= $self->{'FULL_AR'}? " AR='\$(FULL_AR)'":
+	      ($self->{'AR'}? " AR='\$(AR)'": '');
+    $tools .= $self->{'RANLIB'}? " RANLIB='\$(RANLIB)'": '';
     return <<EOF;
-\$(MYEXTLIB): $csubdir/Makefile
-\tcd $csubdir && \$(MAKE)
-$csubdir/Makefile: $csubdir/configure
+\$(MYEXTLIB): $csubdir/configure
 \tcd $csubdir && \\
-\t./configure --disable-shared --enable-static $args \\
-\tCC='\$(CC)' CFLAGS='\$(CCFLAGS) \$(OPTIMIZE) \$(CCCDLFLAGS)'
-$csubdir/configure: $csubdir/configure.ac
-\tcd $csubdir && autoreconf
+\t\$(SHELL) configure --disable-shared --disable-doc $tools $args
+\tcd $csubdir && \$(MAKE)
 EOF
 }
 
@@ -56,6 +46,8 @@ foreach my $arg (@ARGV) {
 	$enable_libthai = 'no';
     } elsif ($arg eq '--with-bundled-sombok') {
 	$bundled_sombok = 'yes';
+    } elsif ($arg eq '--enable-malloc-debug') {
+	$enable_malloc_debug = 'yes';
     } elsif ($arg =~ /^--/ or $arg =~ /^\w+=/) {
 	push @args, $arg;
     } else {
@@ -73,18 +65,30 @@ if ($libthai and $enable_libthai eq 'yes') {
     push @args, '--disable-libthai';
 }
 if (system("$pkg_config --atleast-version=$sombok_atleast_version sombok")
-    >> 8) {
+    >> 8 or
+    system("$pkg_config --max-version=$sombok_max_version sombok") >> 8) {
     $bundled_sombok = 'yes';
 }
+if ($enable_malloc_debug eq 'yes') {
+    $bundled_sombok = 'yes';
+    push @args, '--enable-malloc-debug';
+    push @opts, ('DEFINE' => '-DMALLOC_DEBUG');
+}
 if ($bundled_sombok eq 'yes') {
+    print "Use bundled sombok\n";
     push @opts, ('MYEXTLIB' => "$csubdir/.libs/libsombok\$(LIB_EXT)");
     push @opts, ('INC' => "-I$csubdir/include -I$csubdir");
+    push @opts, ('depend' => { '$(OBJECT)' => '$(MYEXTLIB)' } );
 } else {
+    my $sombok = `$pkg_config --modversion sombok`;
+    chomp $sombok;
+    print "Use sombok $sombok\n";
     push @opts, ('LIBS' => `$pkg_config --libs sombok`);
     push @opts, ('INC' => `$pkg_config --cflags sombok`); 
 }
 
 WriteMakefile(
+	'NO_META'	=> 1,
 	'NAME'		=> 'Unicode::LineBreak',
 	'ABSTRACT_FROM'	=> 'lib/Unicode/LineBreak.pod',
 	'VERSION_FROM'	=> 'lib/Unicode/LineBreak.pm',
@@ -95,7 +99,9 @@ WriteMakefile(
 	    'MIME::Charset'	=> '1.006.2',
 	    'Test::More'	=> '0.45',
 	},
-	# Un-comment this if you add C files to link with later:
-	# 'OBJECT'	=> '$(O_FILES)', # link all the C files too
 	@opts,
+	'dist'		=> {
+	    'PREOP'		=> "\$(PERL) -i -pe \'s/^(version:\\s+).*/\$\${1}\$(VERSION)/\' META.yml; \$(PERL) -i -pe \'s/^(%define version\\s+).*/\$\${1}\$(VERSION)/\' perl-Unicode-LineBreak.spec; cd $csubdir && \$(TOUCH) aclocal.m4 configure config.h.in Makefile.in" .
+	    '; cd test-data; wget -q -N http://www.unicode.org/Public/6.0.0/ucd/auxiliary/LineBreakTest.txt 2>/dev/null || true',
+	},
 );
