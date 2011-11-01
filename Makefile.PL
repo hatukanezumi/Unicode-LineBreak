@@ -21,6 +21,21 @@ clean_subdirs:
 EOF
 }
 
+sub test {
+    my $inherited = shift->SUPER::test(@_);
+    $inherited =~ s/^(test\s*:+\s*)/${1}copy_unidata /m;
+    $inherited;
+}
+
+sub distdir {
+    my $inherited = shift->SUPER::distdir(@_);
+    open my $mani, '<', 'MANIFEST' or die "$!";
+    $inherited =~ s/^(distdir\s*:+\s*)/${1}copy_unidata /m
+	if scalar grep m{test-data/LineBreakTest.txt}, <$mani>;
+    close $mani;
+    $inherited;
+}
+
 sub postamble {
     my $self = shift;
     my $args = join ' ', map {s/\'/\\\'/g; "'$_'"; } @args;
@@ -33,6 +48,13 @@ sub postamble {
 \tcd $csubdir && \\
 \t\$(SHELL) configure --disable-shared --disable-doc $tools $args
 \tcd $csubdir && \$(MAKE)
+
+copy_unidata :
+\tcd test-data; \\
+\t[ -f LineBreakTest.txt ] || \\
+\twget -q -N \\
+\thttp://unicode.org/Public/6.0.0/ucd/auxiliary/LineBreakTest.txt \\
+\t|| true
 EOF
 }
 
@@ -101,7 +123,6 @@ WriteMakefile(
 	},
 	@opts,
 	'dist'		=> {
-	    'PREOP'		=> "\$(PERL) -i -pe \'s/^(version:\\s+).*/\$\${1}\$(VERSION)/\' META.yml; \$(PERL) -i -pe \'s/^(%define version\\s+).*/\$\${1}\$(VERSION)/\' perl-Unicode-LineBreak.spec; cd $csubdir && \$(TOUCH) aclocal.m4 configure config.h.in Makefile.in" .
-	    '; cd test-data; wget -q -N http://www.unicode.org/Public/6.0.0/ucd/auxiliary/LineBreakTest.txt 2>/dev/null || true',
+	    'PREOP'		=> "\$(PERL) -i -pe \'s/^(version:\\s+).*/\$\${1}\$(VERSION)/\' META.yml; \$(PERL) -i -pe \'s/^(%define version\\s+).*/\$\${1}\$(VERSION)/; s/^(%define sombok_version\\s+).*/\$\${1}$sombok_atleast_version/\' perl-Unicode-LineBreak.spec; cd $csubdir && \$(TOUCH) aclocal.m4 configure config.h.in Makefile.in",
 	},
 );

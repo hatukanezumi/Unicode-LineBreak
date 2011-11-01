@@ -1,4 +1,4 @@
-2011.11  Xxx Nov XX 2011
+2011.11  Tue Nov 01 2011
 # Backport from trunk with Unicode data 6.0.0.
 + debian/*
   - Added Debian packaging info at Debian sid, packaged by Emmanuel Bouthenot.
