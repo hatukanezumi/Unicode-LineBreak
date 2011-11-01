@@ -14,24 +14,26 @@ my $bundled_sombok = 'no';
 my $libthai;
 my $enable_malloc_debug = 'no';
 
-# temp.
-sub top_targets {
-    my $inherited = shift->SUPER::top_targets(@_);
-    $inherited =~
-	s{^(all\b.*)}
-	{$1
-\t[ -f test-data/LineBreakTest.txt ] || \\
-\twget -q -O test-data/LineBreakTest.txt \\
-\tftp://ftp.unicode.org/Public/6.1.0/ucd/auxiliary/LineBreakTest\\*.txt \\
-\t2>/dev/null || true};
-    $inherited;
-}
-
 sub clean_subdirs {
     return <<EOF;
 clean_subdirs:
 \tif \$(TEST_F) $csubdir/Makefile; then cd $csubdir; \$(MAKE) distclean; fi
 EOF
+}
+
+sub test {
+    my $inherited = shift->SUPER::test(@_);
+    $inherited =~ s/^(test\s*:+\s*)/${1}copy_unidata /m;
+    $inherited;
+}
+
+sub distdir {
+    my $inherited = shift->SUPER::distdir(@_);
+    open my $mani, '<', 'MANIFEST' or die "$!";
+    $inherited =~ s/^(distdir\s*:+\s*)/${1}copy_unidata /m
+	if scalar grep m{test-data/LineBreakTest.txt}, <$mani>;
+    close $mani;
+    $inherited;
 }
 
 sub postamble {
@@ -46,6 +48,13 @@ sub postamble {
 \tcd $csubdir && \\
 \t\$(SHELL) configure --disable-shared --disable-doc $tools $args
 \tcd $csubdir && \$(MAKE)
+
+copy_unidata :
+\tcd test-data; \\
+\t[ -f LineBreakTest.txt ] || \\
+\twget -q -N -O LineBreakTest.txt \\
+\tftp://unicode.org/Public/6.1.0/ucd/auxiliary/LineBreakTest*.txt \\
+\t|| true
 EOF
 }
 
@@ -114,6 +123,6 @@ WriteMakefile(
 	},
 	@opts,
 	'dist'		=> {
-	    'PREOP'		=> "\$(PERL) -i -pe \'s/^(version:\\s+).*/\$\${1}\$(VERSION)/\' META.yml; \$(PERL) -i -pe \'s/^(%define version\\s+).*/\$\${1}\$(VERSION)/\' perl-Unicode-LineBreak.spec; cd $csubdir && \$(TOUCH) aclocal.m4 configure config.h.in Makefile.in",
+	    'PREOP'		=> "\$(PERL) -i -pe \'s/^(version:\\s+).*/\$\${1}\$(VERSION)/\' META.yml; \$(PERL) -i -pe \'s/^(%define version\\s+).*/\$\${1}\$(VERSION)/; s/^(%define sombok_version\\s+).*/\$\${1}$sombok_atleast_version/\' perl-Unicode-LineBreak.spec; cd $csubdir && \$(TOUCH) aclocal.m4 configure config.h.in Makefile.in",
 	},
 );
