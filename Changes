@@ -1,9 +1,14 @@
 201X.0XX_XX  Xxx Xxx XX 201X
+! LineBreak.xs
+  - Bug Fix: lbclass() & eawidth() return wrong values for strings with
+    single non-ASCII byte, e.g. lbclass("\x{A0}") returns LB_H3.
 ! Makefile.PL
   - Needs Sombok >= 2.1.0.
   - fix: Solaris sh blames test with ``-e''.  Use ``-f''.
 ! t/00LineBreakText.t
   - skip empty data.
++ t/17prop.h
+  - added for fix on LineBreak.xs
 
 2011.010_26  Wed Oct 26 2011
 + debian/*

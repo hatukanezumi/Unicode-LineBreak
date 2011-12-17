@@ -1063,7 +1063,7 @@ eawidth(self, str)
 	else if (!sv_isobject(str)) {
 	    if (!SvCUR(str))
 		XSRETURN_UNDEF;
-	    c = utf8_to_uvuni((U8 *)SvPV_nolen(str), NULL);
+	    c = utf8_to_uvuni((U8 *)SvPVutf8(str, SvCUR(str)), NULL);
 	}
 	else if (sv_derived_from(str, "Unicode::GCString")) {
 	    gcstr = PerltoC(gcstring_t *, str);
@@ -1094,7 +1094,7 @@ lbclass(self, str)
 	else if (!sv_isobject(str)) {
 	    if (!SvCUR(str))
 		XSRETURN_UNDEF;
-	    c = utf8_to_uvuni((U8 *)SvPV_nolen(str), NULL);
+	    c = utf8_to_uvuni((U8 *)SvPVutf8(str, SvCUR(str)), NULL);
 	    RETVAL = linebreak_lbclass(self, c);
 	}
 	else if (sv_derived_from(str, "Unicode::GCString")) {
