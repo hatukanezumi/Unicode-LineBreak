@@ -1,3 +1,11 @@
+2011.12  Sat Dec 17 2011
+# Backport from trunk
+! LineBreak.xs
+  - Bug Fix: lbclass() & eawidth() return wrong values for strings with
+    single non-ASCII byte, e.g. lbclass("\x{A0}") returns LB_H3.
++ t/17prop.t
+  - added for fix on LineBreak.xs
+
 2011.11  Tue Nov 01 2011
 # Backport from trunk with Unicode data 6.0.0.
 + debian/*

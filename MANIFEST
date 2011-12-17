@@ -86,6 +86,7 @@ t/13flowedsp.t
 t/14sea_al.t
 t/15array.t
 t/16regex.t
+t/17prop.t
 t/lb.pl
 t/lf.pl
 t/pod.t
