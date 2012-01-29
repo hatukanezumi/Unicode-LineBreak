@@ -114,7 +114,7 @@ I<Instance method>.
 Get line breaking property (class) of the first character of Unicode string
 STRING.
 See L</Constants> for returned value.
-Classes AI, SA, SG and XX will be resolved to other
+Classes AI, CJ, SA, SG and XX will be resolved to other
 appropriate classes. 
 However, when word segmentation for South East Asian writing systems is
 enabled, characters of supported scripts (currently Thai only) will be kept SA.
@@ -157,7 +157,7 @@ Possible maximum number of characters in one line,
 not counting trailing SPACEs and newline sequence.
 Note that number of characters generally doesn't represent length of line.
 Default is C<998>.
-Should not be C<0>.
+C<0> means unlimited (as of release 2012.01).
 
 =item ColMin => NUMBER
 
@@ -195,7 +195,7 @@ Default context is C<"NONEASTASIAN">.
 
 Tailor classification of East_Asian_Width property.
 ORD is UCS scalar value of character or array reference of them.
-PROPERTY is one of East_Asian_Width property values N, Na, W, F and H
+PROPERTY is one of East_Asian_Width property values
 (See L</Constants>).
 This option may be specified multiple times.
 If C<undef> is specified, all tailoring assigned before will be canceled.
@@ -356,6 +356,17 @@ See L</User-Defined Breaking Behaviors>.
 
 Obsoleted equivalent to L</Prep>.
 
+=item ViramaAsJoiner => C<"YES"> | C<"NO">
+
+Virama sign ("halant" in Hindi, "coeng" in Khmer) and its succeeding letter
+are not broken.
+Default is C<"YES">.
+B<Note>:
+This option was introduced by release 2012.001_29.
+On previous releases, it was fixed to C<"NO">.
+"Default" grapheme cluster defined by [UAX #29] does not include this
+feature.
+
 =back
 
 =head2 Constants
@@ -367,13 +378,13 @@ Obsoleted equivalent to L</Prep>.
 Index values to specify 6 East_Asian_Width properties
 defined by [UAX #11], and EA_Z to specify nonspacing.
 
-=item C<LB_BK>, C<LB_CR>, C<LB_LF>, C<LB_NL>, C<LB_SP>, C<LB_OP>, C<LB_CL>, C<LB_CP>, C<LB_QU>, C<LB_GL>, C<LB_NS>, C<LB_EX>, C<LB_SY>, C<LB_IS>, C<LB_PR>, C<LB_PO>, C<LB_NU>, C<LB_AL>, C<LB_ID>, C<LB_HL>, C<LB_IN>, C<LB_HY>, C<LB_BA>, C<LB_BB>, C<LB_B2>, C<LB_CB>, C<LB_ZW>, C<LB_CM>, C<LB_WJ>, C<LB_H2>, C<LB_H3>, C<LB_JL>, C<LB_JV>, C<LB_JT>, C<LB_SG>, C<LB_AI>, C<LB_SA>, C<LB_XX>
+=item C<LB_BK>, C<LB_CR>, C<LB_LF>, C<LB_NL>, C<LB_SP>, C<LB_OP>, C<LB_CL>, C<LB_CP>, C<LB_QU>, C<LB_GL>, C<LB_NS>, C<LB_EX>, C<LB_SY>, C<LB_IS>, C<LB_PR>, C<LB_PO>, C<LB_NU>, C<LB_AL>, C<LB_HL>, C<LB_ID>, C<LB_IN>, C<LB_HY>, C<LB_BA>, C<LB_BB>, C<LB_B2>, C<LB_CB>, C<LB_ZW>, C<LB_CM>, C<LB_WJ>, C<LB_H2>, C<LB_H3>, C<LB_JL>, C<LB_JV>, C<LB_JT>, C<LB_SG>, C<LB_AI>, C<LB_CJ>, C<LB_SA>, C<LB_XX>
 
-Index values to specify 38 line breaking properties (classes)
+Index values to specify 39 line breaking properties (classes)
 defined by [UAX #14].
 
 B<Note>: Property value CP was introduced by Unicode 5.2.0.
-Property value HL may be introduced by Unicode 6.1.0.
+Property value HL and CJ may be introduced by Unicode 6.1.0.
 
 =item C<MANDATORY>, C<DIRECT>, C<INDIRECT>, C<PROHIBITED>
 
@@ -569,7 +580,7 @@ options.  Some constants are defined for convenience of tailoring.
 =head4 Nonstarters of Kana-like Characters
 
 By default, several hiragana, katakana and characters corresponding to kana
-are treated as nonstarters (NS).
+are treated as nonstarters (NS or CJ).
 When the following pair(s) are specified for value of L</LBClass> option,
 these characters are treated as normal ideographic characters (ID).
 
@@ -601,7 +612,8 @@ U+30FC KATAKANA-HIRAGANA PROLONGED SOUND MARK and
 U+FF70 HALFWIDTH KATAKANA-HIRAGANA PROLONGED SOUND MARK.
 
 N.B. These letters are optionally treated either as nonstarter or
-as normal ideographic.  See [JIS X 4051] 6.1.1.
+as normal ideographic.  See [JIS X 4051] 6.1.1, [JLREQ] 3.1.7 or
+currently proposed draft of [UAX14].
 
 N.B. U+3095, U+3096, U+30F5, U+30F6 are considered to be
 neither hiragana nor katakana.
@@ -615,7 +627,7 @@ abbreviation to sequence of hiragana E<0x307E> E<0x3059> or
 katakana E<0x30DE> E<0x30B9>, MA and SU.
 
 N.B. This character is classified as nonstarter (NS) by [UAX #14]
-and as Class 13 (corresponding to ID) by [JIS X 4051].
+and as Class 13 (corresponding to ID) by [JIS X 4051] and [JLREQ].
 
 =back
 
@@ -718,7 +730,7 @@ L<http://hatuka.nezumi.nu/repos/Unicode-LineBreak/>.
 =head2 Conformance to Standards
 
 Character properties this module is based on are defined by
-Unicode Standards version 6.1.0-beta at 19 Sep. 2011.
+Unicode Standards version 6.1.0-beta at 15 Dec. 2011.
 B<This data is beta release.  Do not use for production system>.
 
 This module is intended to implement UAX14-C2.
@@ -741,6 +753,11 @@ Characters assigned to AI may be resolved to either AL or ID by choice.
 =item *
 
 Character(s) assigned to CB are not resolved.
+
+=item *
+
+Characters assigned to CJ are always resolved to NS.
+More flexible tailoring mechanism is provided.
 
 =item *
 
@@ -797,6 +814,13 @@ JIS X 4051:2004
 I<日本語文書の組版方法> (I<Formatting Rules for Japanese Documents>).
 Japanese Standards Association, 2004.
 
+=item [JLREQ]
+
+Anan, Yasuhiro et al.
+I<Requirements for Japanese Text Layout>,
+W3C Working Draft 29 November 2011.
+L<http://www.w3.org/TR/2011/WD-jlreq-20111129/>.
+
 =begin comment
 
 =item [Kubota]
@@ -809,13 +833,13 @@ L<http://web.archive.org/web/people.debian.org/~kubota/unicode-symbols-width2.ht
 
 =item [UAX #11]
 
-A. Freytag (2008-2011).
-I<Unicode Standard Annex #11: East Asian Width>, Revision 17-22.
+A. Freytag (2008-2009).
+I<Unicode Standard Annex #11: East Asian Width>, Revision 17-19.
 L<http://unicode.org/reports/tr11/>.
 
 =item [UAX #14]
 
-A. Freytag and A. Heninger (2008-2011).
+A. Freytag and A. Heninger (2008-2012).
 I<Unicode Standard Annex #14: Unicode Line Breaking Algorithm>, Revision 22-27.
 L<http://unicode.org/reports/tr14/>.
 

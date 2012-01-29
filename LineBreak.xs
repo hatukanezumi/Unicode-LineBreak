@@ -725,7 +725,9 @@ _config(self, ...)
 		    XSRETURN(1);
 		} else
 		    croak("_config: internal error");
-	    } else {
+	    } else if (strcasecmp(key, "ViramaAsJoiner") == 0)
+		RETVAL = newSVuv(self->options & LINEBREAK_OPTION_VIRAMA_AS_JOINER);
+	    else {
 		warn("_config: Getting unknown option %s", key);
 		XSRETURN_UNDEF;
 	    }
@@ -1007,8 +1009,12 @@ _config(self, ...)
 		else
 		    croak("_config: Unknown object %s",
 			  HvNAME(SvSTASH(SvRV(val))));
-	    }
-	    else
+	    } else if (strcasecmp(key, "ViramaAsJoiner") == 0) {
+		if (SVtoboolean(val))
+		    self->options |= LINEBREAK_OPTION_VIRAMA_AS_JOINER;
+		else
+		    self->options &= ~LINEBREAK_OPTION_VIRAMA_AS_JOINER;
+	    } else
 		warn("_config: Setting unknown option %s", key);
 	}
     OUTPUT:

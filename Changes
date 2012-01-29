@@ -1,14 +1,59 @@
-201X.0XX_XX  Xxx Xxx XX 201X
+2012.001_29  Sun Jan 29 2012
+# trunk, Unicode data 6.1.0 beta.
 ! LineBreak.xs
   - Bug Fix: lbclass() & eawidth() return wrong values for strings with
-    single non-ASCII byte, e.g. lbclass("\x{A0}") returns LB_H3.
+    single non-ASCII byte, e.g. lbclass("\x{A0}") returns such as LB_H3.
+  - Chg: CharMax may be 0 (unlimited).  NOTE: this feature has not been
+    tested enough. 
+  - Added new option ViramaAsJoiner.
 ! Makefile.PL
-  - Needs Sombok >= 2.1.0.
+  - Needs Sombok >= 2.1.0beta2.
   - fix: Solaris sh blames test with ``-e''.  Use ``-f''.
+! lib/Unicode/LineBreak.pm
+  - Chg: New option ViramaAsJoiner which is by default "YES".
+! lib/Unicode/LineBreak.pod
+! lib/Unicode/LineBreak/JA_JP.pod
+  - Update documentation:
+    - Added descriptions about LBC CJ & HL.
+    - Modify citation:
+      [UAX #11] really had not been revised after rev. 19 (2009).
+    - Added citation for [JLREQ].
 ! t/00LineBreakText.t
   - skip empty data.
 + t/17prop.h
   - added for fix on LineBreak.xs
+
+2011.12  Sat Dec 17 2011
+# Backport from trunk with Unicode data 6.0.0.
+! LineBreak.xs
+  - Bug Fix: lbclass() & eawidth() return wrong values for strings with
+    single non-ASCII byte, e.g. lbclass("\x{A0}") returns LB_H3.
++ t/17prop.t
+  - added for fix on LineBreak.xs
+
+2011.11  Tue Nov 01 2011
+# Backport from trunk with Unicode data 6.0.0.
++ debian/*
+  - Added Debian packaging info at Debian sid, packaged by Emmanuel Bouthenot.
+! GPL
+  - Street address of FSF: CPAN RT #69999.
+! lib/Text/LineFold.pm:
+  - Bump up version to 2011.10.
+  - _is_indirect(): Simplified as enhancement of lbrule().
+! lib/Unicode/LineBreak.pod
+! lib/Unicode/LineBreak/JA_JP.pod
+  - Some updates.
+! Makefile.PL
+  - Bundle LineBreakTest.txt in dist for test #00.
+! META.yml
+  - Quote abstract containing `#'.
+! sombok/*
+  - Bundled Sombok 2.0.6.
+! t/00LineBreakText.t
+  - Now all tests shall be past.
+  - Add test names.
+! t/01break.t
+  - Added Hebrew (he) test.
 
 2011.010_26  Wed Oct 26 2011
 + debian/*

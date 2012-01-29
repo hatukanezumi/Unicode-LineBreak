@@ -25,7 +25,7 @@ use Unicode::GCString;
 ### Globals
 
 ### The package version
-our $VERSION = '2011.010_26';
+our $VERSION = '2012.001_29';
 
 ### Public Configuration Attributes
 our @Config = (
@@ -44,6 +44,7 @@ our @Config = (
     Prep => undef,
     Sizing => 'UAX11',
     Urgent => undef,
+    ViramaAsJoiner => 'YES',
 );
 our $Config = {};
 eval { require Unicode::LineBreak::Defaults; };

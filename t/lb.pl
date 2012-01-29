@@ -7,7 +7,7 @@ use Unicode::LineBreak qw(:all);
     ColMax => 76,
     ColMin => 0,
     Context => 'NONEASTASIAN',
-    EAWidth => undef,
+    EAWidth => [[0x302E, 0x302F] => EA_Z()], # 6.1.0: Changed from Mn to Mc.
     Format => 'SIMPLE',
     HangulAsAL => 'NO',
     LBClass => undef,

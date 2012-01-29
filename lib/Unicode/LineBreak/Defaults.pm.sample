@@ -47,6 +47,8 @@ Following settings are available.
 
 =item Urgent
 
+=item ViramaAsJoiner
+
 =back
 
 =head1 SEE ALSO
@@ -76,5 +78,6 @@ L<Unicode::LineBreak>
 # $Config->{TailorLB} = [];
 # $Config->{Urgent} = undef;
 # $Config->{UserBreaking} = [];
+# $Config->{ViramaAsJoiner} = 'YES';
 
 1;
