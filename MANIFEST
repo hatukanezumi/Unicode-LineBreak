@@ -47,7 +47,7 @@ sombok/install-sh
 sombok/lib/5.1.0.c
 sombok/lib/5.2.0.c
 sombok/lib/6.0.0.c
-sombok/lib/6.1.0beta.c
+sombok/lib/6.1.0.c
 sombok/lib/break.c
 sombok/lib/charprop.c
 sombok/lib/gcstring.c
@@ -132,6 +132,7 @@ test-data/ko.al.out
 test-data/ko.in
 test-data/ko.newline.out
 test-data/ko.out
+test-data/LineBreakTest.txt
 test-data/quotes.fixed.out
 test-data/quotes.flowed.out
 test-data/quotes.in

@@ -384,7 +384,7 @@ Index values to specify 39 line breaking properties (classes)
 defined by [UAX #14].
 
 B<Note>: Property value CP was introduced by Unicode 5.2.0.
-Property value HL and CJ may be introduced by Unicode 6.1.0.
+Property value HL and CJ were introduced by Unicode 6.1.0.
 
 =item C<MANDATORY>, C<DIRECT>, C<INDIRECT>, C<PROHIBITED>
 
@@ -730,8 +730,7 @@ L<http://hatuka.nezumi.nu/repos/Unicode-LineBreak/>.
 =head2 Conformance to Standards
 
 Character properties this module is based on are defined by
-Unicode Standards version 6.1.0-beta at 15 Dec. 2011.
-B<This data is beta release.  Do not use for production system>.
+Unicode Standards version 6.1.0.
 
 This module is intended to implement UAX14-C2.
 
@@ -851,7 +850,7 @@ L<Text::LineFold>, L<Text::Wrap>.
 
 =head1 AUTHOR
 
-Copyright (C) 2009-2011 Hatuka*nezumi - IKEDA Soji <hatuka(at)nezumi.nu>.
+Copyright (C) 2009-2012 Hatuka*nezumi - IKEDA Soji <hatuka(at)nezumi.nu>.
 
 This program is free software; you can redistribute it and/or modify it 
 under the same terms as Perl itself.

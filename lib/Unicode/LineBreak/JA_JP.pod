@@ -363,7 +363,7 @@ B<注>:
 
 B<注>:
 特性値 CP はUnicode 5.2.0版で導入された。
-特性値 HL と CJ はUnicode 6.1.0版で導入されそう。
+特性値 HL と CJ はUnicode 6.1.0版で導入された。
 
 =item C<MANDATORY>, C<DIRECT>, C<INDIRECT>, C<PROHIBITED>
 
@@ -673,8 +673,7 @@ L<http://hatuka.nezumi.nu/repos/Unicode-LineBreak/>
 
 =head2 標準への適合性
 
-このモジュールで用いている文字の特性値は、Unicode 標準 6.1.0ベータ版 (2011-12-15現在) による。
-B<このデータはベータ公開版である。本番システムで使わないように>。
+このモジュールで用いている文字の特性値は、Unicode 標準 6.1.0版による。
 
 このモジュールでは、実装水準 UAX14-C2 を実装しているつもり。
 
@@ -787,7 +786,7 @@ L<Text::LineFold::JA_JP>, L<Text::Wrap>.
 
 =head1 AUTHOR
 
-Copyright (C) 2009-2011 Hatuka*nezumi - IKEDA Soji <hatuka(at)nezumi.nu>.
+Copyright (C) 2009-2012 Hatuka*nezumi - IKEDA Soji <hatuka(at)nezumi.nu>.
 
 This program is free software; you can redistribute it and/or modify it 
 under the same terms as Perl itself.
