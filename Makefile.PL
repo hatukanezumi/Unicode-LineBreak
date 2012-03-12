@@ -3,22 +3,22 @@ use strict;
 
 package MY;
 use ExtUtils::MakeMaker;
+use Config;
 
 my $csubdir = 'sombok';
-my $sombok_atleast_version = '2.1.0';
+my $sombok_atleast_version = '2.1.1';
 my $sombok_max_version = '2.99.99';
 my $pkg_config = $ENV{'PKG_CONFIG'} || 'pkg-config';
-my @args = ();
 my $enable_libthai = 'yes';
 my $bundled_sombok = 'no';
 my $libthai;
-my $enable_malloc_debug = 'no';
+my $unicode;
 
-sub clean_subdirs {
-    return <<EOF;
-clean_subdirs:
-\tif \$(TEST_F) $csubdir/Makefile; then cd $csubdir; \$(MAKE) distclean; fi
-EOF
+sub clean {
+    my $inherited = shift->SUPER::clean(@_);
+    $inherited =~ s{(\n*)\z}
+	{\n\t\$(RM_F) $csubdir/Makefile.PL $csubdir/include/sombok.h $csubdir/lib/*\$(OBJ_EXT)$1};
+    $inherited;
 }
 
 sub test {
@@ -38,40 +38,36 @@ sub distdir {
 
 sub postamble {
     my $self = shift;
-    my $args = join ' ', map {s/\'/\\\'/g; "'$_'"; } @args;
-    my $tools = "CC='\$(CC)' CFLAGS='\$(CCFLAGS) \$(OPTIMIZE) \$(CCCDLFLAGS)'";
-    $tools .= $self->{'FULL_AR'}? " AR='\$(FULL_AR)'":
-	      ($self->{'AR'}? " AR='\$(AR)'": '');
-    $tools .= $self->{'RANLIB'}? " RANLIB='\$(RANLIB)'": '';
+
+    my $cd_make = $self->cd($csubdir, '$(MAKE) all');
+
     return <<EOF;
-\$(MYEXTLIB): $csubdir/configure
-\tcd $csubdir && \\
-\t\$(SHELL) configure --disable-shared --disable-doc $tools $args
-\tcd $csubdir && \$(MAKE)
+\$(MYEXTLIB): $csubdir/Makefile
+\t$cd_make
 
 copy_unidata :
 \tcd test-data; \\
 \t[ -f LineBreakTest.txt ] || \\
 \twget -q -N -O LineBreakTest.txt \\
-\tftp://unicode.org/Public/6.1.0/ucd/auxiliary/LineBreakTest*.txt \\
+\tftp://unicode.org/Public/$unicode/ucd/auxiliary/LineBreakTest*.txt \\
+\t|| true
+\tcd test-data; \\
+\t[ -f GraphemeBreakTest.txt ] || \\
+\twget -q -N -O GraphemeBreakTest.txt \\
+\tftp://unicode.org/Public/$unicode/ucd/auxiliary/GraphemeBreakTest*.txt \\
 \t|| true
 EOF
 }
 
+$unicode = `cat $csubdir/UNICODE`;
+$unicode =~ s/\s+$//;
 foreach my $arg (@ARGV) {
-    if ($arg =~ /^--(help|version)(=|\z)/) {
-	chdir $csubdir;
-	system("./configure $arg");
-	exit;
-    } elsif ($arg eq 'nolibthai' or $arg eq '--disable-libthai' or
-	$arg eq '--enable-libthai=no') {
+    if ($arg eq '--disable-libthai') {
 	$enable_libthai = 'no';
     } elsif ($arg eq '--with-bundled-sombok') {
 	$bundled_sombok = 'yes';
-    } elsif ($arg eq '--enable-malloc-debug') {
-	$enable_malloc_debug = 'yes';
-    } elsif ($arg =~ /^--/ or $arg =~ /^\w+=/) {
-	push @args, $arg;
+    } elsif ($arg =~ /^--with-unicode-version=(\S+)$/) {
+	$unicode = $1;
     } else {
 	die "Unknown option $arg\n";
     }
@@ -79,27 +75,68 @@ foreach my $arg (@ARGV) {
 my @opts = ();
 $libthai = `$pkg_config --modversion libthai`;
 chomp $libthai;
-if ($libthai and $enable_libthai eq 'yes') {
+$libthai ||= 'unknown';
+if ($libthai ne 'unknown' and $enable_libthai eq 'yes') {
     print "Use libthai $libthai\n";
-    push @args, '--enable-libthai';
     push @opts, ('LIBS' => `$pkg_config --libs libthai`);
-} else {
-    push @args, '--disable-libthai';
 }
 if (system("$pkg_config --atleast-version=$sombok_atleast_version sombok")
     >> 8 or
     system("$pkg_config --max-version=$sombok_max_version sombok") >> 8) {
     $bundled_sombok = 'yes';
 }
-if ($enable_malloc_debug eq 'yes') {
-    $bundled_sombok = 'yes';
-    push @args, '--enable-malloc-debug';
-    push @opts, ('DEFINE' => '-DMALLOC_DEBUG');
-}
 if ($bundled_sombok eq 'yes') {
-    print "Use bundled sombok\n";
-    push @opts, ('MYEXTLIB' => "$csubdir/.libs/libsombok\$(LIB_EXT)");
-    push @opts, ('INC' => "-I$csubdir/include -I$csubdir");
+    my $sombok = `cat $csubdir/VERSION`;
+    $sombok =~ s/\s+$//;
+    $sombok ||= 'bundled';
+
+    print "Use bundled sombok $sombok with Unicode $unicode\n";
+
+    # create sombok/Makefile.PL
+    unlink "$csubdir/Makefile" if -e "$csubdir/Makefile";
+    open my $fp, '<', 'Makefile.PL.sombok' or die $!;
+    my $h = join '', <$fp>;
+    close $fp;
+    $h =~ s/\@UNICODE_VERSION\@/$unicode/g;
+    open my $ofp, '>', "$csubdir/Makefile.PL" or die $!;
+    print $ofp $h;
+    close $ofp;
+
+    # create sombok/include/sombok.h
+    open my $fp, '<', "$csubdir/include/sombok.h.in" or die $!;
+    my $h = join '', <$fp>;
+    close $fp;
+
+    $h =~ s/#ifdef HAVE_CONFIG_H/#if 1/;
+    if ($libthai and $enable_libthai eq 'yes') {
+	$h =~ s{\"config.h\"}
+	       {\"EXTERN.h\"\n#    include \"perl.h\"\n#    define USE_LIBTHAI \"libthai/$libthai\"};
+    } else {
+	$h =~ s{\"config.h\"}
+               {\"EXTERN.h\"\n#    include \"perl.h\"\n#    undef USE_LIBTHAI};
+    }
+    $h =~ s/\@SOMBOK_UNICHAR_T\@/U32/;
+    $h =~ s/\@PACKAGE_VERSION\@/$sombok/;
+    $h =~ s/\@SOMBOK_UNICHAR_T_IS_WCHAR_T\@//;
+    $h =~ s/\@SOMBOK_UNICHAR_T_IS_UNSIGNED_INT\@//;
+    $h =~ s/\@SOMBOK_UNICHAR_T_IS_UNSIGNED_LONG\@//;
+
+    open my $ofp, '>', "$csubdir/include/sombok.h" or die $!;
+    print $ofp $h;
+    close $ofp;
+
+    #XXXmy $define = ($^O eq 'MSWin32') ? '-DMSDOS' : '';
+    my $myextlib;
+    if ($^O eq 'MSWin32') {
+	$myextlib = 'sombok\\libsombok$(LIB_EXT)';
+    } elsif ($^O eq 'darwin' && $Config{'ldflags'} =~/-arch ppc64/) {
+	$myextlib = '-all_load sombok/libsombok$(LIB_EXT)';
+    } else {
+	$myextlib = 'sombok/libsombok$(LIB_EXT)';
+    }
+
+    push @opts, ('MYEXTLIB' => $myextlib);
+    push @opts, ('INC' => "-I$csubdir/include");
     push @opts, ('depend' => { '$(OBJECT)' => '$(MYEXTLIB)' } );
 } else {
     my $sombok = `$pkg_config --modversion sombok`;
@@ -123,6 +160,6 @@ WriteMakefile(
 	},
 	@opts,
 	'dist'		=> {
-	    'PREOP'		=> "\$(PERL) -i -pe \'s/^(version:\\s+).*/\$\${1}\$(VERSION)/\' META.yml; \$(PERL) -i -pe \'s/^(%define version\\s+).*/\$\${1}\$(VERSION)/; s/^(%define sombok_version\\s+).*/\$\${1}$sombok_atleast_version/\' perl-Unicode-LineBreak.spec; cd $csubdir && \$(TOUCH) aclocal.m4 configure config.h.in Makefile.in",
+	    'PREOP'		=> "\$(FULLPERL) -i -pe \'s/^(version:\\s+).*/\$\${1}\$(VERSION)/\' META.yml; \$(FULLPERL) -i -pe \'s/^(%define version\\s+).*/\$\${1}\$(VERSION)/; s/^(%define sombok_version\\s+).*/\$\${1}$sombok_atleast_version/\' perl-Unicode-LineBreak.spec",
 	},
 );

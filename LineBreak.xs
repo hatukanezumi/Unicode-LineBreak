@@ -1,7 +1,7 @@
 /*
  * LineBreak.xs - Perl XS glue for Sombok package.
  * 
- * Copyright (C) 2009-2011 Hatuka*nezumi - IKEDA Soji <hatuka(at)nezumi.nu>.
+ * Copyright (C) 2009-2012 Hatuka*nezumi - IKEDA Soji <hatuka(at)nezumi.nu>.
  * 
  * This file is part of the Unicode::LineBreak package.  This program is
  * free software; you can redistribute it and/or modify it under the same
@@ -251,14 +251,14 @@ void do_pregexec_once(REGEXP *rx, unistr_t *str)
 /*
  * Increment/decrement reference count
  */
-void ref_func(SV *sv, int datatype, int d)
+void ref_func(void *sv, int datatype, int d)
 {
     if (sv == NULL)
 	return;
     if (0 < d)
-	SvREFCNT_inc(sv);
+	SvREFCNT_inc((SV *)sv);
     else if (d < 0)
-	SvREFCNT_dec(sv);
+	SvREFCNT_dec((SV *)sv);
 }
 
 /*
@@ -565,10 +565,6 @@ _config(self, ...)
 	SV *val;
 	char *opt;
     CODE:
-	if (self == NULL)
-	    if ((self = linebreak_new()) == NULL)
-		croak("_config: %s", strerror(errno));
-
 	RETVAL = NULL;
 	if (items < 2)
 	    croak("_config: Too few arguments");
