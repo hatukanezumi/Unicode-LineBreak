@@ -1,4 +1,4 @@
-2012.003_11  Mon Mar 12 2012
+2012.003_13  Mon Mar 12 2012
 # Tests building on Win32 are appreciated.
 ! LineBreak.xs:
   - Cast ref_func() according to strict prototyping.
@@ -12,6 +12,8 @@
 + t/00GraphemeBreakTest.t
   - Added test suite provided by Unicode Consortium.
   - Cases including single surrogates will be skipped.
+
+2012.003_11  Mon Mar 12 2012 - Withdrawn
 
 2012.02  Sat Feb 04 2012
 ! t/01break.t

@@ -108,7 +108,7 @@ if ($bundled_sombok eq 'yes') {
     close $fp;
 
     $h =~ s/#ifdef HAVE_CONFIG_H/#if 1/;
-    if ($libthai and $enable_libthai eq 'yes') {
+    if ($libthai ne 'unknown' and $enable_libthai eq 'yes') {
 	$h =~ s{\"config.h\"}
 	       {\"EXTERN.h\"\n#    include \"perl.h\"\n#    define USE_LIBTHAI \"libthai/$libthai\"};
     } else {
