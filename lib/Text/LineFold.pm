@@ -48,7 +48,7 @@ use Unicode::LineBreak qw(:all);
 ### Globals
 
 ### The package Version
-our $VERSION = '2011.10';
+our $VERSION = '2012.03';
 
 ### Public Configuration Attributes
 our $Config = {
@@ -379,7 +379,7 @@ sub fold {
 		     $s =~ /^(\s|$special_break)/) {
 		$str .= $s;
 	    } else {
-		$str .= ' ' if $self->_is_indirect($str, $s);
+		$str .= ' ' if $self->breakingRule($str, $s) == INDIRECT;
 		$str .= $s;
 	    }
 	}
@@ -505,7 +505,8 @@ sub unfold {
 		    } elsif (length $s) {
 			$result .= $s;
 		    } elsif (length $l) {
-			$result .= ' ' if $self->_is_indirect($l, $n);
+			$result .= ' '
+			    if $self->breakingRule($l, $n) == INDIRECT;
 		    }
 		} elsif ($s =~ /\G(.+)\n/cg) {
 		    $result .= $1.$self->config('Newline');
@@ -567,14 +568,6 @@ sub unfold {
         return $self->{_charset}->encode($result);
     }
 }
-
-sub _is_indirect {
-    my $self = shift;
-    my $b = Unicode::GCString->new(shift, $self)->lbclass_ext(-1);
-    my $a = Unicode::GCString->new(shift, $self)->lbclass(0);
-    return $self->lbrule($b, $a) == INDIRECT; # FIXME: SA vs. SA
-}
-
 
 =head1 BUGS
 

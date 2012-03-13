@@ -1130,6 +1130,30 @@ lbrule(self, b_idx, a_idx)
     OUTPUT:
 	RETVAL
 
+propval_t
+breakingRule(lbobj, bgcstr, agcstr)
+	linebreak_t *lbobj;
+	generic_string bgcstr;
+	generic_string agcstr;
+    PROTOTYPE: $$$
+    PREINIT:
+	propval_t blbc, albc;
+    CODE:
+	if (!SvOK(ST(1)) || !SvOK(ST(2)))
+	    XSRETURN_UNDEF;
+	if (lbobj == NULL)
+	    XSRETURN_UNDEF;
+	if (bgcstr->gclen == 0 || agcstr->gclen == 0)
+	    XSRETURN_UNDEF;
+	if ((blbc = bgcstr->gcstr[bgcstr->gclen - 1].elbc) == PROP_UNKNOWN)
+	    blbc = bgcstr->gcstr[bgcstr->gclen - 1].lbc;
+	albc = agcstr->gcstr[0].lbc;
+	RETVAL = linebreak_get_lbrule(lbobj, blbc, albc);
+	if (RETVAL == PROP_UNKNOWN)
+	    XSRETURN_UNDEF;
+    OUTPUT:
+	RETVAL
+
 void
 reset(self)
 	linebreak_t *self;

@@ -1,3 +1,19 @@
+2012.003_26  Tue Mar 13 2012
+# Mainly fixes of bugs emited by previous development release.
+! lib/Text/LineFold.pm:
+  - use breakingRule().
+! LineBreak.xs:
+  - New: LineBreak::breakingRule().  lbrule() may be deprecated in near future.
+! Makefile.PL:
+  - Fix: libthai cflags were ommitted.
+  - get UC test files only when they do not exist.
+  - Fix: disable test on subdirs: lack of it causes error with *BSD make.
+  - Fix: failed with options INSTALLDIRS=... etc.
+! Makefile.PL.sombok:
+  - Fix: use Cwd::cwd() to get current directory: `cwd` doesn't work on
+    MSWin32.
+  - use $(DIRFILESEP) as path separators.
+
 2012.003_13  Mon Mar 12 2012
 # Tests building on Win32 are appreciated.
 ! LineBreak.xs:

@@ -9,30 +9,39 @@ my $csubdir = 'sombok';
 my $sombok_atleast_version = '2.1.1';
 my $sombok_max_version = '2.99.99';
 my $pkg_config = $ENV{'PKG_CONFIG'} || 'pkg-config';
-my $enable_libthai = 'yes';
-my $bundled_sombok = 'no';
+my $enable_libthai = 1;
+my $bundled_sombok = 0;
+my $unicode = 6.1.0;
+my $copy_unidata = 0;
+my $sombok;
 my $libthai;
-my $unicode;
 
 sub clean {
     my $inherited = shift->SUPER::clean(@_);
     $inherited =~ s{(\n*)\z}
-	{\n\t\$(RM_F) $csubdir/Makefile.PL $csubdir/include/sombok.h $csubdir/lib/*\$(OBJ_EXT)$1};
+	{\n\t\$(RM_F) $csubdir\$(DIRFILESEP)Makefile.PL $csubdir\$(DIRFILESEP)include\$(DIRFILESEP)sombok.h $csubdir\$(DIRFILESEP)lib\$(DIRFILESEP)*\$(OBJ_EXT)$1};
     $inherited;
 }
 
 sub test {
     my $inherited = shift->SUPER::test(@_);
-    $inherited =~ s/^(test\s*:+\s*)/${1}copy_unidata /m;
+    # Get UNIDATA before testing.
+    $inherited =~ s/^(test\s*:+\s*)/${1}copy_unidata /m
+	if $copy_unidata;
+    # disable test in subdirs.
+    $inherited =~ s{^(test\s*:+\s*.*)(\n\t.+)*}
+	{${1}\n\t\$(NOECHO) \$(NOOP)}m;
     $inherited;
 }
 
 sub distdir {
     my $inherited = shift->SUPER::distdir(@_);
-    open my $mani, '<', 'MANIFEST' or die "$!";
-    $inherited =~ s/^(distdir\s*:+\s*)/${1}copy_unidata /m
-	if scalar grep m{test-data/LineBreakTest.txt}, <$mani>;
-    close $mani;
+    if ($copy_unidata) {
+	open my $mani, '<', 'MANIFEST' or die "$!";
+	$inherited =~ s/^(distdir\s*:+\s*)/${1}copy_unidata /m
+	    if scalar grep m{test-data/LineBreakTest.txt}, <$mani>;
+	close $mani;
+    }
     $inherited;
 }
 
@@ -42,7 +51,7 @@ sub postamble {
     my $cd_make = $self->cd($csubdir, '$(MAKE) all');
 
     return <<EOF;
-\$(MYEXTLIB): $csubdir/Makefile
+\$(MYEXTLIB): $csubdir\$(DIRFILESEP)Makefile
 \t$cd_make
 
 copy_unidata :
@@ -59,36 +68,44 @@ copy_unidata :
 EOF
 }
 
-$unicode = `cat $csubdir/UNICODE`;
-$unicode =~ s/\s+$//;
+if (open my $fp, '<', "$csubdir/UNICODE") {
+    $unicode = <$fp>;
+    $unicode =~ s/\s+$//;
+    close $fp;
+}
+
 foreach my $arg (@ARGV) {
     if ($arg eq '--disable-libthai') {
-	$enable_libthai = 'no';
+	$enable_libthai = 0;
     } elsif ($arg eq '--with-bundled-sombok') {
-	$bundled_sombok = 'yes';
+	$bundled_sombok = 1;
     } elsif ($arg =~ /^--with-unicode-version=(\S+)$/) {
 	$unicode = $1;
-    } else {
-	die "Unknown option $arg\n";
     }
 }
-my @opts = ();
-$libthai = `$pkg_config --modversion libthai`;
-chomp $libthai;
-$libthai ||= 'unknown';
-if ($libthai ne 'unknown' and $enable_libthai eq 'yes') {
+
+my %opts = ('LIBS' => '', 'INC' => '');
+
+$enable_libthai = 0 if system("$pkg_config --exists libthai") >> 8;
+if ($enable_libthai) {
+    $libthai = `$pkg_config --modversion libthai`;
+    chomp $libthai;
+    $libthai ||= 'unknown';
     print "Use libthai $libthai\n";
-    push @opts, ('LIBS' => `$pkg_config --libs libthai`);
 }
+
 if (system("$pkg_config --atleast-version=$sombok_atleast_version sombok")
     >> 8 or
     system("$pkg_config --max-version=$sombok_max_version sombok") >> 8) {
-    $bundled_sombok = 'yes';
+    $bundled_sombok = 1;
 }
-if ($bundled_sombok eq 'yes') {
-    my $sombok = `cat $csubdir/VERSION`;
-    $sombok =~ s/\s+$//;
-    $sombok ||= 'bundled';
+if ($bundled_sombok) {
+    if (open my $fp, '<', "$csubdir/VERSION") {
+	$sombok = <$fp>;
+	close $fp;
+	$sombok =~ s/\s+$//;
+	$sombok ||= 'bundled';
+    }
 
     print "Use bundled sombok $sombok with Unicode $unicode\n";
 
@@ -108,7 +125,7 @@ if ($bundled_sombok eq 'yes') {
     close $fp;
 
     $h =~ s/#ifdef HAVE_CONFIG_H/#if 1/;
-    if ($libthai ne 'unknown' and $enable_libthai eq 'yes') {
+    if ($enable_libthai) {
 	$h =~ s{\"config.h\"}
 	       {\"EXTERN.h\"\n#    include \"perl.h\"\n#    define USE_LIBTHAI \"libthai/$libthai\"};
     } else {
@@ -135,16 +152,27 @@ if ($bundled_sombok eq 'yes') {
 	$myextlib = 'sombok/libsombok$(LIB_EXT)';
     }
 
-    push @opts, ('MYEXTLIB' => $myextlib);
-    push @opts, ('INC' => "-I$csubdir/include");
-    push @opts, ('depend' => { '$(OBJECT)' => '$(MYEXTLIB)' } );
+    $opts{'MYEXTLIB'} = $myextlib;
+    $opts{'INC'} .= " -I$csubdir\$(DIRFILESEP)include";
+    $opts{'depend'} = { '$(OBJECT)' => '$(MYEXTLIB)' };
 } else {
-    my $sombok = `$pkg_config --modversion sombok`;
+    $sombok = `$pkg_config --modversion sombok`;
     chomp $sombok;
     print "Use sombok $sombok\n";
-    push @opts, ('LIBS' => `$pkg_config --libs sombok`);
-    push @opts, ('INC' => `$pkg_config --cflags sombok`); 
+    $opts{'LIBS'} .= ' '.`$pkg_config --libs sombok`;
+    $opts{'INC'} .= ' '.`$pkg_config --cflags sombok`; 
 }
+
+if ($enable_libthai) {
+    $opts{'LIBS'} .= ' '.`$pkg_config --libs libthai`;
+    $opts{'INC'} .= ' '.`$pkg_config --cflags libthai`;
+}
+
+$opts{'LIBS'} =~ s/\s+/ /g;
+$opts{'INC'} =~ s/\s+/ /g;
+
+$copy_unidata = (! -e "test-data/LineBreakTest.txt" ||
+                 ! -e "test-data/GraphemeBreakTest.txt");
 
 WriteMakefile(
 	'NO_META'	=> 1,
@@ -158,7 +186,7 @@ WriteMakefile(
 	    'MIME::Charset'	=> '1.006.2',
 	    'Test::More'	=> '0.45',
 	},
-	@opts,
+	%opts,
 	'dist'		=> {
 	    'PREOP'		=> "\$(FULLPERL) -i -pe \'s/^(version:\\s+).*/\$\${1}\$(VERSION)/\' META.yml; \$(FULLPERL) -i -pe \'s/^(%define version\\s+).*/\$\${1}\$(VERSION)/; s/^(%define sombok_version\\s+).*/\$\${1}$sombok_atleast_version/\' perl-Unicode-LineBreak.spec",
 	},

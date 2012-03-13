@@ -93,6 +93,16 @@ I<Undocumented>.
 
 =over 4
 
+=item $self->breakingRule (BEFORESTR, AFTERSTR)
+
+I<Instance method>.
+Get possible line breaking behavior between strings BEFORESTR and AFTERSTR.
+See L</Constants> for returned value.
+
+B<Note>:
+This method gives just approximate description of line breaking behavior.
+Use break() and so on to wrap actual texts.
+
 =item context ([Charset => CHARSET], [Language => LANGUAGE])
 
 I<Function>.
@@ -122,11 +132,15 @@ enabled, characters of supported scripts (currently Thai only) will be kept SA.
 =item $self->lbrule (BEFORE, AFTER)
 
 I<Instance method>.
-Get line breaking action between class BEFORE and class AFTER.
+Get possible line breaking behavior between class BEFORE and class AFTER.
 See L</Constants> for returned value.
 
 B<Note>:
 This method gives just approximate description of line breaking behavior.
+Use break() and so on to wrap actual texts.
+
+B<Note>:
+This method may be deprecated in near future.  Use breakingRule().
 
 =item $self->strsize (LEN, PRE, SPC, STR)
 
