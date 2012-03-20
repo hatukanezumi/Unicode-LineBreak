@@ -1,6 +1,9 @@
-Unicode-LineBreak Package.
+===========================================================
+Unicode-LineBreak - UAX #14 Unicode Line Breaking Algorithm
+===========================================================
 
-Copyright (C) 2009-2012 by Hatuka*nezumi - IKEDA Soji <hatuka(at)nezumi.nu>.
+Unicode-LineBreak Package is Copyright (C) 2009-2012,
+by Hatuka*nezumi - IKEDA Soji.
 
 This package is free software; you can redistribute it and/or modify it 
 under the same terms as Perl itself.
@@ -58,5 +61,11 @@ For Other Language
 
 Python
     pytextseg: http://pypi.python.org/pypi/pytextseg/
+
+Author
+======
+
+Copyright (C) 2009-2012 Hatuka*nezumi - IKEDA Soji <hatuka(at)nezumi.nu>.
+
 
 $$

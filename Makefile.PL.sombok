@@ -10,7 +10,7 @@ WriteMakefile(
     NAME      => 'sombok', # (doesn't matter what the name is here) oh yes it does
     DEFINE    => $define,
     INC       => "\"-I\$(PERL_INC)\" \"-I$pwd\$(DIRFILESEP)include\"", # force PERL_INC dir ahead of system -I's
-    SKIP      => [qw(dynamic dynamic_lib dlsyms test)],
+    SKIP      => [qw(dynamic dynamic_lib dlsyms)],
     OBJECT    => '$(O_FILES)',
     clean     => {'FILES' => 'libsombok$(LIB_EXT)'},
     H         => [qw(include/sombok.h include/sombok_constants.h $(PERL_INC)/config.h)],
@@ -36,6 +36,9 @@ config ::
 
 lint:
 	lint -abchx $(LIBSRCS)
+
+pure_all ::
+	$(NOECHO) $(NOOP)
 
 ';
     $r .= '

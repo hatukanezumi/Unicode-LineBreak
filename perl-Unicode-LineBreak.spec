@@ -1,5 +1,5 @@
 %define module  Unicode-LineBreak
-%define version 2012.003_26
+%define version 2012.003_30
 %define release 1%{?dist}
 %define sombok_version 2.1.1
 
@@ -32,7 +32,7 @@ Unicode 行分割アルゴリズムを実行する。分割位置を決定する
 書11 [UAX #11] で定義される East_Asian_Width 参考特性も考慮する。
 %description
 Unicode::LineBreak performs Line Breaking Algorithm described in
-Unicode Standards Annex #14 [UAX #14]. East_Asian_Width informative
+Unicode Standard Annex #14 [UAX #14]. East_Asian_Width informative
 properties defined by Annex #11 [UAX #11] will be concerned to
 determine breaking positions.
 

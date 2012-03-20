@@ -13,7 +13,7 @@ Unicode::LineBreak - UAX #14 Unicode Line Breaking Algorithm
 =head1 DESCRIPTION
 
 Unicode::LineBreak performs Line Breaking Algorithm described in Unicode
-Standards Annex #14 [UAX #14]. East_Asian_Width informative properties
+Standard Annex #14 [UAX #14]. East_Asian_Width informative properties
 defined by Annex #11 [UAX #11] will be concerned to determine breaking
 positions.
 
@@ -591,10 +591,10 @@ options.  Some constants are defined for convenience of tailoring.
 
 =head3 Line Breaking Properties
 
-=head4 Nonstarters of Kana-like Characters
+=head4 Non-starters of Kana-like Characters
 
 By default, several hiragana, katakana and characters corresponding to kana
-are treated as nonstarters (NS or CJ).
+are treated as non-starters (NS or CJ).
 When the following pair(s) are specified for value of L</LBClass> option,
 these characters are treated as normal ideographic characters (ID).
 
@@ -604,7 +604,7 @@ these characters are treated as normal ideographic characters (ID).
 
 All of characters below.
 
-=item C<IDEOGRAPHIC_ITERATION MARKS() =E<gt> LB_ID>
+=item C<IDEOGRAPHIC_ITERATION_MARKS() =E<gt> LB_ID>
 
 Ideographic iteration marks.
 U+3005 IDEOGRAPHIC ITERATION MARK, U+303B VERTICAL IDEOGRAPHIC ITERATION MARK, U+309D HIRAGANA ITERATION MARK, U+309E HIRAGANA VOICED ITERATION MARK, U+30FD KATAKANA ITERATION MARK and U+30FE KATAKANA VOICED ITERATION MARK.
@@ -625,9 +625,9 @@ Hiragana or katakana prolonged sound marks:
 U+30FC KATAKANA-HIRAGANA PROLONGED SOUND MARK and
 U+FF70 HALFWIDTH KATAKANA-HIRAGANA PROLONGED SOUND MARK.
 
-N.B. These letters are optionally treated either as nonstarter or
+N.B. These letters are optionally treated either as non-starter or
 as normal ideographic.  See [JIS X 4051] 6.1.1, [JLREQ] 3.1.7 or
-currently proposed draft of [UAX14].
+[UAX14].
 
 N.B. U+3095, U+3096, U+30F5, U+30F6 are considered to be
 neither hiragana nor katakana.
@@ -640,7 +640,7 @@ N.B. Although this character is not kana, it is usually regarded as
 abbreviation to sequence of hiragana E<0x307E> E<0x3059> or
 katakana E<0x30DE> E<0x30B9>, MA and SU.
 
-N.B. This character is classified as nonstarter (NS) by [UAX #14]
+N.B. This character is classified as non-starter (NS) by [UAX #14]
 and as Class 13 (corresponding to ID) by [JIS X 4051] and [JLREQ].
 
 =back
@@ -744,7 +744,7 @@ L<http://hatuka.nezumi.nu/repos/Unicode-LineBreak/>.
 =head2 Conformance to Standards
 
 Character properties this module is based on are defined by
-Unicode Standards version 6.1.0.
+Unicode Standard version 6.1.0.
 
 This module is intended to implement UAX14-C2.
 

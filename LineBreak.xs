@@ -21,6 +21,14 @@
 #include "ppport.h"
 #include "sombok.h"
 
+/* for Win32 with Visual Studio (MSVC) */
+#ifdef _MSC_VER
+#  ifndef snprintf
+#      define snprintf _snprintf
+#  endif /* snprintf */
+#  define strcasecmp _stricmp
+#endif /* _MSC_VER */
+
 /* Type synonyms for typemap. */
 typedef IV swapspec_t;
 typedef gcstring_t *generic_string;

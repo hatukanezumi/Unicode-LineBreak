@@ -28,9 +28,12 @@ sub test {
     # Get UNIDATA before testing.
     $inherited =~ s/^(test\s*:+\s*)/${1}copy_unidata /m
 	if $copy_unidata;
-    # disable test in subdirs.
-    $inherited =~ s{^(test\s*:+\s*.*)(\n\t.+)*}
-	{${1}\n\t\$(NOECHO) \$(NOOP)}m;
+##    # disable test in subdirs.
+##    $inherited =~ s{^(test\s*:+.*)(\n\t.+)*}
+##	{${1}\n\t\$(NOECHO) \$(NOOP)}gm;
+##    # for a change by ExtUtils::MakeMaker 6.33 (cf. CPAN RT 27804).
+##    $inherited =~ s{^(subdirs-test\s*:+.*)(\n\t.+)*}
+##	{${1}\n\t\$(NOECHO) \$(NOOP)}gm;
     $inherited;
 }
 
