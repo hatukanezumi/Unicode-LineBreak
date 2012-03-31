@@ -6,7 +6,7 @@ use ExtUtils::MakeMaker;
 use Config;
 
 my $csubdir = 'sombok';
-my $sombok_atleast_version = '2.1.1';
+my $sombok_atleast_version = '2.2';
 my $sombok_max_version = '2.99.99';
 my $pkg_config = $ENV{'PKG_CONFIG'} || 'pkg-config';
 my $enable_libthai = 1;
@@ -28,12 +28,6 @@ sub test {
     # Get UNIDATA before testing.
     $inherited =~ s/^(test\s*:+\s*)/${1}copy_unidata /m
 	if $copy_unidata;
-##    # disable test in subdirs.
-##    $inherited =~ s{^(test\s*:+.*)(\n\t.+)*}
-##	{${1}\n\t\$(NOECHO) \$(NOOP)}gm;
-##    # for a change by ExtUtils::MakeMaker 6.33 (cf. CPAN RT 27804).
-##    $inherited =~ s{^(subdirs-test\s*:+.*)(\n\t.+)*}
-##	{${1}\n\t\$(NOECHO) \$(NOOP)}gm;
     $inherited;
 }
 
@@ -130,10 +124,10 @@ if ($bundled_sombok) {
     $h =~ s/#ifdef HAVE_CONFIG_H/#if 1/;
     if ($enable_libthai) {
 	$h =~ s{\"config.h\"}
-	       {\"EXTERN.h\"\n#    include \"perl.h\"\n#    define USE_LIBTHAI \"libthai/$libthai\"};
+	       {\"EXTERN.h\"\n#include \"perl.h\"\n#include \"XSUB.h\"\n#define USE_LIBTHAI \"libthai/$libthai\"};
     } else {
 	$h =~ s{\"config.h\"}
-               {\"EXTERN.h\"\n#    include \"perl.h\"\n#    undef USE_LIBTHAI};
+               {\"EXTERN.h\"\n#include \"perl.h\"\n#include \"XSUB.h\"\n#undef USE_LIBTHAI};
     }
     $h =~ s/\@SOMBOK_UNICHAR_T\@/U32/;
     $h =~ s/\@PACKAGE_VERSION\@/$sombok/;

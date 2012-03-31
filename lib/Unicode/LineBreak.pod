@@ -109,6 +109,12 @@ I<Function>.
 Get language/region context used by character set CHARSET or
 language LANGUAGE.
 
+=back
+
+=head3 Methods Planned to be Deprecated
+
+=over 4
+
 =item $self->eawidth (STRING)
 
 I<Instance method>.
@@ -117,6 +123,9 @@ STRING.
 See L</Constants> for returned value.
 EA_Z means nonspacing (zero width) character.
 Property value A (ambiguous) will be resolved to other appropriate values. 
+
+B<Note>:
+L<Unicode::GCString/columns> may be used instead.
 
 =item $self->lbclass (STRING)
 
@@ -129,6 +138,9 @@ appropriate classes.
 However, when word segmentation for South East Asian writing systems is
 enabled, characters of supported scripts (currently Thai only) will be kept SA.
 
+B<Note>:
+Use L<Unicode::GCString/lbc> or L<Unicode::GCString/lbcext>.
+
 =item $self->lbrule (BEFORE, AFTER)
 
 I<Instance method>.
@@ -140,13 +152,16 @@ This method gives just approximate description of line breaking behavior.
 Use break() and so on to wrap actual texts.
 
 B<Note>:
-This method may be deprecated in near future.  Use breakingRule().
+Use breakingRule().
 
 =item $self->strsize (LEN, PRE, SPC, STR)
 
 I<Instance method>.
 Calculate I<number of columns> of Unicode string
 PRE.SPC.STR based on character widths defined by [UAX #11].
+
+B<Note>:
+Use L<Unicode::GCString/columns>.
 
 =back
 
@@ -318,7 +333,8 @@ Following options are available.
 =item C<"UAX11">
 
 Default method.
-strsize() will be used.
+Sizes are computed by columns of each characters accoring to built-in
+character database.
 
 =item C<undef>
 
@@ -331,14 +347,6 @@ See L</Calculating String Size>.
 =back
 
 See also L</EAWidth> option.
-
-=item TailorEA => C<[> ORD C<=E<gt>> PROPERTY, ... C<]>
-
-Obsoleted equivalent to L</EAWidth>.
-
-=item TailorLB => C<[> ORD C<=E<gt>> CLASS, ... C<]>
-
-Obsoleted equivalent to L</LBClass>.
 
 =item Urgent => METHOD
 
@@ -366,10 +374,6 @@ See L</User-Defined Breaking Behaviors>.
 
 =back
 
-=item UserBreaking => C<[>METHOD, ...C<]>
-
-Obsoleted equivalent to L</Prep>.
-
 =item ViramaAsJoiner => C<"YES"> | C<"NO">
 
 Virama sign ("halant" in Hindi, "coeng" in Khmer) and its succeeding letter
@@ -380,6 +384,24 @@ This option was introduced by release 2012.001_29.
 On previous releases, it was fixed to C<"NO">.
 "Default" grapheme cluster defined by [UAX #29] does not include this
 feature.
+
+=back
+
+=head3 Obsoleted Options
+
+=over 4
+
+=item TailorEA => C<[> ORD C<=E<gt>> PROPERTY, ... C<]>
+
+Obsoleted equivalent to L</EAWidth>.
+
+=item TailorLB => C<[> ORD C<=E<gt>> CLASS, ... C<]>
+
+Obsoleted equivalent to L</LBClass>.
+
+=item UserBreaking => C<[>METHOD, ...C<]>
+
+Obsoleted equivalent to L</Prep>.
 
 =back
 
@@ -573,11 +595,16 @@ For example, following code processes lines with tab stops by each eight columns
         my ($self, $cols, $pre, $spc, $str) = @_;
     
         my $spcstr = $spc.$str;
-        while ($spcstr =~ s/^( *)(\t+)//) {
-            $cols += length($1);
-            $cols += length($2) * 8 - $cols % 8;
+        while ($spcstr->lbc == LB_SP) {
+            my $c = $spcstr->item(0);
+            if ($c eq "\t") {
+                $cols += 8 - $cols % 8;
+            } else {
+                $cols += $c->columns;
+            }
+            $spcstr = $spcstr->substr(1);
         }
-        $cols += $self->strsize(0, '', '', $spcstr);
+        $cols += $spcstr->columns;
         return $cols;
     };
     my $lb = Unicode::LineBreak->new(LBClass => [ord("\t") => LB_SP],
@@ -788,7 +815,7 @@ Characters assigned to SG or XX are resolved to AL.
 Code points of following UCS ranges are given fixed property values even
 if they have not been assigned any characers.
 
-    Ranges             | lbclass()  | eawidth()  | Description
+    Ranges             | UAX #14    | UAX #11    | Description
     -------------------------------------------------------------
     U+3400..U+4DBF     | ID         | W          | CJK ideographs
     U+4E00..U+9FFF     | ID         | W          | CJK ideographs

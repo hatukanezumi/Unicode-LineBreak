@@ -48,7 +48,7 @@ use Unicode::LineBreak qw(:all);
 ### Globals
 
 ### The package Version
-our $VERSION = '2012.03';
+our $VERSION = '2012.04';
 
 ### Public Configuration Attributes
 our $Config = {
@@ -272,15 +272,13 @@ sub config {
 				 Language => $self->{Language}));
 
     ## Set sizing method.
-    ## Note: Example in Unicode::LineBreak POD treats $spcstr as Perl string.
-    ## Following code is more efficient.
     $self->SUPER::config(Sizing => sub {
 	my ($self, $cols, $pre, $spc, $str) = @_;
 
 	my $tabsize = $self->{TabSize};
 	my $spcstr = $spc.$str;
 	$spcstr->pos(0);
-	while (!$spcstr->eos and $spcstr->lbclass == LB_SP) {
+	while (!$spcstr->eos and $spcstr->item->lbc == LB_SP) {
 	    my $c = $spcstr->next;
 	    if ($c eq "\t") {
 		$cols += $tabsize - $cols % $tabsize if $tabsize;
@@ -589,7 +587,7 @@ L<Unicode::LineBreak>, L<Text::Wrap>.
 
 =head1 AUTHOR
 
-Copyright (C) 2009-2011 Hatuka*nezumi - IKEDA Soji <hatuka(at)nezumi.nu>.
+Copyright (C) 2009-2012 Hatuka*nezumi - IKEDA Soji <hatuka(at)nezumi.nu>.
 
 This program is free software; you can redistribute it and/or modify it 
 under the same terms as Perl itself.

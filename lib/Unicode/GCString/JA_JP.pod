@@ -121,6 +121,31 @@ I<インスタンスメソッド>。
 I<インスタンスメソッド>。
 現在の位置が書記素クラスタ文字列の最後かどうか調べる。
 
+=item item ([OFFSET])
+
+I<インスタンスメソッド>。
+OFFSET番めの書記素クラスタを返す。
+OFFSET を指定しないと、次の位置の書記素クラスタの情報を返す。
+
+=item next
+
+=item C<E<lt>>OBJECTC<E<gt>>
+
+I<インスタンスメソッド>、反復的。
+次の位置の書記素クラスタを返し、次の位置をひとつ進める。
+
+=item pos ([OFFSET])
+
+I<インスタンスメソッド>。
+OFFSET を指定した場合は、次の位置をそれにする。
+書記素クラスタ文字列の次の位置を返す。
+
+=back
+
+=head4 廃止予定のメソッド
+
+=over 4
+
 =item flag ([OFFSET, [VALUE]])
 
 I<インスタンスメソッド>。
@@ -142,17 +167,14 @@ OFFSET を指定しないと、次の位置の書記素クラスタのフラグ�
 
 =back
 
-=item item ([OFFSET])
-
-I<インスタンスメソッド>。
-OFFSET番めの書記素クラスタを返す。
-OFFSET を指定しないと、次の位置の書記素クラスタの情報を返す。
-
 =item lbclass ([OFFSET])
 
 OFFSET番めの書記素クラスタの最初の文字の行分割クラス
 (L<Unicode::LineBreak::JA_JP> 参照) を返す。
 OFFSET を指定しないと、次の位置の書記素クラスタの情報を返す。
+
+B<注>:
+lbc() を使ってほしい。
 
 =item lbclass_ext ([OFFSET])
 
@@ -160,18 +182,26 @@ OFFSET番めの書記素クラスタの最後の書記素エキステンダの�
 (L<Unicode::LineBreak> 参照) を返す。
 書記素エキステンダがないか、またはクラスが CM の場合は、lbclass() の値を返す。
 
-=item next
+B<注>:
+lbcext() を使ってほしい。
 
-=item C<E<lt>>OBJECTC<E<gt>>
+=back
 
-I<インスタンスメソッド>、反復的。
-次の位置の書記素クラスタを返し、次の位置をひとつ進める。
+=head3 その他
 
-=item pos ([OFFSET])
+=over 4
 
-I<インスタンスメソッド>。
-OFFSET を指定した場合は、次の位置をそれにする。
-書記素クラスタ文字列の次の位置を返す。
+=item lbc
+
+最初の書記素クラスタの最初の文字の行分割クラス
+(L<Unicode::LineBreak::JA_JP> 参照) を返す。
+
+=item lbcext
+
+最後の書記素クラスタの最後の書記素エキステンダの行分割クラス
+(L<Unicode::LineBreak::JA_JP> 参照) を返す。
+書記素エキステンダがないか、またはクラスが CM の場合は、
+最後の書記素基底の行分割クラスを返す。
 
 =back
 

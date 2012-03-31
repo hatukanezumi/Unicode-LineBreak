@@ -29,6 +29,8 @@ perl-Unicode-LineBreak.spec
 ppport.h
 README
 sombok/ARTISTIC
+sombok/ChangeLog
+sombok/ChangeLog.REL1
 sombok/COPYING
 sombok/include/sombok_constants.h
 sombok/include/sombok.h.in

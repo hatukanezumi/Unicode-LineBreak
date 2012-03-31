@@ -127,6 +127,31 @@ Convert grapheme cluster string to an array of grapheme clusters.
 I<Instance method>.
 Test if current position is at end of grapheme cluster string.
 
+=item item ([OFFSET])
+
+I<Instance method>.
+Returns OFFSET-th grapheme cluster.
+If OFFSET was not specified, returns next grapheme cluster.
+
+=item next
+
+=item C<E<lt>>OBJECTC<E<gt>>
+
+I<Instance method>, iterative.
+Returns next grapheme cluster and increment next position.
+
+=item pos ([OFFSET])
+
+I<Instance method>.
+If optional OFFSET is specified, set next position by it.
+Returns next position of grapheme cluster string.
+
+=back
+
+=head4 Methods palanned to be deprecated
+
+=over 4
+
 =item flag ([OFFSET, [VALUE]])
 
 I<Instance method>.
@@ -148,17 +173,14 @@ Prohibit line breaking just before this grapheme cluster.
 
 =back
 
-=item item ([OFFSET])
-
-I<Instance method>.
-Returns OFFSET-th grapheme cluster.
-If OFFSET was not specified, returns next grapheme cluster.
-
 =item lbclass ([OFFSET])
 
 Returns Line Breaking Class (See L<Unicode::LineBreak>) of the first
 character of OFFSET-th grapheme cluster.
 If OFFSET was not specified, returns class of next grapheme cluster.
+
+B<Note>:
+Use lbc().
 
 =item lbclass_ext ([OFFSET])
 
@@ -166,18 +188,26 @@ Returns Line Breaking Class (See L<Unicode::LineBreak>) of the last
 grapheme extender of OFFSET-th grapheme cluster.  If there are no
 grapheme extenders or its class is CM, value of lbclass() is returned.
 
-=item next
+B<Note>:
+Use lbcext().
 
-=item C<E<lt>>OBJECTC<E<gt>>
+=back
 
-I<Instance method>, iterative.
-Returns next grapheme cluster and increment next position.
+=head3 Miscelaneous
 
-=item pos ([OFFSET])
+=over 4
 
-I<Instance method>.
-If optional OFFSET is specified, set next position by it.
-Returns next position of grapheme cluster string.
+=item lbc
+
+Returns Line Breaking Class (See L<Unicode::LineBreak>) of the first
+character of first grapheme cluster.
+
+=item lbcext
+
+Returns Line Breaking Class (See L<Unicode::LineBreak>) of the last
+grapheme extender of last grapheme cluster.
+If there are no grapheme extenders or its class is CM, value of last
+grapheme base will be returned.
 
 =back
 

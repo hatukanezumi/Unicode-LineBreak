@@ -2,9 +2,20 @@ use strict;
 use Test::More;
 require 't/lb.pl';
 
-BEGIN { plan tests => 8 }
+BEGIN { plan tests => 12 }
 
 my $lb = Unicode::LineBreak->new(Context => 'EASTASIAN');
+
+is(Unicode::GCString->new(Encode::decode('iso-8859-1', "\xA0"), $lb)->lbc,
+   Unicode::LineBreak::LB_GL());
+is(Unicode::GCString->new(Encode::decode('iso-8859-1', "\xC2\xA0"), $lb)->lbc,
+   Unicode::LineBreak::LB_AL());
+is(Unicode::GCString->new(Encode::decode('iso-8859-1', "\xD7"), $lb)->columns,
+   2);
+is(Unicode::GCString->new(Encode::decode('iso-8859-1', "\xC3"), $lb)->columns,
+   1);
+
+# obsoleted functions
 foreach my $s (("\xA0", "\x{A0}", Encode::decode('iso-8859-1', "\xA0"),
 		)) {
     is($lb->lbclass($s), Unicode::LineBreak::LB_GL());

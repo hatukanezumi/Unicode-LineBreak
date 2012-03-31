@@ -200,20 +200,6 @@ int SVtoboolean(SV *sv)
     return SvNV(sv) != 0.0;
 }
 
-/*
- * Create grapheme cluster string with single grapheme cluster.
- */
-static
-gcstring_t *gctogcstring(gcstring_t *gcstr, gcchar_t *gc)
-{
-    size_t offset;
-
-    if (gc == NULL)
-	return NULL;
-    offset = gc - gcstr->gcstr;
-    return gcstring_substr(gcstr, offset, 1);
-}
-
 /***
  *** Other utilities
  ***/
@@ -1068,6 +1054,8 @@ eawidth(self, str)
 	unichar_t c;
 	gcstring_t *gcstr;
     CODE:
+	warn("eawidth() is obsoleted.  "
+	     "Unicode::GCString::columns may be used instead");
 	if (! SvOK(str))
 	    XSRETURN_UNDEF;
 	else if (!sv_isobject(str)) {
@@ -1099,6 +1087,8 @@ lbclass(self, str)
 	unichar_t c;
 	gcstring_t *gcstr;
     CODE:
+	warn("lbclass() is obsoleted.  "
+	     "Use Unicode::GCString::lbc or Unicode::GCString::lbcext");
 	if (! SvOK(str))
 	    XSRETURN_UNDEF;
 	else if (!sv_isobject(str)) {
@@ -1128,6 +1118,7 @@ lbrule(self, b_idx, a_idx)
 	propval_t a_idx;
     PROTOTYPE: $$$
     CODE:
+	warn("lbrule() is obsoleted.  Use breakingRule()");
 	if (!SvOK(ST(1)) || !SvOK(ST(2)))
 	    XSRETURN_UNDEF;
 	if (self == NULL)
@@ -1151,11 +1142,10 @@ breakingRule(lbobj, bgcstr, agcstr)
 	    XSRETURN_UNDEF;
 	if (lbobj == NULL)
 	    XSRETURN_UNDEF;
-	if (bgcstr->gclen == 0 || agcstr->gclen == 0)
+	if ((blbc = gcstring_lbclass_ext(bgcstr, -1)) == PROP_UNKNOWN)
 	    XSRETURN_UNDEF;
-	if ((blbc = bgcstr->gcstr[bgcstr->gclen - 1].elbc) == PROP_UNKNOWN)
-	    blbc = bgcstr->gcstr[bgcstr->gclen - 1].lbc;
-	albc = agcstr->gcstr[0].lbc;
+	if ((albc = gcstring_lbclass(agcstr, 0)) == PROP_UNKNOWN)
+	    XSRETURN_UNDEF;
 	RETVAL = linebreak_get_lbrule(lbobj, blbc, albc);
 	if (RETVAL == PROP_UNKNOWN)
 	    XSRETURN_UNDEF;
@@ -1178,6 +1168,7 @@ strsize(lbobj, len, pre, spc, str, ...)
 	generic_string str;
     PROTOTYPE: $$$$$;$
     CODE:
+	warn("strsize() is obsoleted.  Use Unicode::GCString::columns");
 	if (5 < items)
 	     warn("``max'' argument of strsize was obsoleted");
 
@@ -1214,11 +1205,9 @@ break(self, input)
 	switch (GIMME_V) {
 	case G_SCALAR:
 	    r = gcstring_new(NULL, self);
-	    for (i = 0; ret[i] != NULL; i++) {
+	    for (i = 0; ret[i] != NULL; i++)
 		gcstring_append(r, ret[i]);
-		gcstring_destroy(ret[i]);
-	    }
-	    free(ret);
+	    linebreak_free_result(ret, 1);
 	    XPUSHs(sv_2mortal(unistrtoSV((unistr_t *)r, 0, r->len)));
 	    gcstring_destroy(r);
 	    XSRETURN(1);
@@ -1226,13 +1215,11 @@ break(self, input)
 	case G_ARRAY:
 	    for (i = 0; ret[i] != NULL; i++)
 		XPUSHs(sv_2mortal(CtoPerl("Unicode::GCString", ret[i])));
-	    free(ret);
+	    linebreak_free_result(ret, 0);
 	    XSRETURN(i);
 
 	default:
-	    for (i = 0; ret[i] != NULL; i++)
-		gcstring_destroy(ret[i]);
-	    free(ret);
+	    linebreak_free_result(ret, 1);
 	    XSRETURN_EMPTY;
 	}
 
@@ -1261,11 +1248,9 @@ break_partial(self, input)
 	switch (GIMME_V) {
 	case G_SCALAR:
 	    r = gcstring_new(NULL, self);
-	    for (i = 0; ret[i] != NULL; i++) {
+	    for (i = 0; ret[i] != NULL; i++)
 		gcstring_append(r, ret[i]);
-		gcstring_destroy(ret[i]);
-	    }
-	    free(ret);
+	    linebreak_free_result(ret, 1);
 	    XPUSHs(sv_2mortal(unistrtoSV((unistr_t *)r, 0, r->len)));
 	    gcstring_destroy(r);
 	    XSRETURN(1);
@@ -1273,13 +1258,11 @@ break_partial(self, input)
 	case G_ARRAY:
 	    for (i = 0; ret[i] != NULL; i++)
 		XPUSHs(sv_2mortal(CtoPerl("Unicode::GCString", ret[i])));
-	    free(ret);
+	    linebreak_free_result(ret, 0);
 	    XSRETURN(i);
 
 	default:
-	    for (i = 0; ret[i] != NULL; i++)
-		gcstring_destroy(ret[i]);
-	    free(ret);
+	    linebreak_free_result(ret, 1);
 	    XSRETURN_EMPTY;
 	}
 
@@ -1345,7 +1328,7 @@ as_array(self)
 	    for (i = 0; i < self->gclen; i++)
 		XPUSHs(sv_2mortal(
 			   CtoPerl("Unicode::GCString", 
-				   gctogcstring(self, self->gcstr + i))));
+				   gcstring_substr(self, i, 1))));
 
 SV*
 as_scalarref(self, ...)
@@ -1444,6 +1427,7 @@ flag(self, ...)
 	int i;
 	unsigned int flag;
     CODE:
+	warn("flag() will be deprecated in near future");
 	if (1 < items)
 	    i = SvIV(ST(1));
 	else
@@ -1475,7 +1459,7 @@ item(self, ...)
 	if (i < 0 || self == NULL || self->gclen <= i)
 	    XSRETURN_UNDEF;
 
-	RETVAL = gctogcstring(self, self->gcstr + i);
+	RETVAL = gcstring_substr(self, i, 1);
     OUTPUT:
 	RETVAL
 
@@ -1514,21 +1498,40 @@ join(self, ...)
 	RETVAL
 
 propval_t
+lbc(self)
+	gcstring_t *self;
+    PROTOTYPE: $
+    CODE:
+	if ((RETVAL = gcstring_lbclass(self, 0)) == PROP_UNKNOWN)
+	    XSRETURN_UNDEF;
+    OUTPUT:
+	RETVAL
+
+propval_t
+lbcext(self)
+	gcstring_t *self;
+    PROTOTYPE: $
+    CODE:
+	if ((RETVAL = gcstring_lbclass_ext(self, -1)) == PROP_UNKNOWN)
+	    XSRETURN_UNDEF;
+    OUTPUT:
+	RETVAL
+
+propval_t
 lbclass(self, ...)
 	gcstring_t *self;
     PROTOTYPE: $;$
     PREINIT:
 	int i;
     CODE:
-	if (1 < items) {
+	warn("lbclass() is obsoleted.  Use lbc()");
+	if (1 < items)
 	    i = SvIV(ST(1));
-	    if (i < 0)
-		i += self->gclen;
-	} else
+	else
 	    i = self->pos;
-	if (i < 0 || self == NULL || self->gclen <= i)
+	RETVAL = gcstring_lbclass(self, i);
+	if (RETVAL == PROP_UNKNOWN)
 	    XSRETURN_UNDEF;
-	RETVAL = (propval_t)self->gcstr[i].lbc;
     OUTPUT:
 	RETVAL
 
@@ -1539,16 +1542,12 @@ lbclass_ext(self, ...)
     PREINIT:
 	int i;
     CODE:
-	if (1 < items) {
+	warn("lbclass_ext() is obsoleted.  Use lbcext()");
+	if (1 < items)
 	    i = SvIV(ST(1));
-	    if (i < 0)
-		i += self->gclen;
-	} else
+	else
 	    i = self->pos;
-	if (i < 0 || self == NULL || self->gclen <= i)
-	    XSRETURN_UNDEF;
-	if ((RETVAL = (propval_t)self->gcstr[i].elbc) == PROP_UNKNOWN)
-	    RETVAL = (propval_t)self->gcstr[i].lbc;
+	RETVAL = gcstring_lbclass_ext(self, i);
 	if (RETVAL == PROP_UNKNOWN)
 	    XSRETURN_UNDEF;
     OUTPUT:
@@ -1573,7 +1572,7 @@ next(self, ...)
 	if (gcstring_eos(self))
 	    XSRETURN_UNDEF;
 	gc = gcstring_next(self);
-	RETVAL = gctogcstring(self, gc);
+	RETVAL = gcstring_substr(self, gc - self->gcstr, 1);
     OUTPUT:
 	RETVAL
 

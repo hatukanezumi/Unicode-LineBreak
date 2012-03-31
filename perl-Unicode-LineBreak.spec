@@ -1,7 +1,8 @@
 %define module  Unicode-LineBreak
 %define version 2012.003_30
 %define release 1%{?dist}
-%define sombok_version 2.1.1
+%define sombok_version 2.2
+%define sombok_max_version 2.99.99
 
 Name:       perl-%{module}
 Version:    %{version}
@@ -15,11 +16,13 @@ Source:     http://search.cpan.org/CPAN/authors/id/N/NE/NEZUMI/%{module}-%{versi
 Requires: perl(Encode)
 Requires: perl(MIME::Charset) >= 1.006.2
 Requires: sombok >= %{sombok_version}
+Requires: sombok <= %{sombok_max_version}
 BuildRequires: perl(ExtUtils::MakeMaker)
 BuildRequires: perl(MIME::Charset) >= 1.006.2
 BuildRequires: perl(Test::More)
 #BuildRequires: perl(Test::Pod)
 BuildRequires: sombok-devel >= %{sombok_version}
+BuildRequires: sombok-devel <= %{sombok_max_version}
 BuildRequires: pkgconfig
 BuildRoot:  %{_tmppath}/%{name}-%{version}
 

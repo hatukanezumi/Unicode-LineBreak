@@ -38,7 +38,7 @@ sub dotest {
 	close XXX;
     }
 
-    is($broken, $outstring);
+    is($broken, $outstring, "$in --> $out");
 }    
 
 sub dotest_partial {
@@ -73,7 +73,7 @@ sub dotest_partial {
 	close XXX;
     }
 
-    is($broken, $outstring);
+    is($broken, $outstring, "$in --> $out, length $len");
 }
 
 sub dotest_array {
@@ -96,7 +96,7 @@ sub dotest_array {
 	close XXX;
     }
 
-    is_deeply(\@broken, \@outstring);
+    is_deeply(\@broken, \@outstring, "$in --> $out");
 }    
 
 1;

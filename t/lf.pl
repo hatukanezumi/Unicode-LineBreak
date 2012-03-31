@@ -22,7 +22,7 @@ sub dounfoldtest {
         close XXX;
     }
 
-    is($unfolded, $outstring);
+    is($unfolded, $outstring, "unfold $in, method=$method");
 }
 
 sub do5tests {
@@ -45,7 +45,7 @@ sub do5tests {
 	    print XXX $folded{$method};
 	    close XXX;
 	}
-	is($folded{$method}, $outstring);
+	is($folded{$method}, $outstring, "fold $in, method=$method");
     }
     foreach my $method (qw(FIXED FLOWED)) {
 	my $outstring = $lf->unfold($folded{$method}, $method);
@@ -53,7 +53,7 @@ sub do5tests {
 	    $instring = join '', <IN>;
 	    close IN;
 	}
-	is($outstring, $instring);
+	is($outstring, $instring, "unfold $out, method=$method");
 	#XXXopen XXX, ">test-data/$out.".(lc $method).".xxx";
 	#XXXprint XXX $outstring;
 	#XXXclose XXX;
@@ -80,7 +80,7 @@ sub dowraptest {
         close XXX;
     }
 
-    is($folded, $outstring);
+    is($folded, $outstring, "wrap $in");
 }
 
 1;

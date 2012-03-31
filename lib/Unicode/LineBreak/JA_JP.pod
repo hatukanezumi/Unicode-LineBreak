@@ -86,10 +86,26 @@ I<Undocumented>.
 
 =over 4
 
+=item $self->breakingRule (BEFORESTR, AFTERSTR)
+
+I<インスタンスメソッド>。
+文字列 BEFORESTR と AFTERSTR の間での行分割動作を得る。
+返値については L</定数> を参照。
+
+B<注>:
+このメソッドは、行分割のおおまかな動作を表す値を返すにすぎない。
+実際のテキストを行折りするには、break() 等のメソッドを使ってほしい。
+
 =item context ([Charset => CHARSET], [Language => LANGUAGE])
 
 I<関数>。
 キャラクタセット CHARSET および言語コード LANGUAGE から、それを使う言語/地域の文脈を得る。
+
+=back
+
+=head3 廃止予定のメソッド
+
+=over 4
 
 =item $self->eawidth (STRING)
 
@@ -99,6 +115,9 @@ Unicode 文字列 STRING の最初の文字の East_Asian_Width 特性を得る�
 EA_Z は前進を伴わない (幅のない) ことを意味する。
 特性値 A (曖昧) は適切な値に解決する。
 
+B<注>:
+代わりに L<Unicode::GCString/columns> が使える。
+
 =item $self->lbclass (STRING)
 
 I<インスタンスメソッド>。
@@ -106,6 +125,9 @@ Unicode 文字列 STRING の最初の文字の行分割特性 (分類) を得る
 返値については L</定数> を参照。
 AI、CJ、SA、SG、XX の各分類は他の適切な分類に解決する。
 ただし、東南アジアの表記体系のための単語分節が有効になっているときは、対応している用字系 (現在はタイ文字のみ) の文字の特性を SA のまま解決しない。
+
+B<注>:
+L<Unicode::GCString/lbc> や L<Unicode::GCString/lbcext> を使ってほしい。
 
 =item $self->lbrule (BEFORE, AFTER)
 
@@ -116,10 +138,16 @@ I<インスタンスメソッド>。
 B<注>:
 このメソッドは、行分割のおおまかな動作を表す値を返すにすぎない。
 
+B<注>:
+breakingRule() を使ってほしい。
+
 =item $self->strsize (LEN, PRE, SPC, STR)
 
 I<インスタンスメソッド>。
 [UAX #11] で定義された文字幅に基づいて、Unicode 文字列 PRE.SPC.STR のI<桁数>を算出する。
+
+B<注>:
+L<Unicode::GCString/columns> を使ってほしい。
 
 =back
 
@@ -285,7 +313,7 @@ URI を、印刷物に適した規則で分割する。
 =item C<"UAX11">
 
 初期の方法。
-strsize() を使う。
+組み込みの文字データベースによって文字の桁数を算出する。
 
 =item C<undef>
 
@@ -298,14 +326,6 @@ L</文字列長の算出> を参照。
 =back
 
 L</EAWidth> オプションも参照。
-
-=item TailorEA => C<[> ORD C<=E<gt>> PROPERTY, ... C<]>
-
-L</EAWidth> の旧式な形式。
-
-=item TailorLB => C<[> ORD C<=E<gt>> CLASS, ... C<]>
-
-L</LBClass> の旧式な形式。
 
 =item Urgent => METHOD
 
@@ -333,10 +353,6 @@ L</ユーザ定義の行分割動作> を参照。
 
 =back
 
-=item UserBreaking => C<[>METHOD, ...C<]>
-
-L</Prep> の旧式な形式。
-
 =item ViramaAsJoiner => C<"YES"> | C<"NO">
 
 ヴィラーマ記号 (ヒンディ語では「ハラント」、クメール文字での「脚」)
@@ -346,6 +362,24 @@ B<注>:
 このオプションはリリース 2011.001_29 で導入された。
 以前のリリースでは C<"NO"> に固定であった。
 これは、[UAX #29] で定義する「初期の」書記素クラスタには含まれない仕様である。
+
+=back
+
+=head3 旧式なオプション
+
+=over 4
+
+=item TailorEA => C<[> ORD C<=E<gt>> PROPERTY, ... C<]>
+
+L</EAWidth> の旧式な形式。
+
+=item TailorLB => C<[> ORD C<=E<gt>> CLASS, ... C<]>
+
+L</LBClass> の旧式な形式。
+
+=item UserBreaking => C<[>METHOD, ...C<]>
+
+L</Prep> の旧式な形式。
 
 =back
 
@@ -521,11 +555,16 @@ L<Unicode::GCString::JA_JP> 参照。
         my ($self, $cols, $pre, $spc, $str) = @_;
 
         my $spcstr = $spc.$str;
-        while ($spcstr =~ s/^( *)(\t+)//) {
-            $cols += length($1);
-            $cols += length($2) * 8 - $cols % 8;
+        while ($spcstr->lbc == LB_SP) {
+            my $c = $spcstr->item(0);
+            if ($c eq "\t") {
+                $cols += 8 - $cols % 8;
+            } else {
+                $cols += $c->columns;
+            }
+            $spcstr = $spcstr->substr(1);
         }
-        $cols += $self->strsize(0, '', '', $spcstr);
+        $cols += $spcstr->columns;
         return $cols;
     };
     my $lb = Unicode::LineBreak->new(LBClass => [ord("\t") => LB_SP],
@@ -713,7 +752,7 @@ SG や XX に分類される文字は AL に解決する。
 
 以下の UCS の範囲にあるコードポイントは、文字が割り当てられていなくても決まった特性値を持つ。
 
-    範囲               | lbclass()  | eawidth()  | 説明
+    範囲               | UAX #14    | UAX #11    | 説明
     -------------------------------------------------------------
     U+3400..U+4DBF     | ID         | W          | CJK漢字
     U+4E00..U+9FFF     | ID         | W          | CJK漢字
