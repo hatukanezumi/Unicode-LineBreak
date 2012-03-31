@@ -1,4 +1,4 @@
-2012.004_XX  Xxx Apr XX 2012
+2012.04  Sun Apr 01 2012
 ! lib/Unicode/GCString.pod:
 ! lib/Unicode/GCString/JA_JP.pod:
   - Let flag(), lbclass() and lbclass_ext() be deprecated.
@@ -10,7 +10,7 @@
 ! Makefile.PL:
   - Fix: Win32 etc.: Include XSUB.h in sombok.h to avoid mismatches of
     malloc implementations, when bundled sombok is used.
-  - Requires sombok >= 2.2.
+  - Requires sombok >= 2.2.0.
 
 2012.003_30  Tue Mar 20 2012
 # Mainly fixes of bugs emited by previous development release.

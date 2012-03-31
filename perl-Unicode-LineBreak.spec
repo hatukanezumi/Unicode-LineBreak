@@ -1,7 +1,7 @@
 %define module  Unicode-LineBreak
-%define version 2012.003_30
+%define version 2012.04
 %define release 1%{?dist}
-%define sombok_version 2.2
+%define sombok_version 2.2.0
 %define sombok_max_version 2.99.99
 
 Name:       perl-%{module}
