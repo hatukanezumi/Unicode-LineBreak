@@ -1,3 +1,20 @@
+2012.005_18  Sat May 26 2012
+! lib/Unicode/LineBreak.pod:
+! lib/Unicode/LineBreak/JA_JP.pod:
+  - Added "Incompatible Changes" section.
+! LineBreak.xs:
+  LineBreak: eawidth() and lbclass() were removed.
+! Makefile.PL:
+! META.yml:
+  - requires ExtUtils::MakeMaker >= 6.26.
++ META.json:
+  - added.
++ t/000.t:
+  - added.
+! t/01break.t:
+! t/08partial.t:
+  - Added ko-decomp test.
+
 2012.04  Sun Apr 01 2012
 ! lib/Unicode/GCString.pod:
 ! lib/Unicode/GCString/JA_JP.pod:

@@ -1,5 +1,5 @@
 %define module  Unicode-LineBreak
-%define version 2012.04
+%define version 2012.005_18
 %define release 1%{?dist}
 %define sombok_version 2.2.0
 %define sombok_max_version 2.99.99
@@ -17,7 +17,7 @@ Requires: perl(Encode)
 Requires: perl(MIME::Charset) >= 1.006.2
 Requires: sombok >= %{sombok_version}
 Requires: sombok <= %{sombok_max_version}
-BuildRequires: perl(ExtUtils::MakeMaker)
+BuildRequires: perl(ExtUtils::MakeMaker) >= 6.26
 BuildRequires: perl(MIME::Charset) >= 1.006.2
 BuildRequires: perl(Test::More)
 #BuildRequires: perl(Test::Pod)

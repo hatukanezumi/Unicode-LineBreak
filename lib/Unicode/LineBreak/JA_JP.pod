@@ -107,28 +107,6 @@ I<関数>。
 
 =over 4
 
-=item $self->eawidth (STRING)
-
-I<インスタンスメソッド>。
-Unicode 文字列 STRING の最初の文字の East_Asian_Width 特性を得る。
-返値については L</定数> を参照。
-EA_Z は前進を伴わない (幅のない) ことを意味する。
-特性値 A (曖昧) は適切な値に解決する。
-
-B<注>:
-代わりに L<Unicode::GCString/columns> が使える。
-
-=item $self->lbclass (STRING)
-
-I<インスタンスメソッド>。
-Unicode 文字列 STRING の最初の文字の行分割特性 (分類) を得る。
-返値については L</定数> を参照。
-AI、CJ、SA、SG、XX の各分類は他の適切な分類に解決する。
-ただし、東南アジアの表記体系のための単語分節が有効になっているときは、対応している用字系 (現在はタイ文字のみ) の文字の特性を SA のまま解決しない。
-
-B<注>:
-L<Unicode::GCString/lbc> や L<Unicode::GCString/lbcext> を使ってほしい。
-
 =item $self->lbrule (BEFORE, AFTER)
 
 I<インスタンスメソッド>。
@@ -709,6 +687,29 @@ $VERSION 変数を参照してほしい。
 このモジュールの開発版が
 L<http://hatuka.nezumi.nu/repos/Unicode-LineBreak/>
 にある。
+
+=head2 非互換な変更
+
+=over 4
+
+=item 2012.005_26
+
+=over 4
+
+=item *
+
+eawidth() メソッドを廃止した。
+代わりに L<Unicode::GCString/columns> が使えるかもしれない。
+
+=item *
+
+lbclass() メソッドを廃止した。
+代わりに L<Unicode::GCString/lbc> や L<Unicode::GCString/lbcext>
+を使ってほしい。
+
+=back
+
+=back
 
 =head2 標準への適合性
 

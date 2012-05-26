@@ -24,6 +24,7 @@ LineBreak.xs
 Makefile.PL
 Makefile.PL.sombok
 MANIFEST			This list of files
+META.json
 META.yml
 perl-Unicode-LineBreak.spec
 ppport.h
@@ -49,6 +50,7 @@ sombok/README
 sombok/README.ja_JP
 sombok/UNICODE
 sombok/VERSION
+t/000.t
 t/00GraphemeBreakTest.t
 t/00LineBreakTest.t
 t/01break.t
@@ -108,6 +110,8 @@ test-data/ja.in
 test-data/ja.out
 test-data/ja.plain.out
 test-data/ja.wrap.out
+test-data/ko-decomp.in
+test-data/ko-decomp.out
 test-data/ko.al.out
 test-data/ko.in
 test-data/ko.newline.out

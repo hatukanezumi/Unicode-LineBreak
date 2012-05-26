@@ -181,10 +181,11 @@ WriteMakefile(
 	'PREREQ_PM'	=> {
 	    'Encode'		=> 1.98,
 	    'MIME::Charset'	=> '1.006.2',
+	    'ExtUtils::MakeMaker'   => '6.26',
 	    'Test::More'	=> '0.45',
 	},
 	%opts,
 	'dist'		=> {
-	    'PREOP'		=> "\$(FULLPERL) -i -pe \'s/^(version:\\s+).*/\$\${1}\$(VERSION)/\' META.yml; \$(FULLPERL) -i -pe \'s/^(%define version\\s+).*/\$\${1}\$(VERSION)/; s/^(%define sombok_version\\s+).*/\$\${1}$sombok_atleast_version/\' perl-Unicode-LineBreak.spec",
+	    'PREOP'		=> "\$(FULLPERL) -i -pe \'s/^(version:\\s+).*/\$\${1}\$(VERSION)/\' META.yml; \$(FULLPERL) -i -pe \'s/^(\\s*\"version\"\\s*:\\s*).*/\$\${1}\"\$(VERSION)\"/\' META.json; \$(FULLPERL) -i -pe \'s/^(%define version\\s+).*/\$\${1}\$(VERSION)/; s/^(%define sombok_version\\s+).*/\$\${1}$sombok_atleast_version/\' perl-Unicode-LineBreak.spec",
 	},
 );

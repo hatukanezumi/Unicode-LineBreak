@@ -1,6 +1,6 @@
 --- #YAML:1.0
 name:                Unicode-LineBreak
-version:             2012.04
+version:             2012.005_18
 abstract:            'UAX #14 Unicode Line Breaking Algorithm'
 license:             perl
 author:              
@@ -11,6 +11,7 @@ requires:
     Encode:                        1.98
     MIME::Charset:                 1.006.2
 build_requires:
+    ExtUtils::MakeMaker:           6.26
     Test::More:                    0.45
 resources:
     repository: http://hatuka.nezumi.nu/repos/Unicode-LineBreak/

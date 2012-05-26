@@ -115,32 +115,6 @@ language LANGUAGE.
 
 =over 4
 
-=item $self->eawidth (STRING)
-
-I<Instance method>.
-Get East_Asian_Width property of the first character of Unicode string
-STRING.
-See L</Constants> for returned value.
-EA_Z means nonspacing (zero width) character.
-Property value A (ambiguous) will be resolved to other appropriate values. 
-
-B<Note>:
-L<Unicode::GCString/columns> may be used instead.
-
-=item $self->lbclass (STRING)
-
-I<Instance method>.
-Get line breaking property (class) of the first character of Unicode string
-STRING.
-See L</Constants> for returned value.
-Classes AI, CJ, SA, SG and XX will be resolved to other
-appropriate classes. 
-However, when word segmentation for South East Asian writing systems is
-enabled, characters of supported scripts (currently Thai only) will be kept SA.
-
-B<Note>:
-Use L<Unicode::GCString/lbc> or L<Unicode::GCString/lbcext>.
-
 =item $self->lbrule (BEFORE, AFTER)
 
 I<Instance method>.
@@ -767,6 +741,28 @@ Consult $VERSION variable.
 
 Development versions of this module may be found at 
 L<http://hatuka.nezumi.nu/repos/Unicode-LineBreak/>.
+
+=head2 Incompatible Changes
+
+=over 4
+
+=item 2012.005_26
+
+=over 4
+
+=item *
+
+eawidth() method was deprecated.
+L<Unicode::GCString/columns> may be used instead.
+
+=item *
+
+lbclass() method was deprecated.
+Use L<Unicode::GCString/lbc> or L<Unicode::GCString/lbcext>.
+
+=back
+
+=back
 
 =head2 Conformance to Standards
 

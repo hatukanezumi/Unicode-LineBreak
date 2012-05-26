@@ -69,7 +69,15 @@ unistr_t *SVtounistr(unistr_t *buf, SV *str)
     utf8ptr = utf8;
     uniptr = buf->str;
     while (utf8ptr < utf8 + utf8len) {
-	*uniptr = (unichar_t)utf8_to_uvuni(utf8ptr, &len);
+#if PERL_VERSION >= 16 || (PERL_VERSION == 15 && PERL_SUBVERSION >= 9)
+	*uniptr = (unichar_t) utf8_to_uvuni_buf(utf8ptr, utf8 + utf8len,
+						&len);
+#else
+	*uniptr = (unichar_t) utf8n_to_uvuni(utf8ptr,
+					     utf8 + utf8len - utf8ptr, &len,
+					     ckWARN(WARN_UTF8) ? 0 :
+					     UTF8_ALLOW_ANY);
+#endif
 	if (len < 0) {
 	    free(buf->str);
 	    buf->str = NULL;
@@ -265,7 +273,7 @@ gcstring_t *prep_func(linebreak_t *lbobj, void *dataref, unistr_t *str,
     AV *data;
     SV *sv, **pp, *func = NULL;
     REGEXP *rx = NULL;
-    int count, i, j;
+    size_t count, i, j;
     gcstring_t *gcstr, *ret;
 
     if (dataref == NULL ||
@@ -922,7 +930,7 @@ _config(self, ...)
 		    av_fetch(av, 0, 0) != NULL && av_fetch(av, 1, 0) != NULL) {
 		    sv = *av_fetch(av, 1, 0);
 		    if (SvIOK(sv))
-			p = SvIV(sv);
+			p = (propval_t) SvIV(sv);
 		    else
 			croak("_config: Invalid argument");
 
@@ -934,10 +942,12 @@ _config(self, ...)
 				continue;
 			    if (! SvIOK(sv = *av_fetch(codes, i, 0)))
 				croak("_config: Invalid argument");
-			    linebreak_update_eawidth(self, SvUV(sv), p);
+			    linebreak_update_eawidth(self,
+						     (unichar_t) SvUV(sv), p);
 			}
 		    } else if (SvIOK(sv)) {
-			linebreak_update_eawidth(self, SvUV(sv), p);
+			linebreak_update_eawidth(self, (unichar_t) SvUV(sv),
+						 p);
 		    } else
 			croak("_config: Invalid argument");
 		} else
@@ -961,7 +971,7 @@ _config(self, ...)
 		    av_fetch(av, 0, 0) != NULL && av_fetch(av, 1, 0) != NULL) {
 		    sv = *av_fetch(av, 1, 0);
 		    if (SvIOK(sv))
-			p = SvIV(sv);
+			p = (propval_t) SvIV(sv);
 		    else
 			croak("_config: Invalid argument");
 
@@ -973,10 +983,12 @@ _config(self, ...)
 				continue;
 			    if (! SvIOK(sv = *av_fetch(codes, i, 0)))
 				croak("_config: Invalid argument");
-			    linebreak_update_lbclass(self, SvUV(sv), p);
+			    linebreak_update_lbclass(self,
+						     (unichar_t) SvUV(sv), p);
 			}
 		    } else if (SvIOK(sv)) {
-			linebreak_update_lbclass(self, SvUV(sv), p);
+			linebreak_update_lbclass(self, (unichar_t) SvUV(sv),
+						 p);
 		    } else
 			croak("_config: Invalid argument");
 		} else
@@ -1042,72 +1054,6 @@ as_string(self, ...)
 	snprintf(buf, 64, "%s(0x%lx)", HvNAME(SvSTASH(SvRV(ST(0)))),
 		 (unsigned long)(void *)self);
 	RETVAL = newSVpv(buf, 0);
-    OUTPUT:
-	RETVAL
-
-propval_t
-eawidth(self, str)
-	linebreak_t *self;
-	SV *str;
-    PROTOTYPE: $$
-    PREINIT:
-	unichar_t c;
-	gcstring_t *gcstr;
-    CODE:
-	warn("eawidth() is obsoleted.  "
-	     "Unicode::GCString::columns may be used instead");
-	if (! SvOK(str))
-	    XSRETURN_UNDEF;
-	else if (!sv_isobject(str)) {
-	    if (!SvCUR(str))
-		XSRETURN_UNDEF;
-	    c = utf8_to_uvuni((U8 *)SvPVutf8(str, SvCUR(str)), NULL);
-	}
-	else if (sv_derived_from(str, "Unicode::GCString")) {
-	    gcstr = PerltoC(gcstring_t *, str);
-	    if (!gcstr->len)
-		XSRETURN_UNDEF;
-	    else
-		c = gcstr->str[0];
-	}
-	else
-	    croak("eawidth: Unknown object %s", HvNAME(SvSTASH(SvRV(str))));
-	RETVAL = linebreak_eawidth(self, c);
-	if (RETVAL == PROP_UNKNOWN)
-	    XSRETURN_UNDEF;
-    OUTPUT:
-	RETVAL
-
-propval_t
-lbclass(self, str)
-	linebreak_t *self;
-	SV *str;
-    PROTOTYPE: $$
-    PREINIT:
-	unichar_t c;
-	gcstring_t *gcstr;
-    CODE:
-	warn("lbclass() is obsoleted.  "
-	     "Use Unicode::GCString::lbc or Unicode::GCString::lbcext");
-	if (! SvOK(str))
-	    XSRETURN_UNDEF;
-	else if (!sv_isobject(str)) {
-	    if (!SvCUR(str))
-		XSRETURN_UNDEF;
-	    c = utf8_to_uvuni((U8 *)SvPVutf8(str, SvCUR(str)), NULL);
-	    RETVAL = linebreak_lbclass(self, c);
-	}
-	else if (sv_derived_from(str, "Unicode::GCString")) {
-	    gcstr = PerltoC(gcstring_t *, str);
-	    if (gcstr->gclen)
-		RETVAL = gcstr->gcstr[0].lbc;
-	    else
-		RETVAL = PROP_UNKNOWN;
-	}
-	else
-	    croak("lbclass: Unknown object %s", HvNAME(SvSTASH(SvRV(str))));
-	if (RETVAL == PROP_UNKNOWN)
-	    XSRETURN_UNDEF;
     OUTPUT:
 	RETVAL
 
