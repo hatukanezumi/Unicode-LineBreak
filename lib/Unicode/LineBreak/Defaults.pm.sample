@@ -17,37 +17,69 @@ Following settings are available.
 
 =over 4
 
-=item BreakIndent
+=item *
 
-=item CharactersMax
+BreakIndent
 
-=item ColumnsMin
+=item *
 
-=item ColumnsMax
+CharMax
 
-=item ComplexBreaking
+=item *
 
-=item Context
+ColMin
 
-=item Format
+=item *
 
-=item HangulAsAL
+ColMax
 
-=item LegacyCM
+=item *
 
-=item Newline
+ComplexBreaking
 
-=item Prep
+=item *
 
-=item Sizing
+Context
 
-=item TailorEA
+=item *
 
-=item TailorLB
+EAWidth
 
-=item Urgent
+=item *
 
-=item ViramaAsJoiner
+Format
+
+=item *
+
+HangulAsAL
+
+=item *
+
+LBClass
+
+=item *
+
+LegacyCM
+
+=item *
+
+Newline
+
+=item *
+
+Prep
+
+=item *
+
+Sizing
+
+=item *
+
+Urgent
+
+=item *
+
+ViramaAsJoiner
 
 =back
 
@@ -63,21 +95,20 @@ L<Unicode::LineBreak>
 
 ## Default settings on current release are:
 # $Config->{BreakIndent} = 'YES';
-# $Config->{CharactersMax} = 998;
-# $Config->{ColumnsMin} = 0;
-# $Config->{ColumnsMax} = 76;
+# $Config->{CharMax} = 998;
+# $Config->{ColMin} = 0;
+# $Config->{ColMax} = 76;
 # $Config->{ComplexBreaking} = 'YES';
 # $Config->{Context} = 'NONEASTASIAN';
+# $Config->{EAWidth} = undef;
 # $Config->{Format} = 'SIMPLE';
 # $Config->{HangulAsAL} = 'NO';
+# $Config->{LBClass} = undef;
 # $Config->{LegacyCM} = 'YES';
 # $Config->{Newline} = "\n";
 # $Config->{Prep} = undef;
 # $Config->{Sizing} = 'UAX11';
-# $Config->{TailorEA} = [];
-# $Config->{TailorLB} = [];
 # $Config->{Urgent} = undef;
-# $Config->{UserBreaking} = [];
 # $Config->{ViramaAsJoiner} = 'YES';
 
 1;

@@ -1,9 +1,18 @@
+2012.06  Sat Jun 02 2012
+! lib/Unicode/LineBreak/Defaults.pm.sample:
+  - removed obsoleted options.
+! Makefile.PL:
+! META.json:
+  - fixed broken {'meta-spec'}{'version'}.
+
 2012.005_18  Sat May 26 2012
 ! lib/Unicode/LineBreak.pod:
 ! lib/Unicode/LineBreak/JA_JP.pod:
   - Added "Incompatible Changes" section.
 ! LineBreak.xs:
-  LineBreak: eawidth() and lbclass() were removed.
+  - Fix for all versions of Perl: CPAN RT #77394.  utf8_to_uvuni has been
+    deprecated by Perl 5.16 since it may read out of buffer.
+  - Chg: LineBreak: eawidth() and lbclass() were removed.
 ! Makefile.PL:
 ! META.yml:
   - requires ExtUtils::MakeMaker >= 6.26.

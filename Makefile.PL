@@ -62,6 +62,18 @@ copy_unidata :
 \twget -q -N -O GraphemeBreakTest.txt \\
 \tftp://unicode.org/Public/$unicode/ucd/auxiliary/GraphemeBreakTest*.txt \\
 \t|| true
+
+preop :
+\t\$(FULLPERL) -i -pe 's/^(version:\\s+).*/\$\${1}\$(VERSION)/' META.yml
+\t\$(FULLPERL) -MJSON::XS -e '\$\$_ = decode_json join "", <>;' \\
+\t-e '\$\$_->{"version"} = "\$(VERSION)";' \\
+\t-e 'print JSON::XS->new->pretty(1)->encode(\$\$_)' \\
+\tMETA.json > META.json.new
+\t\$(MV) META.json.new META.json
+\t\$(FULLPERL) -i -pe 's/^(%define version\\s+).*/\$\${1}\$(VERSION)/;' \\
+\t-e 's/^(%define sombok_version\\s+).*/\$\${1}$sombok_atleast_version/' \\
+\tperl-Unicode-LineBreak.spec
+
 EOF
 }
 
@@ -186,6 +198,6 @@ WriteMakefile(
 	},
 	%opts,
 	'dist'		=> {
-	    'PREOP'		=> "\$(FULLPERL) -i -pe \'s/^(version:\\s+).*/\$\${1}\$(VERSION)/\' META.yml; \$(FULLPERL) -i -pe \'s/^(\\s*\"version\"\\s*:\\s*).*/\$\${1}\"\$(VERSION)\"/\' META.json; \$(FULLPERL) -i -pe \'s/^(%define version\\s+).*/\$\${1}\$(VERSION)/; s/^(%define sombok_version\\s+).*/\$\${1}$sombok_atleast_version/\' perl-Unicode-LineBreak.spec",
+	    'PREOP'		=> "\$(MAKE) preop",
 	},
 );

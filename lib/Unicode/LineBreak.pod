@@ -746,7 +746,7 @@ L<http://hatuka.nezumi.nu/repos/Unicode-LineBreak/>.
 
 =over 4
 
-=item 2012.005_26
+=item Release 2012.06
 
 =over 4
 

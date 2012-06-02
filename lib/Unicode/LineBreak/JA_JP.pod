@@ -692,7 +692,7 @@ L<http://hatuka.nezumi.nu/repos/Unicode-LineBreak/>
 
 =over 4
 
-=item 2012.005_26
+=item リリース 2012.06
 
 =over 4
 
@@ -704,7 +704,7 @@ eawidth() メソッドを廃止した。
 =item *
 
 lbclass() メソッドを廃止した。
-代わりに L<Unicode::GCString/lbc> や L<Unicode::GCString/lbcext>
+L<Unicode::GCString/lbc> や L<Unicode::GCString/lbcext>
 を使ってほしい。
 
 =back
