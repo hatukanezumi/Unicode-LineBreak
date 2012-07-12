@@ -1,4 +1,4 @@
-2012.007_14  Thu Jul 12 2012
+2012.007_16  Thu Jul 12 2012
 ! Makefile.PL:
   - Use sombok >= 2.3.0.
 ! t/00LineBreakTest.t:
@@ -11,6 +11,9 @@
   - Updated citation.
   - Added a section about tailoring for IDEOGRAPHIC SPACE (not yet written).
     See <http://www.unicode.org/review/pri212/feedback.html>, by Koji Ishii.
+
+2012.007_14  Thu Jul 12 2012
+# Not really released
 
 2012.06  Sat Jun 02 2012
 ! lib/Unicode/LineBreak/Defaults.pm.sample:
