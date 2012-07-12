@@ -5,6 +5,10 @@
 #
 # Passed by GraphemeBreakTest-6.1.0.txt (2011-12-07, 17:54:39 UTC), except
 # 50 surrogate cases.
+# Passed by GraphemeBreakTest-6.2.0d4.txt (2012-06-02, 23:25:40 UTC), except
+# 58 surrogate cases.
+#
+# Note: Legacy-CM feature is enabled.
 #
 
 use strict;

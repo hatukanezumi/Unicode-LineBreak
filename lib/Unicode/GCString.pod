@@ -252,8 +252,8 @@ L<http://hatuka.nezumi.nu/repos/Unicode-LineBreak/>.
 =head1 SEE ALSO
 
 [UAX #29]
-Mark Davis (2009-2010).
-I<Unicode Standard Annex #29: Unicode Text Segmentation>, Revision 15-17.
+Mark Davis (2009-2012).
+I<Unicode Standard Annex #29: Unicode Text Segmentation>, Revision 15-20.
 L<http://www.unicode.org/reports/tr29/>.
 
 =head1 AUTHOR

@@ -4,25 +4,25 @@
          "url" : "http://hatuka.nezumi.nu/repos/Unicode-LineBreak/"
       }
    },
+   "generated_by" : "ExtUtils::MakeMaker version 6.42, CPAN::Meta::Converter version 2.120921",
    "meta-spec" : {
       "version" : "2",
       "url" : "http://search.cpan.org/perldoc?CPAN::Meta::Spec"
    },
-   "generated_by" : "ExtUtils::MakeMaker version 6.42, CPAN::Meta::Converter version 2.120921",
-   "version" : "2012.06",
+   "version" : "2012.007_14",
    "name" : "Unicode-LineBreak",
-   "dynamic_config" : 1,
    "author" : [
       "Hatuka*nezumi - IKEDA Soji <hatuka@nezumi.nu>"
    ],
+   "dynamic_config" : 1,
    "license" : [
       "perl_5"
    ],
    "prereqs" : {
       "runtime" : {
          "requires" : {
-            "MIME::Charset" : "v1.6.2",
-            "Encode" : "1.98"
+            "Encode" : "1.98",
+            "MIME::Charset" : "v1.6.2"
          }
       },
       "build" : {

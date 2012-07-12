@@ -6,12 +6,13 @@ use ExtUtils::MakeMaker;
 use Config;
 
 my $csubdir = 'sombok';
-my $sombok_atleast_version = '2.2.0';
+my $sombok_atleast_version = '2.3.0';
 my $sombok_max_version = '2.99.99';
 my $pkg_config = $ENV{'PKG_CONFIG'} || 'pkg-config';
 my $enable_libthai = 1;
 my $bundled_sombok = 0;
-my $unicode = 6.1.0;
+my $unicode;
+my $unicode_num;
 my $copy_unidata = 0;
 my $sombok;
 my $libthai;
@@ -36,7 +37,7 @@ sub distdir {
     if ($copy_unidata) {
 	open my $mani, '<', 'MANIFEST' or die "$!";
 	$inherited =~ s/^(distdir\s*:+\s*)/${1}copy_unidata /m
-	    if scalar grep m{test-data/LineBreakTest.txt}, <$mani>;
+	    if scalar grep m{^test-data/LineBreakTest.txt}, <$mani>;
 	close $mani;
     }
     $inherited;
@@ -55,12 +56,12 @@ copy_unidata :
 \tcd test-data; \\
 \t[ -f LineBreakTest.txt ] || \\
 \twget -q -N -O LineBreakTest.txt \\
-\tftp://unicode.org/Public/$unicode/ucd/auxiliary/LineBreakTest*.txt \\
+\tftp://unicode.org/Public/$unicode_num/ucd/auxiliary/LineBreakTest*.txt \\
 \t|| true
 \tcd test-data; \\
 \t[ -f GraphemeBreakTest.txt ] || \\
 \twget -q -N -O GraphemeBreakTest.txt \\
-\tftp://unicode.org/Public/$unicode/ucd/auxiliary/GraphemeBreakTest*.txt \\
+\tftp://unicode.org/Public/$unicode_num/ucd/auxiliary/GraphemeBreakTest*.txt \\
 \t|| true
 
 preop :
@@ -92,6 +93,9 @@ foreach my $arg (@ARGV) {
 	$unicode = $1;
     }
 }
+
+$unicode_num = $unicode;
+$unicode_num =~ s/[^.\d].*//;
 
 my %opts = ('LIBS' => '', 'INC' => '');
 

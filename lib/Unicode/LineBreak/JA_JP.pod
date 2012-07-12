@@ -369,13 +369,14 @@ L</Prep> の旧式な形式。
 
 [UAX #11] で定義される 6 つの East_Asian_Width 特性を表す値と、前進を伴わないことを表す EA_Z。
 
-=item C<LB_BK>, C<LB_CR>, C<LB_LF>, C<LB_NL>, C<LB_SP>, C<LB_OP>, C<LB_CL>, C<LB_CP>, C<LB_QU>, C<LB_GL>, C<LB_NS>, C<LB_EX>, C<LB_SY>, C<LB_IS>, C<LB_PR>, C<LB_PO>, C<LB_NU>, C<LB_AL>, C<LB_HL>, C<LB_ID>, C<LB_IN>, C<LB_HY>, C<LB_BA>, C<LB_BB>, C<LB_B2>, C<LB_CB>, C<LB_ZW>, C<LB_CM>, C<LB_WJ>, C<LB_H2>, C<LB_H3>, C<LB_JL>, C<LB_JV>, C<LB_JT>, C<LB_SG>, C<LB_AI>, C<LB_CJ>, C<LB_SA>, C<LB_XX>
+=item C<LB_BK>, C<LB_CR>, C<LB_LF>, C<LB_NL>, C<LB_SP>, C<LB_OP>, C<LB_CL>, C<LB_CP>, C<LB_QU>, C<LB_GL>, C<LB_NS>, C<LB_EX>, C<LB_SY>, C<LB_IS>, C<LB_PR>, C<LB_PO>, C<LB_NU>, C<LB_AL>, C<LB_HL>, C<LB_ID>, C<LB_IN>, C<LB_HY>, C<LB_BA>, C<LB_BB>, C<LB_B2>, C<LB_CB>, C<LB_ZW>, C<LB_CM>, C<LB_WJ>, C<LB_H2>, C<LB_H3>, C<LB_JL>, C<LB_JV>, C<LB_JT>, C<LB_SG>, C<LB_AI>, C<LB_CJ>, C<LB_SA>, C<LB_XX>, C<LB_ZJ>
 
-[UAX #14] で定義される 39 の行分割特性 (分類) を表す値。
+[UAX #14] で定義される 40 の行分割特性 (分類) を表す値。
 
 B<注>:
 特性値 CP はUnicode 5.2.0版で導入された。
 特性値 HL と CJ はUnicode 6.1.0版で導入された。
+特性値 ZJ は Unicode 6.2.0版で導入されそう。
 
 =item C<MANDATORY>, C<DIRECT>, C<INDIRECT>, C<PROHIBITED>
 
@@ -586,7 +587,7 @@ U+3005 繰返し記号、U+303B ゆすり点、U+309D 平仮名繰返し記号�
 長音記号。
 U+30FC 長音記号、U+FF70 長音記号 (代替名称)。
 
-注。これらの文字は行頭禁則文字と扱われることも、通常の表語文字的な文字と扱われることもある。[JIS X 4051] 6.1.1、[JLREQ] 3.1.7 や [UAX14] の最新原案を参照。
+注。これらの文字は行頭禁則文字と扱われることも、通常の表語文字的な文字と扱われることもある。[JIS X 4051] 6.1.1、[JLREQ] 3.1.7 や [UAX14] を参照。
 
 注。U+3095 E<0x3095>, U+3096 E<0x3096>, U+30F5 ヵ, U+30F6 ヶ は仮名ではないとされる。
 
@@ -635,6 +636,10 @@ U+303C ます記号。
 デーン語、フィン語、ノルウェー語、スウェーデン語では、9 の形状の引用符や
 右向きのギュメ (E<0x2019> E<0x201D> E<0x00BB> E<0x203A>)
 を開き記号にも閉じ記号にも用いる。
+
+=head4 和字間隔
+
+I<未稿>.
 
 =head3 East_Asian_Width 特性
 
@@ -713,7 +718,7 @@ L<Unicode::GCString/lbc> や L<Unicode::GCString/lbcext>
 
 =head2 標準への適合性
 
-このモジュールで用いている文字の特性値は、Unicode 標準 6.1.0版による。
+このモジュールで用いている文字の特性値は、Unicode 標準 6.2.0ベータ版による。
 
 このモジュールでは、実装水準 UAX14-C2 を実装しているつもり。
 
@@ -793,8 +798,8 @@ I<日本語文書の組版方法>.
 
 阿南康宏他.
 I<日本語組版処理の要件>, 
-W3C ワーキングドラフト 2011年11月29日.
-L<http://www.w3.org/TR/2011/WD-jlreq-20111129/ja/>.
+W3C 技術ノート 2012年4月3日.
+L<http://www.w3.org/TR/2012/NOTE-jlreq-20120403/ja/>.
 
 =begin comment
 
@@ -815,7 +820,7 @@ L<http://unicode.org/reports/tr11/>.
 =item [UAX #14]
 
 A. Freytag and A. Heninger (2008-2012).
-I<Unicode Standard Annex #14: Unicode Line Breaking Algorithm>, Revision 22-27.
+I<Unicode Standard Annex #14: Unicode Line Breaking Algorithm>, Revision 22-29.
 L<http://unicode.org/reports/tr14/>.
 
 =back

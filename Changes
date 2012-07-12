@@ -1,3 +1,17 @@
+2012.007_14  Thu Jul 12 2012
+! Makefile.PL:
+  - Use sombok >= 2.3.0.
+! t/00LineBreakTest.t:
+  - Temporarily skip problematic ZJ subtests.
+! lib/Unicode/GCString.pod:
+! lib/Unicode/GCString/JA_JP.pod:
+  - Updated citation.
+! lib/Unicode/LineBreak.pod:
+! lib/Unicode/LineBreak/JA_JP.pod:
+  - Updated citation.
+  - Added a section about tailoring for IDEOGRAPHIC SPACE (not yet written).
+    See <http://www.unicode.org/review/pri212/feedback.html>, by Koji Ishii.
+
 2012.06  Sat Jun 02 2012
 ! lib/Unicode/LineBreak/Defaults.pm.sample:
   - removed obsoleted options.
