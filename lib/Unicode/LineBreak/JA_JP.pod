@@ -1,5 +1,3 @@
-use utf8;
-
 =encoding utf-8
 
 =head1 NAME
@@ -369,19 +367,18 @@ L</Prep> の旧式な形式。
 
 [UAX #11] で定義される 6 つの East_Asian_Width 特性を表す値と、前進を伴わないことを表す EA_Z。
 
-=item C<LB_BK>, C<LB_CR>, C<LB_LF>, C<LB_NL>, C<LB_SP>, C<LB_OP>, C<LB_CL>, C<LB_CP>, C<LB_QU>, C<LB_GL>, C<LB_NS>, C<LB_EX>, C<LB_SY>, C<LB_IS>, C<LB_PR>, C<LB_PO>, C<LB_NU>, C<LB_AL>, C<LB_HL>, C<LB_ID>, C<LB_IN>, C<LB_HY>, C<LB_BA>, C<LB_BB>, C<LB_B2>, C<LB_CB>, C<LB_ZW>, C<LB_CM>, C<LB_WJ>, C<LB_H2>, C<LB_H3>, C<LB_JL>, C<LB_JV>, C<LB_JT>, C<LB_SG>, C<LB_AI>, C<LB_CJ>, C<LB_SA>, C<LB_XX>, C<LB_ZJ>
+=item C<LB_BK>, C<LB_CR>, C<LB_LF>, C<LB_NL>, C<LB_SP>, C<LB_OP>, C<LB_CL>, C<LB_CP>, C<LB_QU>, C<LB_GL>, C<LB_NS>, C<LB_EX>, C<LB_SY>, C<LB_IS>, C<LB_PR>, C<LB_PO>, C<LB_NU>, C<LB_AL>, C<LB_HL>, C<LB_ID>, C<LB_IN>, C<LB_HY>, C<LB_BA>, C<LB_BB>, C<LB_B2>, C<LB_CB>, C<LB_ZW>, C<LB_CM>, C<LB_WJ>, C<LB_H2>, C<LB_H3>, C<LB_JL>, C<LB_JV>, C<LB_JT>, C<LB_SG>, C<LB_AI>, C<LB_CJ>, C<LB_SA>, C<LB_XX>, C<LB_RI>
 
 [UAX #14] で定義される 40 の行分割特性 (分類) を表す値。
 
 B<注>:
 特性値 CP はUnicode 5.2.0版で導入された。
 特性値 HL と CJ はUnicode 6.1.0版で導入された。
-特性値 ZJ は Unicode 6.2.0版で導入されそう。
+特性値 RI は Unicode 6.2.0版で導入されそう。
 
 =item C<MANDATORY>, C<DIRECT>, C<INDIRECT>, C<PROHIBITED>
 
 行分割動作を表す 4 つの値。
-
 強制分割。直接分割も間接分割も認める。間接分割を認めるが直接分割は禁ずる。分割を禁ずる。
 
 =item C<Unicode::LineBreak::SouthEastAsian::supported>
@@ -532,7 +529,7 @@ L<Unicode::GCString::JA_JP> 参照。
 
     sub tabbedsizing {
         my ($self, $cols, $pre, $spc, $str) = @_;
-
+     
         my $spcstr = $spc.$str;
         while ($spcstr->lbc == LB_SP) {
             my $c = $spcstr->item(0);
@@ -567,7 +564,7 @@ L</LBClass> オプションおよび L</EAWidth> オプションで個々の文�
 
 下記の文字すべて。
 
-=item C<IDEOGRAPHIC_ITERATION MARKS() =E<gt> LB_ID>
+=item C<IDEOGRAPHIC_ITERATION_MARKS() =E<gt> LB_ID>
 
 表語文字的な繰り返し記号。
 U+3005 繰返し記号、U+303B ゆすり点、U+309D 平仮名繰返し記号、U+309E 平仮名繰返し記号 (濁点)、U+30FD 片仮名繰返し記号、U+30FE 片仮名繰返し記号 (濁点)。
@@ -600,7 +597,7 @@ U+303C ます記号。
 注。この文字は [UAX #14] では行頭禁則文字 (NS) に分類されるが、[JIS X 4051] や [JLREQ] では文字クラス (13) や cl-19 (ID に相当) に分類される。
 
 =back
- 
+
 =head4 曖昧な引用符
 
 初期値では、若干の記号を曖昧な引用符 (QU) と扱う。
@@ -822,6 +819,7 @@ L<http://unicode.org/reports/tr11/>.
 A. Freytag and A. Heninger (2008-2012).
 I<Unicode Standard Annex #14: Unicode Line Breaking Algorithm>, Revision 22-29.
 L<http://unicode.org/reports/tr14/>.
+および、その最新原案 (未公開)。
 
 =back
 
@@ -835,3 +833,5 @@ Copyright (C) 2009-2012 Hatuka*nezumi - IKEDA Soji <hatuka(at)nezumi.nu>.
 
 This program is free software; you can redistribute it and/or modify it 
 under the same terms as Perl itself.
+
+=cut

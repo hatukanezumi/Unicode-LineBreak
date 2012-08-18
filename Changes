@@ -1,3 +1,12 @@
+2012.008_16  Sat Aug 18 2012
+! lib/Unicode/LineBreak.pm
+! lib/Unicode/LineBreak.pod
+! lib/Unicode/LineBreak/JA_JP.pod
+! t/00GraphemeBreakTest.t
+! t/00LineBreakTest.t
+  - Updates for latest 6.2.0beta.
+  - Bundled sombok-2.3.0gamma1.
+
 2012.007_16  Thu Jul 12 2012
 ! Makefile.PL:
   - Use sombok >= 2.3.0.

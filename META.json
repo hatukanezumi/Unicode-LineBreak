@@ -9,7 +9,7 @@
       "version" : "2",
       "url" : "http://search.cpan.org/perldoc?CPAN::Meta::Spec"
    },
-   "version" : "2012.007_16",
+   "version" : "2012.008_16",
    "name" : "Unicode-LineBreak",
    "author" : [
       "Hatuka*nezumi - IKEDA Soji <hatuka@nezumi.nu>"

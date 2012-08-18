@@ -3,10 +3,13 @@
 #
 # 00LineBreakTest.txt - Test suite provided by Unicode Consortium.
 #
-# Passed by LineBreakTest-6.0.0.txt (2010-08-30, 21:08:43 UTC).
-# Passed by LineBreakTest-6.1.0d12.txt (2011-09-16, 22:24:58 UTC).
-# Passed by LineBreakTest-6.1.0d19.txt (2011-12-07, 01:05:50 UTC).
-# 29 subtests failed by LineBreakTest-6.2.0d4.txt (2012-06-02, 23:25:41 UTC).
+# - Passed by LineBreakTest-6.0.0.txt (2010-08-30, 21:08:43 UTC).
+# - Passed by LineBreakTest-6.1.0d12.txt (2011-09-16, 22:24:58 UTC).
+# - Passed by LineBreakTest-6.1.0d19.txt (2011-12-07, 01:05:50 UTC).
+# - 29 subtests failed by LineBreakTest-6.2.0d4.txt (2012-06-02, 23:25:41 UTC).
+#   [sombok-2.3.0beta1]
+# - Passed by LineBreakTest-6.2.0d6.txt (2012-08-14, 17:54:58 UTC).
+#   [sombok-2.3.0gamma1]
 #
 # Note: Legacy-CM feature is disabled.
 #
@@ -79,12 +82,12 @@ while (<IN>) {
        );
 
     SKIP: {
-	# Tentative check
-	my $t = $got;
-	if ($t =~ s/ × 200D\b/ ÷ 200D/ and $t eq $_) {
-	    diag "Skipped: $desc";
-	    skip "subtests including debatable ZJ behavior", 1;
-	}
+	#XXX # Tentative check
+	#XXX my $t = $got;
+	#XXX if ($t =~ s/ × 200D\b/ ÷ 200D/ and $t eq $_) {
+	#XXX     diag "Skipped: $desc";
+	#XXX     skip "subtests including debatable ZJ behavior", 1;
+	#XXX }
 
 	is $got, $_, $desc;
     }

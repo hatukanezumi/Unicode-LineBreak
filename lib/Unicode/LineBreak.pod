@@ -245,7 +245,7 @@ Default is C<"NO">.
 
 =item LBClass => C<[> ORD C<=E<gt>> CLASS C<]>
 
-=item LBClass => undef
+=item LBClass => C<undef>
 
 Tailor classification of line breaking property.
 ORD is UCS scalar value of character or array reference of them.
@@ -383,19 +383,19 @@ Obsoleted equivalent to L</Prep>.
 
 =over 4
 
-=item C<EA_Na>,	C<EA_N>, C<EA_A>, C<EA_W>, C<EA_H>, C<EA_F>, C<EA_Z>
+=item C<EA_Na>, C<EA_N>, C<EA_A>, C<EA_W>, C<EA_H>, C<EA_F>, C<EA_Z>
 
 Index values to specify 6 East_Asian_Width properties
 defined by [UAX #11], and EA_Z to specify nonspacing.
 
-=item C<LB_BK>, C<LB_CR>, C<LB_LF>, C<LB_NL>, C<LB_SP>, C<LB_OP>, C<LB_CL>, C<LB_CP>, C<LB_QU>, C<LB_GL>, C<LB_NS>, C<LB_EX>, C<LB_SY>, C<LB_IS>, C<LB_PR>, C<LB_PO>, C<LB_NU>, C<LB_AL>, C<LB_HL>, C<LB_ID>, C<LB_IN>, C<LB_HY>, C<LB_BA>, C<LB_BB>, C<LB_B2>, C<LB_CB>, C<LB_ZW>, C<LB_CM>, C<LB_WJ>, C<LB_H2>, C<LB_H3>, C<LB_JL>, C<LB_JV>, C<LB_JT>, C<LB_SG>, C<LB_AI>, C<LB_CJ>, C<LB_SA>, C<LB_XX>, C<LB_ZJ>
+=item C<LB_BK>, C<LB_CR>, C<LB_LF>, C<LB_NL>, C<LB_SP>, C<LB_OP>, C<LB_CL>, C<LB_CP>, C<LB_QU>, C<LB_GL>, C<LB_NS>, C<LB_EX>, C<LB_SY>, C<LB_IS>, C<LB_PR>, C<LB_PO>, C<LB_NU>, C<LB_AL>, C<LB_HL>, C<LB_ID>, C<LB_IN>, C<LB_HY>, C<LB_BA>, C<LB_BB>, C<LB_B2>, C<LB_CB>, C<LB_ZW>, C<LB_CM>, C<LB_WJ>, C<LB_H2>, C<LB_H3>, C<LB_JL>, C<LB_JV>, C<LB_JT>, C<LB_SG>, C<LB_AI>, C<LB_CJ>, C<LB_SA>, C<LB_XX>, C<LB_RI>
 
 Index values to specify 40 line breaking properties (classes)
 defined by [UAX #14].
 
 B<Note>: Property value CP was introduced by Unicode 5.2.0.
 Property values HL and CJ were introduced by Unicode 6.1.0.
-Property value ZJ may be introduced by Unicode 6.2.0.
+Property value RI may be introduced by Unicode 6.2.0.
 
 =item C<MANDATORY>, C<DIRECT>, C<INDIRECT>, C<PROHIBITED>
 
@@ -883,6 +883,7 @@ L<http://unicode.org/reports/tr11/>.
 A. Freytag and A. Heninger (2008-2012).
 I<Unicode Standard Annex #14: Unicode Line Breaking Algorithm>, Revision 22-29.
 L<http://unicode.org/reports/tr14/>.
+And its latest draft (not yet published).
 
 =back
 
