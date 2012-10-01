@@ -25,7 +25,7 @@ use Unicode::GCString;
 ### Globals
 
 ### The package version
-our $VERSION = '2012.008_16';
+our $VERSION = '2012.10';
 
 ### Public Configuration Attributes
 our @Config = (
@@ -107,7 +107,7 @@ sub new {
     my $self = __PACKAGE__->_new();
     $self->config(@Config);
     $self->config(@_);
-    $self;
+    bless $self, $class;
 }
 
 sub config ($@) {
@@ -127,6 +127,7 @@ sub config ($@) {
 	} elsif (uc $k eq uc 'SizingMethod') {
 	    return $self->_config('Sizing');
 	} elsif (uc $k eq uc 'TailorEA') {
+	    carp "$k is obsoleted.  Use EAWidth";
 	    $ret = $self->_config('EAWidth');
 	    if (! defined $ret) {
 		return [];
@@ -134,6 +135,7 @@ sub config ($@) {
 		return [map { ($_->[0] => $_->[1]) } @{$ret}];
 	    }
 	} elsif (uc $k eq uc 'TailorLB') {
+	    carp "$k is obsoleted.  Use LBClass";
 	    $ret = $self->_config('LBClass');
 	    if (! defined $ret) {
 		return [];
@@ -143,6 +145,7 @@ sub config ($@) {
 	} elsif (uc $k eq uc 'UrgentBreaking') {
 	    return $self->_config('Urgent');
 	} elsif (uc $k eq uc 'UserBreaking') {
+	    carp "$k is obsoleted.  Use Prep";
 	    $ret = $self->_config('Prep');
 	    if (! defined $ret) {
 		return [];
@@ -169,6 +172,7 @@ sub config ($@) {
 	} elsif (uc $k eq uc 'SizingMethod') {
 	    push @config, 'Sizing' => $v;
 	} elsif (uc $k eq uc 'TailorLB') {
+	    carp "$k is obsoleted.  Use LBClass";
 	    push @config, 'LBClass' => undef;
 	    if (! defined $v) {
 		;
@@ -181,6 +185,7 @@ sub config ($@) {
 		}
 	    }
 	} elsif (uc $k eq uc 'TailorEA') {
+	    carp "$k is obsoleted.  Use EAWidth";
 	    push @config, 'EAWidth' => undef;
 	    if (! defined $v) {
 		;
@@ -193,6 +198,7 @@ sub config ($@) {
 		}
 	    }
 	} elsif (uc $k eq uc 'UserBreaking') {
+	    carp "$k is obsoleted.  Use Prep";
 	    push @config, 'Prep' => undef;
 	    if (! defined $v) {
 		;

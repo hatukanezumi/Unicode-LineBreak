@@ -1242,7 +1242,7 @@ supported()
 MODULE = Unicode::LineBreak	PACKAGE = Unicode::GCString	
 
 gcstring_t *
-new(klass, str, lbobj=NULL)
+_new(klass, str, lbobj=NULL)
 	char *klass;
 	unistr_t *str;
 	linebreak_t *lbobj;
@@ -1252,7 +1252,7 @@ new(klass, str, lbobj=NULL)
 	    XSRETURN_UNDEF;
 	/* FIXME:buffer is copied twice. */
 	if ((RETVAL = gcstring_newcopy(str, lbobj)) == NULL)
-	    croak("%s->new: %s", klass, strerror(errno));
+	    croak("%s->_new: %s", klass, strerror(errno));
     OUTPUT:
 	RETVAL
 

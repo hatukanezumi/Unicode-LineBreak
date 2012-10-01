@@ -68,7 +68,7 @@ preop :
 \t\$(FULLPERL) -i -pe 's/^(version:\\s+).*/\$\${1}\$(VERSION)/' META.yml
 \t\$(FULLPERL) -MJSON::XS -e '\$\$_ = decode_json join "", <>;' \\
 \t-e '\$\$_->{"version"} = "\$(VERSION)";' \\
-\t-e 'print JSON::XS->new->pretty(1)->encode(\$\$_)' \\
+\t-e 'print JSON::XS->new->canonical(1)->pretty(1)->encode(\$\$_)' \\
 \tMETA.json > META.json.new
 \t\$(MV) META.json.new META.json
 \t\$(FULLPERL) -i -pe 's/^(%define version\\s+).*/\$\${1}\$(VERSION)/;' \\

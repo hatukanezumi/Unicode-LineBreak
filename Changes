@@ -1,3 +1,16 @@
+2012.10  Mon Oct 01 2012
+# Unicode 6.2.0, bundled sombok-2.3.0.
+! lib/Unicode/LineBreak/JA_JP.pod
+! lib/Unicode/LineBreak.pod
+  - Undocumented EA_ZA and EA_ZW introduced by sombok-2.3.0.
+  - Added a note to state EA_Z* are not a part of Standard.
+! lib/Unicode/LineBreak.pm
+  - added warning for obsoleted options: TailorEA, TailorLB and UserBreaking.
+! t/03ns.t
+! t/06context.t
+! t/09uri.t
+  - Removed tests for obsoleted options.
+
 2012.008_16  Sat Aug 18 2012
 ! lib/Unicode/LineBreak.pm
 ! lib/Unicode/LineBreak.pod

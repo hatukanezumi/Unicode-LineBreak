@@ -24,12 +24,20 @@ B<“prepend” character>.  It is close in that people consider as I<character>
 
 =over 4
 
+=item new (STRING, [KEY => VALUE, ...])
+
 =item new (STRING, [LINEBREAK])
 
 I<Constructor>.
 Create new grapheme cluster string (Unicode::GCString object) from
 Unicode string STRING.
-Optional L<Unicode::LineBreak> object LINEBREAK controls breaking features.
+
+About optional KEY => VALUE pairs see L<Unicode::LineBreak/Options>.
+On second form, L<Unicode::LineBreak> object LINEBREAK controls
+breaking features.
+
+B<Note>:
+The first form was introduced by release 2012.10.
 
 =item copy
 
@@ -175,6 +183,7 @@ Prohibit line breaking just before this grapheme cluster.
 
 =item lbclass ([OFFSET])
 
+I<Instance method>.
 Returns Line Breaking Class (See L<Unicode::LineBreak>) of the first
 character of OFFSET-th grapheme cluster.
 If OFFSET was not specified, returns class of next grapheme cluster.
@@ -184,6 +193,7 @@ Use lbc().
 
 =item lbclass_ext ([OFFSET])
 
+I<Instance method>.
 Returns Line Breaking Class (See L<Unicode::LineBreak>) of the last
 grapheme extender of OFFSET-th grapheme cluster.  If there are no
 grapheme extenders or its class is CM, value of lbclass() is returned.
@@ -199,11 +209,13 @@ Use lbcext().
 
 =item lbc
 
+I<Instance method>.
 Returns Line Breaking Class (See L<Unicode::LineBreak>) of the first
 character of first grapheme cluster.
 
 =item lbcext
 
+I<Instance method>.
 Returns Line Breaking Class (See L<Unicode::LineBreak>) of the last
 grapheme extender of last grapheme cluster.
 If there are no grapheme extenders or its class is CM, value of last
@@ -253,7 +265,7 @@ L<http://hatuka.nezumi.nu/repos/Unicode-LineBreak/>.
 
 [UAX #29]
 Mark Davis (2009-2012).
-I<Unicode Standard Annex #29: Unicode Text Segmentation>, Revision 15-20.
+I<Unicode Standard Annex #29: Unicode Text Segmentation>, Revisions 15-21.
 L<http://www.unicode.org/reports/tr29/>.
 
 =head1 AUTHOR

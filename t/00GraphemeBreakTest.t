@@ -9,6 +9,8 @@
 #   58 surrogate cases.  [sombok-2.3.0beta1]
 # - Passed by GraphemeBreakTest-6.2.0d6.txt (2012-08-14, 17:54:56 UTC), except
 #   54 surrogate cases.  [sombok-2.3.0gamma1]
+# - Passed by GraphemeBreakTest-6.2.0d8.txt (2012-08-22, 12:41:15 UTC), except
+#   54 surrogate cases.  [sombok-2.3.0]
 #
 # Note: Legacy-CM feature is enabled.
 #
@@ -16,7 +18,6 @@
 use strict;
 use Test::More;
 use Encode qw(decode is_utf8);
-use Unicode::LineBreak;
 use Unicode::GCString;
 
 BEGIN {
@@ -45,10 +46,7 @@ BEGIN {
     }
 }
 
-my $lb = Unicode::LineBreak->new(
-				 LegacyCM => 'YES',
-				 ViramaAsJoiner => 'NO',
-				);
+my @opts = (LegacyCM => 'YES', ViramaAsJoiner => 'NO');
 
 open IN, 'test-data/GraphemeBreakTest.txt';
 
@@ -79,7 +77,7 @@ while (<IN>) {
 		 map { sprintf '%04X', ord $_ }
 		 split //, $_->as_string;
 	    }
-	    @{Unicode::GCString->new($s, $lb)}
+	    @{Unicode::GCString->new($s, @opts)}
 	  ), $_, $desc;
     }
 }

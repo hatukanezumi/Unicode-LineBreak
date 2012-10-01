@@ -4,18 +4,20 @@ require 't/lb.pl';
 
 BEGIN { plan tests => 4 }
 
-my $lb = Unicode::LineBreak->new(Context => 'EASTASIAN');
+my @opts = (Context => 'EASTASIAN');
 
-is(Unicode::GCString->new(Encode::decode('iso-8859-1', "\xA0"), $lb)->lbc,
+is(Unicode::GCString->new(Encode::decode('iso-8859-1', "\xA0"), @opts)->lbc,
    Unicode::LineBreak::LB_GL());
-is(Unicode::GCString->new(Encode::decode('iso-8859-1', "\xC2\xA0"), $lb)->lbc,
+is(Unicode::GCString->new(Encode::decode('iso-8859-1', "\xC2\xA0"), @opts)->lbc,
    Unicode::LineBreak::LB_AL());
-is(Unicode::GCString->new(Encode::decode('iso-8859-1', "\xD7"), $lb)->columns,
+is(Unicode::GCString->new(Encode::decode('iso-8859-1', "\xD7"), @opts)->columns,
    2);
-is(Unicode::GCString->new(Encode::decode('iso-8859-1', "\xC3"), $lb)->columns,
+is(Unicode::GCString->new(Encode::decode('iso-8859-1', "\xC3"), @opts)->columns,
    1);
 
 ### obsoleted functions
+##my $lb = Unicode::LineBreak->new(@opts);
+##
 ##foreach my $s (("\xA0", "\x{A0}", Encode::decode('iso-8859-1', "\xA0"),
 ##		)) {
 ##    is($lb->lbclass($s), Unicode::LineBreak::LB_GL());

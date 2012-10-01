@@ -1,37 +1,37 @@
 {
-   "resources" : {
-      "repository" : {
-         "url" : "http://hatuka.nezumi.nu/repos/Unicode-LineBreak/"
-      }
-   },
-   "generated_by" : "ExtUtils::MakeMaker version 6.42, CPAN::Meta::Converter version 2.120921",
-   "meta-spec" : {
-      "version" : "2",
-      "url" : "http://search.cpan.org/perldoc?CPAN::Meta::Spec"
-   },
-   "version" : "2012.008_16",
-   "name" : "Unicode-LineBreak",
+   "abstract" : "UAX #14 Unicode Line Breaking Algorithm",
    "author" : [
       "Hatuka*nezumi - IKEDA Soji <hatuka@nezumi.nu>"
    ],
    "dynamic_config" : 1,
+   "generated_by" : "ExtUtils::MakeMaker version 6.42, CPAN::Meta::Converter version 2.120921",
    "license" : [
       "perl_5"
    ],
+   "meta-spec" : {
+      "url" : "http://search.cpan.org/perldoc?CPAN::Meta::Spec",
+      "version" : "2"
+   },
+   "name" : "Unicode-LineBreak",
    "prereqs" : {
+      "build" : {
+         "requires" : {
+            "ExtUtils::MakeMaker" : "6.26",
+            "Test::More" : "0.45"
+         }
+      },
       "runtime" : {
          "requires" : {
             "Encode" : "1.98",
             "MIME::Charset" : "v1.6.2"
          }
-      },
-      "build" : {
-         "requires" : {
-            "Test::More" : "0.45",
-            "ExtUtils::MakeMaker" : "6.26"
-         }
       }
    },
-   "abstract" : "UAX #14 Unicode Line Breaking Algorithm",
-   "release_status" : "stable"
+   "release_status" : "stable",
+   "resources" : {
+      "repository" : {
+         "url" : "http://hatuka.nezumi.nu/repos/Unicode-LineBreak/"
+      }
+   },
+   "version" : "2012.10"
 }

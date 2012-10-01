@@ -21,12 +21,20 @@ B<書記素クラスタ>〔grapheme cluster〕は、Unicode文字の列で、ひ
 
 =over 4
 
+=item new (STRING, [KEY => VALUE, ...])
+
 =item new (STRING, [LINEBREAK])
 
 I<コンストラクタ>。
 Unicode文字列 STRING から新たに書記素クラスタ文字列
 (Unicode::GCString オブジェクト) を作る。
-オプションの L<Unicode::LineBreak> オブジェクト LINEBREAK は分割の仕様を制御する。
+
+KEY => VALUE の対については L<Unicode::LineBreak::JA_JP/オプション>を参照。
+第二の形式では、
+L<Unicode::LineBreak> オブジェクト LINEBREAK で分節の仕様を決定する。
+
+B<注>:
+最初の形式はリリース 2012.10 で導入された。
 
 =item copy
 
@@ -169,6 +177,7 @@ OFFSET を指定しないと、次の位置の書記素クラスタのフラグ�
 
 =item lbclass ([OFFSET])
 
+I<インスタンスメソッド>。
 OFFSET番めの書記素クラスタの最初の文字の行分割クラス
 (L<Unicode::LineBreak::JA_JP> 参照) を返す。
 OFFSET を指定しないと、次の位置の書記素クラスタの情報を返す。
@@ -178,6 +187,7 @@ lbc() を使ってほしい。
 
 =item lbclass_ext ([OFFSET])
 
+I<インスタンスメソッド>。
 OFFSET番めの書記素クラスタの最後の書記素エキステンダの行分割クラス
 (L<Unicode::LineBreak> 参照) を返す。
 書記素エキステンダがないか、またはクラスが CM の場合は、lbclass() の値を返す。
@@ -193,11 +203,13 @@ lbcext() を使ってほしい。
 
 =item lbc
 
+I<インスタンスメソッド>。
 最初の書記素クラスタの最初の文字の行分割クラス
 (L<Unicode::LineBreak::JA_JP> 参照) を返す。
 
 =item lbcext
 
+I<インスタンスメソッド>。
 最後の書記素クラスタの最後の書記素エキステンダの行分割クラス
 (L<Unicode::LineBreak::JA_JP> 参照) を返す。
 書記素エキステンダがないか、またはクラスが CM の場合は、
@@ -246,7 +258,7 @@ L<http://hatuka.nezumi.nu/repos/Unicode-LineBreak/>
 
 [UAX #29]
 Mark Davis (2009-2012).
-I<Unicode Standard Annex #29: Unicode Text Segmentation>, Revision 15-20.
+I<Unicode Standard Annex #29: Unicode Text Segmentation>, Revisions 15-21.
 L<http://www.unicode.org/reports/tr29/>.
 
 =head1 AUTHOR

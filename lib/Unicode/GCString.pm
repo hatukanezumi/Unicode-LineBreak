@@ -26,7 +26,7 @@ use Unicode::LineBreak;
 ### Globals
 
 # The package version
-our $VERSION = '2012.04';
+our $VERSION = '2012.10';
 
 use overload 
     '@{}' => \&as_arrayref,
@@ -37,6 +37,20 @@ use overload
     'cmp' => \&cmp,
     '<>' => \&next,
     ;
+
+sub new {
+    my $class = shift;
+
+    my $self;
+    if (scalar @_ <= 2) {
+	$self = __PACKAGE__->_new(@_);
+    } else {
+	my $str = shift;
+	my $lb = Unicode::LineBreak->new(@_);
+	$self = __PACKAGE__->_new($str, $lb);
+    }
+    bless $self, $class;
+}
 
 sub as_arrayref {
     my @a = shift->as_array;
