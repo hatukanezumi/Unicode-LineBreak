@@ -1,7 +1,7 @@
 # Typemap for Unicode-LineBreak
 # =============================
 #
-# Copyright (C) 2009-2011 by Hatuka*nezumi - IKEDA Soji <hatuka(at)nezumi.nu>.
+# Copyright (C) 2009-2013 by Hatuka*nezumi - IKEDA Soji <hatuka(at)nezumi.nu>.
 # 
 # This package is free software; you can redistribute it and/or modify it 
 # under the same terms as Perl itself.
@@ -58,23 +58,16 @@ T_UNICODE_GCSTRING
 	if (! sv_isobject($arg)) {
 	    gcstring_t *gcstr; /* container of buffer. */
 
-	    /* String not being decoded must not be allowed. */
-	    if (! SvUTF8($arg)) {
-		char *s;
-		size_t len, i;
-
-		len = SvCUR($arg);
-		s = SvPV($arg, len);
-		for (i = 0; i \< len; i++)
-		    if (127 \< (unsigned char)s[i])
-			croak(\"$func_name: Unicode string must be given.\");
-	    }
-
 	    if ((gcstr = malloc(sizeof(gcstring_t))) == NULL)
 		croak(\"$func_name: %s\", strerror(errno));
 	    memset(gcstr, 0, sizeof(gcstring_t));
 
-	    SVtounistr((unistr_t *)gcstr, $arg);
+	    /* String not being decoded must be treated as Unicode. */
+	    if (! SvUTF8($arg))
+		SVupgradetounistr((unistr_t *)gcstr, $arg);
+	    else
+		SVtounistr((unistr_t *)gcstr, $arg);
+
 	    $var = (unistr_t *)gcstr;
 	    /* let Unicode buffer be mortal. */
 	    sv_2mortal(CtoPerl(\"Unicode::GCString\", gcstr));

@@ -1,7 +1,7 @@
 /*
  * LineBreak.xs - Perl XS glue for Sombok package.
  * 
- * Copyright (C) 2009-2012 Hatuka*nezumi - IKEDA Soji <hatuka(at)nezumi.nu>.
+ * Copyright (C) 2009-2013 Hatuka*nezumi - IKEDA Soji <hatuka(at)nezumi.nu>.
  * 
  * This file is part of the Unicode::LineBreak package.  This program is
  * free software; you can redistribute it and/or modify it under the same
@@ -94,6 +94,36 @@ unistr_t *SVtounistr(unistr_t *buf, SV *str)
 	uniptr++;
     }
     buf->len = unilen;
+    return buf;
+}
+
+/*
+ * Create Unicode string from Perl string NOT utf8-flagged.
+ */
+static
+unistr_t *SVupgradetounistr(unistr_t *buf, SV *str)
+{
+    char *s;
+    size_t len, i;
+
+    if (buf == NULL) {
+	if ((buf = malloc(sizeof(unistr_t))) == NULL)
+	    croak("SVupgradetounistr: %s", strerror(errno));
+    } else if (buf->str)
+	free(buf->str);
+    buf->str = NULL;
+    buf->len = 0;
+
+    len = SvCUR(str);
+    if (len == 0)
+	return buf;
+    if ((buf->str = malloc(sizeof(unichar_t) * len)) == NULL)
+	croak("SVupgradetounistr: %s", strerror(errno));
+
+    s = SvPV(str, len);
+    for (i = 0; i < len; i++)
+	buf->str[i] = (unichar_t)(unsigned char)s[i];
+    buf->len = len;
     return buf;
 }
 
@@ -761,17 +791,6 @@ _config(self, ...)
 		    if (rx != NULL)
 			SvREFCNT_inc(pattern); /* FIXME:avoid freed */
 		    else if (SvOK(pattern)) {
-			if (! SvUTF8(pattern)) {
-			    char *s;
-			    size_t len, i;
-
-			    len = SvCUR(pattern);
-			    s = SvPV(pattern, len);
-			    for (i = 0; i < len; i++)
-				if (127 < (unsigned char)s[i])
-				    croak("_config: "
-					  "Unicode string must be given.");
-			}
 #if ((PERL_VERSION >= 10) || (PERL_VERSION == 9 && PERL_SUBVERSION >= 5))
 			rx = pregcomp(pattern, 0);
 #else /* PERL_VERSION */

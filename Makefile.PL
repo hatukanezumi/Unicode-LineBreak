@@ -57,12 +57,12 @@ copy_unidata :
 \t[ -f LineBreakTest.txt ] || \\
 \twget -q -N -O LineBreakTest.txt \\
 \tftp://unicode.org/Public/$unicode_num/ucd/auxiliary/LineBreakTest*.txt \\
-\t|| true
+\t|| \$(NOOP)
 \tcd test-data; \\
 \t[ -f GraphemeBreakTest.txt ] || \\
 \twget -q -N -O GraphemeBreakTest.txt \\
 \tftp://unicode.org/Public/$unicode_num/ucd/auxiliary/GraphemeBreakTest*.txt \\
-\t|| true
+\t|| \$(NOOP)
 
 preop :
 \t\$(FULLPERL) -i -pe 's/^(version:\\s+).*/\$\${1}\$(VERSION)/' META.yml
@@ -103,7 +103,16 @@ $enable_libthai = 0 if system("$pkg_config --exists libthai") >> 8;
 if ($enable_libthai) {
     $libthai = `$pkg_config --modversion libthai`;
     chomp $libthai;
-    $libthai ||= 'unknown';
+    my $ver;
+    if ($libthai and $libthai =~ m{^(\d+)\.(\d+)(?:\.(\d+))?}) {
+	$ver = $1 + $2 * 0.001 + ($3 || 0) * 0.000001;
+    }
+    unless ($ver and 0.001009 <= $ver) {
+	printf "Version of your libthai is %s.  0.1.9 or later is required.  Update it or specify --disable-libthai option.\n",
+	    ($libthai || $ver);
+	exit 1;
+    }
+
     print "Use libthai $libthai\n";
 }
 

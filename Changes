@@ -1,3 +1,16 @@
+2013.004_26  Sat Apr 27 2013
+! Makefile.PL
+  - Use $(NOOP) instead of true, for Windows.
+  - Abort make if older libthai was found.
+! Linebreak.xs
+! typemap
+  - Decode arguments without utf8 flag as ISO-8859-1: CPAN RT #84661.
+! t/17prop.t
+  - Added tests for non-utf8-flagged arguments.
+
+2013.003_11  Mon Mar 25 2013
+# Unicode 6.3.0 beta at 2013-03-02, bundled sombok-2.3.1b.
+
 2012.10  Mon Oct 01 2012
 # Unicode 6.2.0, bundled sombok-2.3.0.
 ! lib/Unicode/LineBreak/JA_JP.pod
