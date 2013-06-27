@@ -61,4 +61,8 @@ use constant {
     RIGHT_QUOTES => FORWARD_QUOTES(),
 };
 
+use constant {
+    IDEOGRAPHIC_SPACE => [ 0x3000, ],
+};
+
 1;

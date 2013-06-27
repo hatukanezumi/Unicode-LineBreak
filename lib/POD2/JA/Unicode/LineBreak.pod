@@ -2,7 +2,7 @@
 
 =head1 NAME
 
-Unicode::LineBreak::JA_JP - UAX #14 Unicode 行分割アルゴリズム
+Unicode::LineBreak~[ja] - UAX #14 Unicode 行分割アルゴリズム
 
 =head1 SYNOPSIS
 
@@ -131,7 +131,7 @@ L<Unicode::GCString/columns> を使ってほしい。
 
 L</new>、L</config> の両メソッドには以下の対を指定できる。
 桁数の算出 ([B<E>])、書記素クラスタ分節 ([B<G>])
-(L<Unicode::GCString::JA_JP> も参照)、行分割動作 ([B<L>])
+(L<Unicode::GCString|POD2::JA::Unicode::GCString> も参照)、行分割動作 ([B<L>])
 に影響するものがある。
 
 =over 4
@@ -466,7 +466,7 @@ SELF は Unicode::LineBreak オブジェクト、EVENT はサブルーチンが�
 
 B<注意>:
 文字列の引数は実際には書記素クラスタ列である。
-L<Unicode::GCString::JA_JP> 参照。
+L<Unicode::GCString|POD2::JA::Unicode::GCString> 参照。
 
 たとえば次のコードは、行末の空白を取り除いて行折りをする。
 
@@ -492,7 +492,7 @@ SELF は Unicode::LineBreak オブジェクト、STR は分割すべき Unicode 
 
 B<注意>:
 文字列の引数は実際には書記素クラスタ列である。
-L<Unicode::GCString::JA_JP> 参照。
+L<Unicode::GCString|POD2::JA::Unicode::GCString> 参照。
 
 たとえば次のコードは、若干の化学物質 (チチンのような) の名称にハイフンを挿入し、行折りできるようにする。
 
@@ -568,7 +568,7 @@ SELF は Unicode::LineBreak オブジェクト、LEN は先行する文字列の
 
 B<注意>:
 文字列の引数は実際には書記素クラスタ列である。
-L<Unicode::GCString::JA_JP> 参照。
+L<Unicode::GCString|POD2::JA::Unicode::GCString> 参照。
 
 たとえば次のコードは、行に 8 桁ごとのタブストップがあるものとして処理する。
 
@@ -681,7 +681,23 @@ U+303C ます記号。
 
 =head4 和字間隔
 
-I<未稿>.
+=over 4
+
+=item C<IDEOGRAPHIC_SPACE() =E<gt> LB_BA>
+
+U+3000 和字間隔が行頭に来ないようにする。
+これが初期の挙動である。
+
+=item C<IDEOGRAPHIC_SPACE() =E<gt> LB_ID>
+
+和字間隔が行頭に来ることがある。
+Unicode 6.2以前はこれが初期の挙動であった。
+
+=item C<IDEOGRAPHIC_SPACE() =E<gt> LB_SP>
+
+和字間隔が行頭に来ず、行末でははみ出すようにする。
+
+=back
 
 =head3 East_Asian_Width 特性
 
@@ -760,7 +776,7 @@ L<Unicode::GCString/lbc> や L<Unicode::GCString/lbcext>
 
 =head2 標準への適合性
 
-このモジュールで用いている文字の特性値は、Unicode 標準 6.2.0版による。
+このモジュールで用いている文字の特性値は、Unicode 標準 6.3.0版のベータ版による。
 
 このモジュールでは、実装水準 UAX14-C2 を実装しているつもり。
 
@@ -877,7 +893,9 @@ L<http://www.unicode.org/reports/tr29/>.
 
 =head1 SEE ALSO
 
-L<Text::LineFold::JA_JP>, L<Text::Wrap>, L<Unicode::GCString::JA_JP>.
+L<Text::LineFold|POD2::JA::Text::LineFold>,
+L<Text::Wrap>,
+L<Unicode::GCString|POD2::JA::Unicode::GCString>.
 
 =head1 AUTHOR
 

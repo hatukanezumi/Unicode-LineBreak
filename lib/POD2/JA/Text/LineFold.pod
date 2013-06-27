@@ -4,7 +4,7 @@ use utf8;
 
 =head1 NAME
 
-Text::LineFold::JA_JP - プレインテキストの行折り
+Text::LineFold~[ja] - プレインテキストの行折り
 
 =head1 SYNOPSIS
 
@@ -52,7 +52,7 @@ I<インスタンスメソッド>。
 
 Charset オプションとともに、言語/地域の文脈を決めるのに使える。
 初期値は C<"XX">。
-L<Unicode::LineBreak::JA_JP/Context> オプションも参照。
+L<Context in Unicode::LineBreak|POD2::JA::Unicode::LineBreak/Context> オプションも参照。
 
 =item Newline => STRING
 
@@ -94,7 +94,7 @@ fold()/unfold() の結果を符号化するキャラクタセット。
 
 =item Urgent
 
-L<Unicode::LineBreak::JA_JP/オプション> を参照。
+L<オプション in Unicode::LineBreak|POD2::JA::Unicode::LineBreak/オプション> を参照。
 
 =back
 
@@ -183,7 +183,8 @@ L<http://hatuka.nezumi.nu/repos/Unicode-LineBreak/>
 
 =head1 SEE ALSO
 
-L<Unicode::LineBreak::JA_JP>, L<Text::Wrap>.
+L<Unicode::LineBreak|POD2::JA::Unicode::LineBreak>,
+L<Text::Wrap>.
 
 =head1 AUTHOR
 

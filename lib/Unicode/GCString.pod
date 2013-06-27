@@ -261,6 +261,24 @@ Consult $VERSION variable.
 Development versions of this module may be found at 
 L<http://hatuka.nezumi.nu/repos/Unicode-LineBreak/>.
 
+=head2 Incompatible Changes
+
+=over 4
+
+=item Release 2013.XX.XX
+
+=over 4
+
+=item *
+
+The new() method can take non-Unicode string argument.
+In this case it will be decoded by iso-8859-1 (Latin 1) character set.
+That method of former releases would die with non-Unicode inputs.
+
+=back
+
+=back
+
 =head1 SEE ALSO
 
 [UAX #29]

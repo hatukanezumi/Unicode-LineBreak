@@ -734,7 +734,24 @@ closing quotation marks.
 
 =head4 IDEOGRAPHIC SPACE
 
-I<To be written>.
+=over 4
+
+=item C<IDEOGRAPHIC_SPACE() =E<gt> LB_BA>
+
+U+3000 IDEOGRAPHIC SPACE won't be placed at beginning of line.
+This is default behavior.
+
+=item C<IDEOGRAPHIC_SPACE() =E<gt> LB_ID>
+
+IDEOGRAPHIC SPACE can be placed at beginning of line.
+This was default behavior by Unicode 6.2 and earlier.
+
+=item C<IDEOGRAPHIC_SPACE() =E<gt> LB_SP>
+
+IDEOGRAPHIC SPACE won't be placed at beginning of line,
+and will protrude from end of line.
+
+=back
 
 =head3 East_Asian_Width Properties
 

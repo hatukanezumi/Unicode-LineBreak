@@ -4,7 +4,7 @@
       "Hatuka*nezumi - IKEDA Soji <hatuka@nezumi.nu>"
    ],
    "dynamic_config" : 1,
-   "generated_by" : "ExtUtils::MakeMaker version 6.42, CPAN::Meta::Converter version 2.120921",
+   "generated_by" : "ExtUtils::MakeMaker version 6.68, CPAN::Meta::Converter version 2.120630",
    "license" : [
       "perl_5"
    ],
@@ -13,6 +13,12 @@
       "version" : "2"
    },
    "name" : "Unicode-LineBreak",
+   "no_index" : {
+      "directory" : [
+         "t",
+         "inc"
+      ]
+   },
    "prereqs" : {
       "build" : {
          "requires" : {
@@ -20,15 +26,24 @@
             "Test::More" : "0.45"
          }
       },
+      "configure" : {
+         "requires" : {
+            "ExtUtils::MakeMaker" : "6.26"
+         }
+      },
       "runtime" : {
          "requires" : {
             "Encode" : "1.98",
-            "MIME::Charset" : "v1.6.2"
+            "MIME::Charset" : "v1.6.2",
+            "perl" : "5.008"
          }
       }
    },
-   "release_status" : "stable",
+   "release_status" : "testing",
    "resources" : {
+      "license" : [
+         "http://dev.perl.org/licenses/"
+      ],
       "repository" : {
          "url" : "http://hatuka.nezumi.nu/repos/Unicode-LineBreak/"
       }

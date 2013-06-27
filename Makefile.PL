@@ -5,12 +5,12 @@ package MY;
 use ExtUtils::MakeMaker;
 use Config;
 
-my $csubdir = 'sombok';
+my $csubdir                = 'sombok';
 my $sombok_atleast_version = '2.3.0';
-my $sombok_max_version = '2.99.99';
-my $pkg_config = $ENV{'PKG_CONFIG'} || 'pkg-config';
-my $enable_libthai = 1;
-my $bundled_sombok = 0;
+my $sombok_max_version     = '2.99.99';
+my $pkg_config             = $ENV{'PKG_CONFIG'} || 'pkg-config';
+my $enable_libthai         = 1;
+my $bundled_sombok         = 0;
 my $unicode;
 my $unicode_num;
 my $copy_unidata = 0;
@@ -26,6 +26,7 @@ sub clean {
 
 sub test {
     my $inherited = shift->SUPER::test(@_);
+
     # Get UNIDATA before testing.
     $inherited =~ s/^(test\s*:+\s*)/${1}copy_unidata /m
 	if $copy_unidata;
@@ -48,6 +49,13 @@ sub postamble {
 
     my $cd_make = $self->cd($csubdir, '$(MAKE) all');
 
+    my $make_json = $self->cd(q{$(DISTVNAME)},
+	q{$(FULLPERL) -MCPAN::Meta -MCPAN::Meta::Converter -e 'CPAN::Meta->new(CPAN::Meta::Converter->new(CPAN::Meta->load_file("META.yml"))->convert(version=>"2"))->save("META.json")'}
+    );
+    my $make_rpm_spec = $self->cd(q{$(DISTVNAME)},
+	q{$(FULLPERL) -i -pe 's/^(%define version\s+).*/$${1}$(VERSION)/; s/^(%define sombok_version\s+).*/$${1}}
+	    . $sombok_atleast_version . q{/' perl-Unicode-LineBreak.spec});
+
     return <<EOF;
 \$(MYEXTLIB): $csubdir\$(DIRFILESEP)Makefile
 \t$cd_make
@@ -65,15 +73,8 @@ copy_unidata :
 \t|| \$(NOOP)
 
 preop :
-\t\$(FULLPERL) -i -pe 's/^(version:\\s+).*/\$\${1}\$(VERSION)/' META.yml
-\t\$(FULLPERL) -MJSON::XS -e '\$\$_ = decode_json join "", <>;' \\
-\t-e '\$\$_->{"version"} = "\$(VERSION)";' \\
-\t-e 'print JSON::XS->new->canonical(1)->pretty(1)->encode(\$\$_)' \\
-\tMETA.json > META.json.new
-\t\$(MV) META.json.new META.json
-\t\$(FULLPERL) -i -pe 's/^(%define version\\s+).*/\$\${1}\$(VERSION)/;' \\
-\t-e 's/^(%define sombok_version\\s+).*/\$\${1}$sombok_atleast_version/' \\
-\tperl-Unicode-LineBreak.spec
+\t$make_json
+\t$make_rpm_spec
 
 EOF
 }
@@ -108,7 +109,8 @@ if ($enable_libthai) {
 	$ver = $1 + $2 * 0.001 + ($3 || 0) * 0.000001;
     }
     unless ($ver and 0.001009 <= $ver) {
-	printf "Version of your libthai is %s.  0.1.9 or later is required.  Update it or specify --disable-libthai option.\n",
+	printf
+	    "Version of your libthai is %s.  0.1.9 or later is required.  Update it or specify --disable-libthai option.\n",
 	    ($libthai || $ver);
 	exit 1;
     }
@@ -168,7 +170,7 @@ if ($bundled_sombok) {
     my $myextlib;
     if ($^O eq 'MSWin32') {
 	$myextlib = 'sombok\\libsombok$(LIB_EXT)';
-    } elsif ($^O eq 'darwin' && $Config{'ldflags'} =~/-arch ppc64/) {
+    } elsif ($^O eq 'darwin' && $Config{'ldflags'} =~ /-arch ppc64/) {
 	$myextlib = '-all_load sombok/libsombok$(LIB_EXT)';
     } else {
 	$myextlib = 'sombok/libsombok$(LIB_EXT)';
@@ -176,41 +178,48 @@ if ($bundled_sombok) {
 
     $opts{'MYEXTLIB'} = $myextlib;
     $opts{'INC'} .= " -I$csubdir\$(DIRFILESEP)include";
-    $opts{'depend'} = { '$(OBJECT)' => '$(MYEXTLIB)' };
+    $opts{'depend'} = {'$(OBJECT)' => '$(MYEXTLIB)'};
 } else {
     $sombok = `$pkg_config --modversion sombok`;
     chomp $sombok;
     print "Use sombok $sombok\n";
-    $opts{'LIBS'} .= ' '.`$pkg_config --libs sombok`;
-    $opts{'INC'} .= ' '.`$pkg_config --cflags sombok`; 
+    $opts{'LIBS'} .= ' ' . `$pkg_config --libs sombok`;
+    $opts{'INC'}  .= ' ' . `$pkg_config --cflags sombok`;
 }
 
 if ($enable_libthai) {
-    $opts{'LIBS'} .= ' '.`$pkg_config --libs libthai`;
-    $opts{'INC'} .= ' '.`$pkg_config --cflags libthai`;
+    $opts{'LIBS'} .= ' ' . `$pkg_config --libs libthai`;
+    $opts{'INC'}  .= ' ' . `$pkg_config --cflags libthai`;
 }
 
 $opts{'LIBS'} =~ s/\s+/ /g;
-$opts{'INC'} =~ s/\s+/ /g;
+$opts{'INC'}  =~ s/\s+/ /g;
 
-$copy_unidata = (! -e "test-data/LineBreakTest.txt" ||
-                 ! -e "test-data/GraphemeBreakTest.txt");
+$copy_unidata = (!-e "test-data/LineBreakTest.txt" ||
+	!-e "test-data/GraphemeBreakTest.txt");
 
 WriteMakefile(
-	'NO_META'	=> 1,
-	'NAME'		=> 'Unicode::LineBreak',
-	'ABSTRACT_FROM'	=> 'lib/Unicode/LineBreak.pod',
-	'VERSION_FROM'	=> 'lib/Unicode/LineBreak.pm',
-	'AUTHOR'	=> q{Hatuka*nezumi - IKEDA Soji <hatuka@nezumi.nu>},
-	'LICENSE'	=> 'perl',
-	'PREREQ_PM'	=> {
-	    'Encode'		=> 1.98,
-	    'MIME::Charset'	=> '1.006.2',
-	    'ExtUtils::MakeMaker'   => '6.26',
-	    'Test::More'	=> '0.45',
+    'NAME'               => 'Unicode::LineBreak',
+    'ABSTRACT_FROM'      => 'lib/Unicode/LineBreak.pod',
+    'VERSION_FROM'       => 'lib/Unicode/LineBreak.pm',
+    'AUTHOR'             => q{Hatuka*nezumi - IKEDA Soji <hatuka@nezumi.nu>},
+    'LICENSE'            => 'perl',
+    'MIN_PERL_VERSION'   => 5.008,
+    'CONFIGURE_REQUIRES' => {'ExtUtils::MakeMaker' => '6.26',},
+    'BUILD_REQUIRES'     => {
+	'ExtUtils::MakeMaker' => '6.26',
+	'Test::More'          => '0.45',
+    },
+    'PREREQ_PM' => {
+	'Encode'        => 1.98,
+	'MIME::Charset' => '1.006.2',
+    },
+    'META_MERGE' => {
+	'resources' => {
+	    'license'    => 'http://dev.perl.org/licenses/',
+	    'repository' => 'http://hatuka.nezumi.nu/repos/Unicode-LineBreak/',
 	},
-	%opts,
-	'dist'		=> {
-	    'PREOP'		=> "\$(MAKE) preop",
-	},
+    },
+    %opts,
+    'dist' => {'PREOP' => "\$(MAKE) preop",},
 );
