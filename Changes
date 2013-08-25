@@ -1,4 +1,4 @@
-2013.0XX_XX  Xxx Xxx XX 2013
+2013.008_06  Sun Aug 25 2013
 + lib/POD2/JA/Text/LineFold.pod
 + lib/POD2/JA/Unicode/GCString.pod
 + lib/POD2/JA/Unicode/LineBreak.pod
@@ -6,13 +6,20 @@
 - lib/Unicode/GCString/JA_JP.pod
 - lib/Unicode/LineBreak/JA_JP.pod
   - Moved Japanese PODs to suit POD2 feature.
+! lib/POD2/JA/Unicode/GCString.pod
+! lib/Unicode/GCString.pod
+  - Commented-out "Methods planned to be deprecated".
 ! lib/POD2/JA/Unicode/LineBreak.pod
 ! lib/Unicode/LineBreak.pod
   - Addition about IDEOGRAPHIC SPACE.
+  - Added description about predefined property values for currency symbols.
+  - Commented-out "Methods Planned to be Deprecated" and "Obsoleted Options".
 ! lib/Unicode/LineBreak/Constants.pm
   - A new constant IDEOGRAPHIC_SPACE.
 ! Makefile.PL
   - Now "make dist" generates META files.
++ t/18currency.t
+  - On reserved codepoints for currency symbols.
 
 2013.004_26  Sat Apr 27 2013
 ! Makefile.PL

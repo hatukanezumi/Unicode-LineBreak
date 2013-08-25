@@ -109,6 +109,9 @@ OFFSET と LENGTH は書記素クラスタで数える。
 REPLACEMENT を指定すると、部分文字列をそれで置き換える。
 REPLACEMENT は Unicode文字列でもよい。
 
+Note:
+このメソッドは組み込み関数 substr() と異なり、左辺値を返すことはない。
+
 =back
 
 =head3 書記素クラスタの列としての操作
@@ -149,6 +152,8 @@ OFFSET を指定した場合は、次の位置をそれにする。
 書記素クラスタ文字列の次の位置を返す。
 
 =back
+
+=begin comment
 
 =head4 廃止予定のメソッド
 
@@ -196,6 +201,8 @@ B<注>:
 lbcext() を使ってほしい。
 
 =back
+
+=end comment
 
 =head3 その他
 
@@ -275,8 +282,8 @@ new() メソッドは非Unicode文字列を引数に取れるようになった�
 =head1 SEE ALSO
 
 [UAX #29]
-Mark Davis (2009-2012).
-I<Unicode Standard Annex #29: Unicode Text Segmentation>, Revisions 15-21.
+Mark Davis (2009-2013).
+I<Unicode Standard Annex #29: Unicode Text Segmentation>, Revisions 15-22.
 L<http://www.unicode.org/reports/tr29/>.
 
 =head1 AUTHOR
@@ -285,7 +292,7 @@ Hatuka*nezumi - IKEDA Soji <hatuka(at)nezumi.nu>
 
 =head1 COPYRIGHT
 
-Copyright (C) 2009-2012 Hatuka*nezumi - IKEDA Soji.
+Copyright (C) 2009-2013 Hatuka*nezumi - IKEDA Soji.
 
 This program is free software; you can redistribute it and/or modify it
 under the same terms as Perl itself.

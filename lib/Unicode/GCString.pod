@@ -115,6 +115,9 @@ OFFSET and LENGTH are based on grapheme clusters.
 If REPLACEMENT is specified, substring is replaced by it.
 REPLACEMENT may be Unicode string.
 
+Note:
+This method cannot return the lvalue, unlike built-in substr().
+
 =back
 
 =head3 Operations as Sequence of Grapheme Clusters
@@ -156,7 +159,9 @@ Returns next position of grapheme cluster string.
 
 =back
 
-=head4 Methods palanned to be deprecated
+=begin comment
+
+=head4 Methods planned to be deprecated
 
 =over 4
 
@@ -202,6 +207,8 @@ B<Note>:
 Use lbcext().
 
 =back
+
+=end comment
 
 =head3 Miscelaneous
 
@@ -282,8 +289,8 @@ That method of former releases would die with non-Unicode inputs.
 =head1 SEE ALSO
 
 [UAX #29]
-Mark Davis (2009-2012).
-I<Unicode Standard Annex #29: Unicode Text Segmentation>, Revisions 15-21.
+Mark Davis (2009-2013).
+I<Unicode Standard Annex #29: Unicode Text Segmentation>, Revisions 15-22.
 L<http://www.unicode.org/reports/tr29/>.
 
 =head1 AUTHOR
@@ -292,7 +299,7 @@ Hatuka*nezumi - IKEDA Soji <hatuka(at)nezumi.nu>
 
 =head1 COPYRIGHT
 
-Copyright (C) 2009-2012 Hatuka*nezumi - IKEDA Soji.
+Copyright (C) 2009-2013 Hatuka*nezumi - IKEDA Soji.
 
 This program is free software; you can redistribute it and/or modify it
 under the same terms as Perl itself.

@@ -101,6 +101,8 @@ I<関数>。
 
 =back
 
+=begin comment
+
 =head3 廃止予定のメソッド
 
 =over 4
@@ -126,6 +128,8 @@ B<注>:
 L<Unicode::GCString/columns> を使ってほしい。
 
 =back
+
+=end comment
 
 =head2 オプション
 
@@ -368,6 +372,8 @@ B<注>:
 
 =back
 
+=begin comment
+
 =head3 旧式なオプション
 
 =over 4
@@ -385,6 +391,8 @@ L</LBClass> の旧式な形式。
 L</Prep> の旧式な形式。
 
 =back
+
+=end comment
 
 =head2 定数
 
@@ -820,6 +828,7 @@ SG や XX に分類される文字は AL に解決する。
 
     範囲               | UAX #14    | UAX #11    | 説明
     -------------------------------------------------------------
+    U+20A0..U+20CF     | PR [*1}    | N [*2]     | 通貨記号
     U+3400..U+4DBF     | ID         | W          | CJK漢字
     U+4E00..U+9FFF     | ID         | W          | CJK漢字
     U+D800..U+DFFF     | AL (SG)    | N          | サロゲート
@@ -832,6 +841,10 @@ SG や XX に分類される文字は AL に解決する。
     その他未割り当て   | AL (XX)    | N          | 未割り当て、
                        |            |            | 予約、非文字
     -------------------------------------------------------------
+    [*1] U+20A7 ペセタ記号 (PO)、U+20B6 トゥール・リーヴル記号 
+      (PO) を除く。
+    [*2] U+20A9 ウォン記号 (H)、U+20AC ユーロ記号 (F か N (A)) を
+      除く。
 
 =item *
 
@@ -879,14 +892,14 @@ L<http://unicode.org/reports/tr11/>.
 
 =item [UAX #14]
 
-A. Freytag and A. Heninger (2008-2012).
-I<Unicode Standard Annex #14: Unicode Line Breaking Algorithm>, Revisions 22-30.
+A. Freytag and A. Heninger (2008-2013).
+I<Unicode Standard Annex #14: Unicode Line Breaking Algorithm>, Revisions 22-31.
 L<http://unicode.org/reports/tr14/>.
 
 =item [UAX #29]
 
-Mark Davis (2009-2012).
-I<Unicode Standard Annex #29: Unicode Text Segmentation>, Revisions 15-21.
+Mark Davis (2009-2013).
+I<Unicode Standard Annex #29: Unicode Text Segmentation>, Revisions 15-22.
 L<http://www.unicode.org/reports/tr29/>.
 
 =back

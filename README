@@ -52,9 +52,9 @@ more details read following POD documentations:
 
 For japonophones, PODs in Japanese language are also included:
 
-    Text::LineFold::JA_JP - プレインテキストの行折り
-    Unicode::GCString::JA_JP - UAX #29 書記素クラスタの列としての文字列
-    Unicode::LineBreak::JA_JP - UAX #14 Unicode 行分割アルゴリズム
+    POD2::JA::Text::LineFold - プレインテキストの行折り
+    POD2::JA::Unicode::GCString - UAX #29 書記素クラスタの列としての文字列
+    POD2::JA::Unicode::LineBreak - UAX #14 Unicode 行分割アルゴリズム
 
 For Other Language
 ==================

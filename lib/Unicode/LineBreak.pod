@@ -111,6 +111,8 @@ language LANGUAGE.
 
 =back
 
+=begin comment
+
 =head3 Methods Planned to be Deprecated
 
 =over 4
@@ -138,6 +140,8 @@ B<Note>:
 Use L<Unicode::GCString/columns>.
 
 =back
+
+=end comment
 
 =head2 Options
 
@@ -390,6 +394,8 @@ feature.
 
 =back
 
+=begin comment
+
 =head3 Obsoleted Options
 
 =over 4
@@ -407,6 +413,8 @@ Obsoleted equivalent to L</LBClass>.
 Obsoleted equivalent to L</Prep>.
 
 =back
+
+=end comment
 
 =head2 Constants
 
@@ -888,6 +896,7 @@ if they have not been assigned any characers.
 
     Ranges             | UAX #14    | UAX #11    | Description
     -------------------------------------------------------------
+    U+20A0..U+20CF     | PR [*1]    | N [*2]     | Currency symbols
     U+3400..U+4DBF     | ID         | W          | CJK ideographs
     U+4E00..U+9FFF     | ID         | W          | CJK ideographs
     U+D800..U+DFFF     | AL (SG)    | N          | Surrogates
@@ -901,6 +910,10 @@ if they have not been assigned any characers.
                        |            |            | reserved or
                        |            |            | noncharacters
     -------------------------------------------------------------
+    [*1] Except U+20A7 PESETA SIGN (PO) and
+      U+20B6 LIVRE TOURNOIS SIGN (PO).
+    [*2] Except U+20A9 WON SIGN (H) and U+20AC EURO SIGN
+      (F or N (A)).
 
 =item *
 
@@ -949,14 +962,14 @@ L<http://unicode.org/reports/tr11/>.
 
 =item [UAX #14]
 
-A. Freytag and A. Heninger (2008-2012).
-I<Unicode Standard Annex #14: Unicode Line Breaking Algorithm>, Revisions 22-30.
+A. Freytag and A. Heninger (2008-2013).
+I<Unicode Standard Annex #14: Unicode Line Breaking Algorithm>, Revisions 22-31.
 L<http://unicode.org/reports/tr14/>.
 
 =item [UAX #29]
 
-Mark Davis (2009-2012).
-I<Unicode Standard Annex #29: Unicode Text Segmentation>, Revisions 15-21.
+Mark Davis (2009-2013).
+I<Unicode Standard Annex #29: Unicode Text Segmentation>, Revisions 15-22.
 L<http://www.unicode.org/reports/tr29/>.
 
 =back
