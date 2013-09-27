@@ -847,9 +847,6 @@ Use L<Unicode::GCString/lbc> or L<Unicode::GCString/lbcext>.
 Character properties this module is based on are defined by
 I<beta release of> Unicode Standard version 6.3.0.
 
-B<NOTE: Current release of this module is development release.
-It should not be applied to production use>.
-
 This module is intended to implement UAX14-C2.
 
 =head1 IMPLEMENTATION NOTES

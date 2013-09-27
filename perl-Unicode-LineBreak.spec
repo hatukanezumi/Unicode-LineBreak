@@ -1,7 +1,7 @@
 %define module  Unicode-LineBreak
-%define version 2013.004_26
+%define version 2013.009_26
 %define release 1%{?dist}
-%define sombok_version 2.3.0
+%define sombok_version 2.3.1
 %define sombok_max_version 2.99.99
 
 Name:       perl-%{module}
@@ -55,6 +55,12 @@ make install DESTDIR=%buildroot
 rm -f %{buildroot}%{perl_archlib}/perllocal.pod
 rm -f %{buildroot}%{perl_vendorarch}/auto/Unicode/LineBreak/.packlist
 
+mkdir -p %{buildroot}%{_mandir}/ja/man3
+for mod in Text::LineFold Unicode::GCString Unicode::LineBreak; do
+  mv %{buildroot}%{_mandir}/man3/POD2::JA::$mod.3pm \
+     %{buildroot}%{_mandir}/ja/man3/$mod.3pm
+done
+
 %clean
 rm -rf %buildroot
 
@@ -62,6 +68,7 @@ rm -rf %buildroot
 %defattr(-,root,root)
 %doc ARTISTIC Changes* GPL README* Todo*
 %{_mandir}/man3/*
+%{_mandir}/*/man3/*
 %{perl_vendorarch}/*
 
 

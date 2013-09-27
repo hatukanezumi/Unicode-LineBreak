@@ -45,14 +45,14 @@ I<インスタンスメソッド>。
 =item Charset => CHARSET
 
 入力文字列を符号化しているキャラクタセット。
-文字列または L<MIME::Charset|POD2::JA::MIME::Charset> オブジェクト。
+文字列または L<MIME::Charset~[ja]> オブジェクト。
 初期値は C<"UTF-8">。
 
 =item Language => LANGUAGE
 
 Charset オプションとともに、言語/地域の文脈を決めるのに使える。
 初期値は C<"XX">。
-L<Context in Unicode::LineBreak|POD2::JA::Unicode::LineBreak/Context> オプションも参照。
+L<Unicode::LineBreak~[ja]/Context> オプションも参照。
 
 =item Newline => STRING
 
@@ -62,7 +62,7 @@ L<Context in Unicode::LineBreak|POD2::JA::Unicode::LineBreak/Context> オプシ�
 =item OutputCharset => CHARSET
 
 fold()/unfold() の結果を符号化するキャラクタセット。
-文字列または L<MIME::Charset|POD2::JA::MIME::Charset> オブジェクト。
+文字列または L<MIME::Charset~[ja]> オブジェクト。
 特殊値 C<"_UNICODE_"> を指定すると、結果は Unicode 文字列となる。
 初期値は Charset オプションの値。
 
@@ -94,7 +94,7 @@ fold()/unfold() の結果を符号化するキャラクタセット。
 
 =item Urgent
 
-L<オプション in Unicode::LineBreak|POD2::JA::Unicode::LineBreak/オプション> を参照。
+L<Unicode::LineBreak~[ja]/オプション> を参照。
 
 =back
 
@@ -183,7 +183,7 @@ L<http://hatuka.nezumi.nu/repos/Unicode-LineBreak/>
 
 =head1 SEE ALSO
 
-L<Unicode::LineBreak|POD2::JA::Unicode::LineBreak>,
+L<Unicode::LineBreak~[ja]>,
 L<Text::Wrap>.
 
 =head1 AUTHOR

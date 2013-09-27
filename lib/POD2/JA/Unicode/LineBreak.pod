@@ -135,7 +135,7 @@ L<Unicode::GCString/columns> を使ってほしい。
 
 L</new>、L</config> の両メソッドには以下の対を指定できる。
 桁数の算出 ([B<E>])、書記素クラスタ分節 ([B<G>])
-(L<Unicode::GCString|POD2::JA::Unicode::GCString> も参照)、行分割動作 ([B<L>])
+(L<Unicode::GCString~[ja]> も参照)、行分割動作 ([B<L>])
 に影響するものがある。
 
 =over 4
@@ -474,7 +474,7 @@ SELF は Unicode::LineBreak オブジェクト、EVENT はサブルーチンが�
 
 B<注意>:
 文字列の引数は実際には書記素クラスタ列である。
-L<Unicode::GCString|POD2::JA::Unicode::GCString> 参照。
+L<Unicode::GCString~[ja]> 参照。
 
 たとえば次のコードは、行末の空白を取り除いて行折りをする。
 
@@ -500,7 +500,7 @@ SELF は Unicode::LineBreak オブジェクト、STR は分割すべき Unicode 
 
 B<注意>:
 文字列の引数は実際には書記素クラスタ列である。
-L<Unicode::GCString|POD2::JA::Unicode::GCString> 参照。
+L<Unicode::GCString~[ja]> 参照。
 
 たとえば次のコードは、若干の化学物質 (チチンのような) の名称にハイフンを挿入し、行折りできるようにする。
 
@@ -576,7 +576,7 @@ SELF は Unicode::LineBreak オブジェクト、LEN は先行する文字列の
 
 B<注意>:
 文字列の引数は実際には書記素クラスタ列である。
-L<Unicode::GCString|POD2::JA::Unicode::GCString> 参照。
+L<Unicode::GCString~[ja]> 参照。
 
 たとえば次のコードは、行に 8 桁ごとのタブストップがあるものとして処理する。
 
@@ -828,7 +828,7 @@ SG や XX に分類される文字は AL に解決する。
 
     範囲               | UAX #14    | UAX #11    | 説明
     -------------------------------------------------------------
-    U+20A0..U+20CF     | PR [*1}    | N [*2]     | 通貨記号
+    U+20A0..U+20CF     | PR [*1]    | N [*2]     | 通貨記号
     U+3400..U+4DBF     | ID         | W          | CJK漢字
     U+4E00..U+9FFF     | ID         | W          | CJK漢字
     U+D800..U+DFFF     | AL (SG)    | N          | サロゲート
@@ -906,9 +906,9 @@ L<http://www.unicode.org/reports/tr29/>.
 
 =head1 SEE ALSO
 
-L<Text::LineFold|POD2::JA::Text::LineFold>,
+L<Text::LineFold~[ja]>,
 L<Text::Wrap>,
-L<Unicode::GCString|POD2::JA::Unicode::GCString>.
+L<Unicode::GCString~[ja]>.
 
 =head1 AUTHOR
 

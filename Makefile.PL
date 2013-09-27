@@ -6,10 +6,12 @@ use ExtUtils::MakeMaker;
 use Config;
 
 my $csubdir                = 'sombok';
-my $sombok_atleast_version = '2.3.0';
+my $sombok_atleast_version = '2.3.1';
 my $sombok_max_version     = '2.99.99';
 my $pkg_config             = $ENV{'PKG_CONFIG'} || 'pkg-config';
 my $enable_libthai         = 1;
+my $libthai_inc            = '';
+my $libthai_libs           = '';
 my $bundled_sombok         = 0;
 my $unicode;
 my $unicode_num;
@@ -116,6 +118,11 @@ if ($enable_libthai) {
     }
 
     print "Use libthai $libthai\n";
+
+    $libthai_libs = `$pkg_config --libs libthai`;
+    chomp $libthai_libs;
+    $libthai_inc = `$pkg_config --cflags libthai`;
+    chomp $libthai_inc;
 }
 
 if (system("$pkg_config --atleast-version=$sombok_atleast_version sombok")
@@ -138,6 +145,7 @@ if ($bundled_sombok) {
     open my $fp, '<', 'Makefile.PL.sombok' or die $!;
     my $h = join '', <$fp>;
     close $fp;
+    $h =~ s/\@LIBTHAI_INC\@/$libthai_inc/g;
     $h =~ s/\@UNICODE_VERSION\@/$unicode/g;
     open my $ofp, '>', "$csubdir/Makefile.PL" or die $!;
     print $ofp $h;
@@ -188,8 +196,8 @@ if ($bundled_sombok) {
 }
 
 if ($enable_libthai) {
-    $opts{'LIBS'} .= ' ' . `$pkg_config --libs libthai`;
-    $opts{'INC'}  .= ' ' . `$pkg_config --cflags libthai`;
+    $opts{'LIBS'} .= ' ' . $libthai_libs;
+    $opts{'INC'}  .= ' ' . $libthai_inc;
 }
 
 $opts{'LIBS'} =~ s/\s+/ /g;

@@ -29,9 +29,9 @@ I<コンストラクタ>。
 Unicode文字列 STRING から新たに書記素クラスタ文字列
 (Unicode::GCString オブジェクト) を作る。
 
-KEY => VALUE の対については L<オプション in Unicode::LineBreak|POD2::JA::Unicode::LineBreak/オプション>を参照。
+KEY => VALUE の対については L<Unicode::LineBreak~[ja]/オプション>を参照。
 第二の形式では、
-L<Unicode::LineBreak> オブジェクト LINEBREAK で分節の仕様を決定する。
+L<Unicode::LineBreak~[ja]> オブジェクト LINEBREAK で分節の仕様を決定する。
 
 B<注>:
 最初の形式はリリース 2012.10 で導入された。
@@ -57,7 +57,7 @@ I<インスタンスメソッド>。
 
 I<インスタンスメソッド>。
 組み込みの文字データベースで決定される書記素クラスタ文字列の桁数を返す。
-詳しくは L<DESCRIPTION in Unicode::LineBreak|POD2::JA::Unicode::LineBreak/DESCRIPTION> を参照。
+詳しくは L<Unicode::LineBreak~[ja]/DESCRIPTION> を参照。
 
 =item length
 
@@ -184,7 +184,7 @@ OFFSET を指定しないと、次の位置の書記素クラスタのフラグ�
 
 I<インスタンスメソッド>。
 OFFSET番めの書記素クラスタの最初の文字の行分割クラス
-(L<Unicode::LineBreak|POD2::JA::Unicode::LineBreak> 参照) を返す。
+(L<Unicode::LineBreak~[ja]> 参照) を返す。
 OFFSET を指定しないと、次の位置の書記素クラスタの情報を返す。
 
 B<注>:
@@ -212,13 +212,13 @@ lbcext() を使ってほしい。
 
 I<インスタンスメソッド>。
 最初の書記素クラスタの最初の文字の行分割クラス
-(L<Unicode::LineBreak|POD2::JA::Unicode::LineBreak> 参照) を返す。
+(L<Unicode::LineBreak~[ja]> 参照) を返す。
 
 =item lbcext
 
 I<インスタンスメソッド>。
 最後の書記素クラスタの最後の書記素エキステンダの行分割クラス
-(L<Unicode::LineBreak|POD2::JA::Unicode::LineBreak> 参照) を返す。
+(L<Unicode::LineBreak~[ja]> 参照) を返す。
 書記素エキステンダがないか、またはクラスが CM の場合は、
 最後の書記素基底の行分割クラスを返す。
 

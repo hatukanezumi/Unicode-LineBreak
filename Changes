@@ -1,3 +1,11 @@
+2013.XX  Xxx Xxx XX 2013
+# Unicode 6.3.0, bundled sombok-2.3.1.
+! Makefile.PL
+! Makefile.PL.sombok
+  - Fed include path of libthai to sombok/Makefile.PL.
+! perl-Unicode-LineBreak.spec
+  - mv POD2::JA manpages into %{_mandir}/ja/.
+
 2013.008_06  Sun Aug 25 2013
 + lib/POD2/JA/Text/LineFold.pod
 + lib/POD2/JA/Unicode/GCString.pod

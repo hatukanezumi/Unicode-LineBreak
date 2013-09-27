@@ -1,3 +1,6 @@
+#-*- perl -*-
+#-*- coding: us-ascii -*-
+
 use ExtUtils::MakeMaker;
 use Cwd;
 
@@ -9,7 +12,7 @@ my $pwd = cwd();
 WriteMakefile(
     NAME      => 'sombok', # (doesn't matter what the name is here) oh yes it does
     DEFINE    => $define,
-    INC       => "\"-I\$(PERL_INC)\" \"-I$pwd\$(DIRFILESEP)include\"", # force PERL_INC dir ahead of system -I's
+    INC       => "\"-I\$(PERL_INC)\" \"-I$pwd\$(DIRFILESEP)include\" @LIBTHAI_INC@", # force PERL_INC dir ahead of system -I's
     SKIP      => [qw(dynamic dynamic_lib dlsyms)],
     OBJECT    => '$(O_FILES)',
     clean     => {'FILES' => 'libsombok$(LIB_EXT)'},

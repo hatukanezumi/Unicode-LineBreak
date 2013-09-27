@@ -1,7 +1,7 @@
 # -*- perl -*-
 # -*- coding: utf-8 -*-
 #
-# 00GraphemeBreakTest.txt - Test suite provided by Unicode Consortium.
+# 00GraphemeBreakTest.t - Test suite provided by Unicode Consortium.
 #
 # - Passed by GraphemeBreakTest-6.1.0.txt (2011-12-07, 17:54:39 UTC), except
 #   50 surrogate cases.

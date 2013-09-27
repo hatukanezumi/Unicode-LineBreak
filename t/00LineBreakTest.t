@@ -1,7 +1,7 @@
 # -*- perl -*-
 # -*- coding: utf-8 -*-
 #
-# 00LineBreakTest.txt - Test suite provided by Unicode Consortium.
+# 00LineBreakTest.t - Test suite provided by Unicode Consortium.
 #
 # - Passed by LineBreakTest-6.0.0.txt (2010-08-30, 21:08:43 UTC).
 # - Passed by LineBreakTest-6.1.0d12.txt (2011-09-16, 22:24:58 UTC).
