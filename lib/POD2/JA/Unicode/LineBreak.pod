@@ -784,7 +784,7 @@ L<Unicode::GCString/lbc> や L<Unicode::GCString/lbcext>
 
 =head2 標準への適合性
 
-このモジュールで用いている文字の特性値は、Unicode 標準 6.3.0版のベータ版による。
+このモジュールで用いている文字の特性値は、Unicode 標準 6.3.0版による。
 
 このモジュールでは、実装水準 UAX14-C2 を実装しているつもり。
 

@@ -845,7 +845,7 @@ Use L<Unicode::GCString/lbc> or L<Unicode::GCString/lbcext>.
 =head2 Conformance to Standards
 
 Character properties this module is based on are defined by
-I<beta release of> Unicode Standard version 6.3.0.
+Unicode Standard version 6.3.0.
 
 This module is intended to implement UAX14-C2.
 
