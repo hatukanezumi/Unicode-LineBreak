@@ -289,8 +289,8 @@ That method of former releases would die with non-Unicode inputs.
 =head1 SEE ALSO
 
 [UAX #29]
-Mark Davis (2009-2013).
-I<Unicode Standard Annex #29: Unicode Text Segmentation>, Revisions 15-22.
+Mark Davis (ed.) (2009-2013).
+I<Unicode Standard Annex #29: Unicode Text Segmentation>, Revisions 15-23.
 L<http://www.unicode.org/reports/tr29/>.
 
 =head1 AUTHOR

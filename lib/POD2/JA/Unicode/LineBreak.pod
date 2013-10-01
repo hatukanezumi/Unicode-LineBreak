@@ -886,20 +886,20 @@ L<http://web.archive.org/web/people.debian.org/~kubota/unicode-symbols-width2.ht
 
 =item [UAX #11]
 
-A. Freytag (2008-2009).
+A. Freytag (ed.) (2008-2009).
 I<Unicode Standard Annex #11: East Asian Width>, Revisions 17-19.
 L<http://unicode.org/reports/tr11/>.
 
 =item [UAX #14]
 
-A. Freytag and A. Heninger (2008-2013).
-I<Unicode Standard Annex #14: Unicode Line Breaking Algorithm>, Revisions 22-31.
+A. Freytag and A. Heninger (eds.) (2008-2013).
+I<Unicode Standard Annex #14: Unicode Line Breaking Algorithm>, Revisions 22-32.
 L<http://unicode.org/reports/tr14/>.
 
 =item [UAX #29]
 
-Mark Davis (2009-2013).
-I<Unicode Standard Annex #29: Unicode Text Segmentation>, Revisions 15-22.
+Mark Davis (ed.) (2009-2013).
+I<Unicode Standard Annex #29: Unicode Text Segmentation>, Revisions 15-23.
 L<http://www.unicode.org/reports/tr29/>.
 
 =back
