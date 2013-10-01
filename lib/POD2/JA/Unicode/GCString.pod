@@ -265,7 +265,7 @@ L<http://hatuka.nezumi.nu/repos/Unicode-LineBreak/>
 
 =over 4
 
-=item 2013.XX.XX
+=item 2013.10
 
 =over 4
 

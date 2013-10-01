@@ -272,7 +272,7 @@ L<http://hatuka.nezumi.nu/repos/Unicode-LineBreak/>.
 
 =over 4
 
-=item Release 2013.XX.XX
+=item Release 2013.10
 
 =over 4
 
