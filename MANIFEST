@@ -72,6 +72,7 @@ t/14sea_al.t
 t/15array.t
 t/16regex.t
 t/17prop.t
+t/18currency.t
 t/lb.pl
 t/lf.pl
 t/pod.t
