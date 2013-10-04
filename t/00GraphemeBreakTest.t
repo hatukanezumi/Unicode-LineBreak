@@ -40,7 +40,7 @@ BEGIN {
 	    plan tests => $tests;
 	    diag $desc;
 	} else {
-	    plan skip_all => 'test-data/GraphemBreakTest.txt is empty.';
+	    plan skip_all => 'test-data/GraphemeBreakTest.txt is empty.';
 	}
     } else {
 	plan skip_all => 'test-data/GraphemeBreakTest.txt found at '.
