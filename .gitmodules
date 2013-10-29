@@ -1,0 +1,6 @@
+[submodule "test-data"]
+	path = test-data
+	url = https://github.com/hatukanezumi/sombok-test-data
+[submodule "sombok"]
+	path = sombok
+	url = https://github.com/hatukanezumi/sombok.git
