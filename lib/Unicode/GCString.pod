@@ -265,9 +265,6 @@ boundaries.  Tailoring mechanism has not been supported yet.
 
 Consult $VERSION variable.
 
-Development versions of this module may be found at 
-L<http://hatuka.nezumi.nu/repos/Unicode-LineBreak/>.
-
 =head2 Incompatible Changes
 
 =over 4

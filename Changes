@@ -1,3 +1,18 @@
+2013.11  Thu Nov 21 2013
+# No new features.
+- debian/
+  - Removed becuase it was not maintained.
+! lib/Unicode/GCString.pm
+  - I forgot to bump up version to 2013.10.
+! lib/POD2/JA/Text/LineFold.pod
+! lib/POD2/JA/Unicode/GCString.pod
+! lib/POD2/JA/Unicode/LineBreak.pod
+! lib/Text/LineFold.pm
+! lib/Unicode/GCString.pod
+! lib/Unicode/LineBreak.pod
+! Makefile.PL
+  - Repository has been moved to GitHub.
+
 2013.10  Fri Oct 04 2013
 # Unicode 6.3.0, bundled sombok-2.3.1.
 ! Makefile.PL

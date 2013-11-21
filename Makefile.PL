@@ -225,7 +225,7 @@ WriteMakefile(
     'META_MERGE' => {
 	'resources' => {
 	    'license'    => 'http://dev.perl.org/licenses/',
-	    'repository' => 'http://hatuka.nezumi.nu/repos/Unicode-LineBreak/',
+	    'repository' => 'https://github.com/hatukanezumi/Unicode-LineBreak/',
 	},
     },
     %opts,

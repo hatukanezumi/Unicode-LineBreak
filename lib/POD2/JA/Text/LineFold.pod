@@ -177,10 +177,6 @@ L<http://rt.cpan.org/Public/Dist/Display.html?Name=Unicode-LineBreak>.
 
 $VERSION 変数を見てほしい。
 
-このモジュールの開発版が
-L<http://hatuka.nezumi.nu/repos/Unicode-LineBreak/>
-にある。
-
 =head1 SEE ALSO
 
 L<Unicode::LineBreak~[ja]>,

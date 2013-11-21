@@ -1,14 +1,6 @@
 ARTISTIC
 Changes
 Changes.REL1
-debian/changelog
-debian/compat
-debian/control
-debian/copyright
-debian/libunicode-linebreak-perl.docs
-debian/rules
-debian/source/format
-debian/watch
 GPL
 lib/POD2/JA/Text/LineFold.pod
 lib/POD2/JA/Unicode/GCString.pod
@@ -24,8 +16,6 @@ LineBreak.xs
 Makefile.PL
 Makefile.PL.sombok
 MANIFEST			This list of files
-META.json
-META.yml
 perl-Unicode-LineBreak.spec
 ppport.h
 README

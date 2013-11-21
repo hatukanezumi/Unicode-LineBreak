@@ -257,10 +257,6 @@ Perl の 5.10.1 版あたりでは、Unicode::GCString オブジェクトから 
 
 $VERSION 変数を参照してほしい。
 
-このモジュールの開発版が
-L<http://hatuka.nezumi.nu/repos/Unicode-LineBreak/>
-にある。
-
 =head2 非互換な変更
 
 =over 4
