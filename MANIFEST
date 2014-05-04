@@ -31,6 +31,7 @@ sombok/lib/6.0.0.c
 sombok/lib/6.1.0.c
 sombok/lib/6.2.0.c
 sombok/lib/6.3.0.c
+sombok/lib/7.0.0beta.c
 sombok/lib/break.c
 sombok/lib/charprop.c
 sombok/lib/gcstring.c
@@ -88,7 +89,7 @@ test-data/fr.newline.out
 test-data/fr.out
 test-data/fr.plain.out
 test-data/fr.wrap.out
-test-data/GraphemeBreakTest.txt
+#test-data/GraphemeBreakTest.txt
 test-data/he.in
 test-data/he.out
 test-data/ja-a.in
@@ -109,7 +110,7 @@ test-data/ko.al.out
 test-data/ko.in
 test-data/ko.newline.out
 test-data/ko.out
-test-data/LineBreakTest.txt
+#test-data/LineBreakTest.txt
 test-data/quotes.fixed.out
 test-data/quotes.flowed.out
 test-data/quotes.in

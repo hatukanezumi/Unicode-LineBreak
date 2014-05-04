@@ -6,7 +6,7 @@ use ExtUtils::MakeMaker;
 use Config;
 
 my $csubdir                = 'sombok';
-my $sombok_atleast_version = '2.3.1';
+my $sombok_atleast_version = '2.3.2';
 my $sombok_max_version     = '2.99.99';
 my $pkg_config             = $ENV{'PKG_CONFIG'} || 'pkg-config';
 my $enable_libthai         = 1;

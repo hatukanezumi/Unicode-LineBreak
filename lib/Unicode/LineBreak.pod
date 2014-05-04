@@ -904,8 +904,8 @@ if they have not been assigned any characers.
                        |            |            | reserved or
                        |            |            | noncharacters
     -------------------------------------------------------------
-    [*1] Except U+20A7 PESETA SIGN (PO) and
-      U+20B6 LIVRE TOURNOIS SIGN (PO).
+    [*1] Except U+20A7 PESETA SIGN (PO),
+      U+20B6 LIVRE TOURNOIS SIGN (PO) and U+20BB NORDIC MARK SIGN (PO).
     [*2] Except U+20A9 WON SIGN (H) and U+20AC EURO SIGN
       (F or N (A)).
 
