@@ -14,6 +14,8 @@
 #   [sombok-2.3.0]
 # - Passed by LineBreakTest-6.3.0d1.txt (2012-12-20, 22:18:30 UTC).
 #   [sombok-2.3.1b]
+# - Passed by LineBreakTest-7.0.0d30.txt (2014-02-19, 15:51:25 UTC). 
+#   [sombok-2.3.2beta1)
 #
 # Note: Legacy-CM feature is disabled.
 #

@@ -13,6 +13,8 @@
 #   54 surrogate cases.  [sombok-2.3.0]
 # - Passed by GraphemeBreakTest-6.3.0d1.txt (2012-12-20, 22:18:29 UTC), except
 #   54 surrogate cases.  [sombok-2.3.1b]
+# - Passed by GraphemeBreakTest-7.0.0d13.txt (2013-11-27, 09:54:39 UTC), except
+#   surrogate cases.  [sombok-2.3.2beta1]
 #
 # Note: Legacy-CM feature is enabled.
 #
