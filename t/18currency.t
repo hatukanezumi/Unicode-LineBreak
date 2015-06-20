@@ -25,6 +25,9 @@ foreach my $c (0x20A0..0x20CF) {
     } elsif ($c == 0x20BB) {
 	is($gc->lbc, Unicode::LineBreak::LB_PO(),
 	    'U+20BB NORDIC MARK SIGN lbc:PO');
+    } elsif ($c == 0x20BE) {
+	is($gc->lbc, Unicode::LineBreak::LB_PO(),
+	    'U+20BE LARI SIGN lbc:PO');
     } else {
 	is($gc->lbc, Unicode::LineBreak::LB_PR(),
 	    sprintf 'U+%04X lbc:PR', $c);

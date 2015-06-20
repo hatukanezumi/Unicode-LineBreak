@@ -1,5 +1,12 @@
+2015.06  Sun Jun 21 2015
+# Unicode 8.0.0, bundled sombok 2.3.3.
+! lib/Unicode/LineBreak.pod
+! lib/POD2/JA/Unicode/LineBreak.pod
+! t/18currency.y
+  - add a change for U+20BE.
+
 2014.06  Fri Jun 20 2014
-# Unicode 7.0.0, bundled sombok 2.3.3.
+# Unicode 7.0.0, bundled sombok 2.3.2.
 
 2014.004_26  Sat May 04 2014
 # Unicode 7.0.0beta at Mar 18, bundled sombok-2.3.2beta1.
