@@ -957,8 +957,8 @@ L<http://unicode.org/reports/tr11/>.
 
 =item [UAX #14]
 
-A. Freytag and A. Heninger (eds.) (2008-2013).
-I<Unicode Standard Annex #14: Unicode Line Breaking Algorithm>, Revisions 22-32.
+A. Freytag and A. Heninger (eds.) (2008-2015).
+I<Unicode Standard Annex #14: Unicode Line Breaking Algorithm>, Revisions 22-35.
 L<http://unicode.org/reports/tr14/>.
 
 =item [UAX #29]
