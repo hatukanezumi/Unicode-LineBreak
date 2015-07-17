@@ -69,7 +69,10 @@ unistr_t *SVtounistr(unistr_t *buf, SV *str)
     utf8ptr = utf8;
     uniptr = buf->str;
     while (utf8ptr < utf8 + utf8len) {
-#if PERL_VERSION >= 16 || (PERL_VERSION == 15 && PERL_SUBVERSION >= 9)
+#if PERL_VERSION >= 20 || (PERL_VERSION == 19 && PERL_SUBVERSION >= 4)
+	*uniptr = (unichar_t) NATIVE_TO_UNI(
+	    utf8_to_uvchr_buf(utf8ptr, utf8 + utf8len, &len));
+#elif PERL_VERSION >= 16 || (PERL_VERSION == 15 && PERL_SUBVERSION >= 9)
 	*uniptr = (unichar_t) utf8_to_uvuni_buf(utf8ptr, utf8 + utf8len,
 						&len);
 #else

@@ -1,3 +1,8 @@
+2015.07.16  Fri Jul 17 2015
+# No new features.
+! LineBreak.xs
+  - utf8_to_uvuni_buf has been deprecated by Perl 5.19.4.
+
 2015.06  Sun Jun 21 2015
 # Unicode 8.0.0, bundled sombok 2.4.0.
 ! lib/Unicode/LineBreak.pod
