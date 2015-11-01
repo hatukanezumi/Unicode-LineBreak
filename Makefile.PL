@@ -206,6 +206,17 @@ $opts{'INC'}  =~ s/\s+/ /g;
 $copy_unidata = (!-e "test-data/LineBreakTest.txt" ||
 	!-e "test-data/GraphemeBreakTest.txt");
 
+sub CheckExternalDependencies {
+  my @dependencies = @_;
+  for my $program (@dependencies) {
+    if (system("which $program > /dev/null") != 0) {
+      warn "W: Required test dependency not found: $program\n";
+    }
+  }
+}
+
+CheckExternalDependencies('wget');
+
 WriteMakefile(
     'NAME'               => 'Unicode::LineBreak',
     'ABSTRACT_FROM'      => 'lib/Unicode/LineBreak.pod',
