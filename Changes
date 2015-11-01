@@ -1,3 +1,10 @@
+2015.11  Sun Nov 01 2015
+# No new features.
+! lib/Unicode/LineBreak.pm
+  - CPAN RT #106859: The latest version is not indexed.
+! t/10gcstring.t
+  - testing that GCString stringify numeric arguments (CPAN RT #106714).
+
 2015.07.16  Fri Jul 17 2015
 # No new features.
 ! LineBreak.xs
