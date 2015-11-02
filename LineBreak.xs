@@ -56,12 +56,11 @@ unistr_t *SVtounistr(unistr_t *buf, SV *str)
     buf->len = 0;
 
     if (SvOK(str))
-	utf8len = SvCUR(str);
+	utf8 = (U8 *)SvPV(str, utf8len);
     else
 	return buf;
     if (utf8len <= 0)
 	return buf;
-    utf8 = (U8 *)SvPV(str, utf8len);
     unilen = utf8_length(utf8, utf8 + utf8len);
     if ((buf->str = (unichar_t *)malloc(sizeof(unichar_t) * unilen)) == NULL)
 	croak("SVtounistr: %s", strerror(errno));
@@ -117,13 +116,15 @@ unistr_t *SVupgradetounistr(unistr_t *buf, SV *str)
     buf->str = NULL;
     buf->len = 0;
 
-    len = SvCUR(str);
+    if (SvOK(str))
+	s = SvPV(str, len);
+    else
+	return buf;
     if (len == 0)
 	return buf;
     if ((buf->str = malloc(sizeof(unichar_t) * len)) == NULL)
 	croak("SVupgradetounistr: %s", strerror(errno));
 
-    s = SvPV(str, len);
     for (i = 0; i < len; i++)
 	buf->str[i] = (unichar_t)(unsigned char)s[i];
     buf->len = len;

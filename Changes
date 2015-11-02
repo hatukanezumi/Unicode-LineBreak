@@ -1,3 +1,10 @@
+2015.011_03  Sun Nove 03 2015
+! LineBreak.xs
+  - Fix with Perl around 5.10.0 or later on *BSD or Mac OS X:
+    CPAN RT #106714: Unicode::GCString fails to handle numeric value.
+! t/10gcstring.t
+  - Adding more case.
+
 2015.11  Sun Nov 01 2015
 # No new features.
 ! lib/Unicode/LineBreak.pm
