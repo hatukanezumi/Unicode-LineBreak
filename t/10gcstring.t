@@ -1,7 +1,7 @@
 use Test::More;
 use Unicode::GCString;
 
-BEGIN { plan tests => 38 }
+BEGIN { plan tests => 37 }
 
 ($s, $r) = (pack('U*', 0x300, 0, 0x0D, 0x41, 0x300, 0x301, 0x3042, 0xD, 0xA,
 		 0xAC00, 0x11A8),
@@ -61,8 +61,6 @@ while ($gc = <$string>) {
     is($gc, shift @s);
 }
 
-$string = Unicode::GCString->new("5");
-is($string->columns, 1, 'string "5"');
 my $number = Unicode::GCString->new(5);
 is($number->columns, 1, 'number "5"');
 $number = Unicode::GCString->new(0);
