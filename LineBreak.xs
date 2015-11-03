@@ -159,7 +159,11 @@ SV *unistrtoSV(unistr_t *unistr, size_t uniidx, size_t unilen)
 	    croak("unistrtoSV: %s", strerror(errno));
 	}
 	buf = newbuf;
+#if PERL_VERSION >= 20 || (PERL_VERSION == 19 && PERL_SUBVERSION >= 4)
+	utf8len = uvchr_to_utf8(buf + utf8len, UNI_TO_NATIVE(*uniptr)) - buf;
+#else
 	utf8len = uvuni_to_utf8(buf + utf8len, *uniptr) - buf;
+#endif
 	uniptr++;
     }
 
