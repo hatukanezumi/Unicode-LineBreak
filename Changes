@@ -1,3 +1,7 @@
+2015.011_09  Mon Nov 09 2015
+! LineBreak.xs
+  - uvnui_to_utf8() was obsoleted by Perl 5.20.0. Use uvchr_to_utf8().
+
 2015.011_03  Sun Nov 03 2015
 ! LineBreak.xs
   - Bug fix: CPAN RT #106714: Unicode::GCString fails to handle numeric value,
