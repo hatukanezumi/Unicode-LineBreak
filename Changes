@@ -1,3 +1,8 @@
+2016.002_27  Sat Feb 27 2016
+! Makefile.PL.sombok
+  - CPAN RT#112078: Compiling libsombok.a fails due to invalid path for object
+    files.
+
 2015.12  Sun Nov 29 2015
 # No new features.
 
