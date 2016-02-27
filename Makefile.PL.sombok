@@ -63,6 +63,8 @@ sub MY::c_o {
 	{ $1 . $self->cd('lib', split /(?<!\\)\n\t/, $2) }eg;
     $inherited =~ s{(\s)(\$\*\.c\s)}
 	{ "$1..\$(DIRFILESEP)$2" }eg;
+    $inherited =~ s{(-o\s)(\$\*\$\(OBJ_EXT\))}
+	{ "$1..\$(DIRFILESEP)$2" }eg;
     $inherited;
 }
 
