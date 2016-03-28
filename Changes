@@ -1,3 +1,6 @@
+2016.003  Tue Mar 29 2016
+# No new features, version number as canonical numstring.
+
 2016.002_27  Sat Feb 27 2016
 ! Makefile.PL.sombok
   - CPAN RT#112078: Compiling libsombok.a fails due to invalid path for object
