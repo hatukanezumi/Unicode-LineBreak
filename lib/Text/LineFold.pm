@@ -48,7 +48,7 @@ use Unicode::LineBreak qw(:all);
 ### Globals
 
 ### The package Version
-our $VERSION = '2012.04';
+our $VERSION = '2016.00702';
 
 ### Public Configuration Attributes
 our $Config = {
@@ -93,8 +93,6 @@ my %FORMAT_FUNCS = (
 	if ($action eq 'sol') {
 	    if ($self->{_}->{prefix}) {
 		return $self->{_}->{prefix}.' '.$str;
-	    } elsif ($str =~ /^(?: |From |>)/) {
-		return ' '.$str;
 	    }
 	} elsif ($action =~ /^so/) {
 	    $self->{_} = {};
@@ -102,11 +100,12 @@ my %FORMAT_FUNCS = (
 		$self->{_}->{prefix} = $1;
 	    } else {
 		$self->{_}->{prefix} = '';
-		if ($str =~ /^(?: |From )/) {
-		    return ' '.$str;
-		}
 	    }
 	} elsif ($action eq "") {
+	    if ($str =~ /^(?: |From )/
+		or $str =~ /^>/ and !length $self->{_}->{prefix}) {
+		return $self->{_}->{line} = ' ' . $str;
+	    }
 	    $self->{_}->{line} = $str;
 	} elsif ($action eq 'eol') {
 	    $str = ' ' if length $str;

@@ -1,3 +1,8 @@
+2016.007_02  Sat Jul 02 2016
+! lib/Text/LineFold.pm
+! t/04fold.t
+  - CPAN RT#115146: Space indenting not happening with "From" or " ".
+
 2016.003  Tue Mar 29 2016
 # No new features, version number as canonical numstring.
 
