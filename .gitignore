@@ -1,9 +1,12 @@
 MYMETA.json
 MYMETA.yml
 Makefile
+Makefile.old
 
 LineBreak.bs
 LineBreak.c
 LineBreak.o
 blib/
 pm_to_blib
+
+Unicode-LineBreak-*.tar.gz
