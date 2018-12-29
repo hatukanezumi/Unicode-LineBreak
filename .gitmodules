@@ -4,3 +4,4 @@
 [submodule "sombok"]
 	path = sombok
 	url = https://github.com/hatukanezumi/sombok.git
+	ignore = dirty
