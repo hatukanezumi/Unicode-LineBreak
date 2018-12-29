@@ -48,7 +48,7 @@ use Unicode::LineBreak qw(:all);
 ### Globals
 
 ### The package Version
-our $VERSION = '2016.00702';
+our $VERSION = '2018.012';
 
 ### Public Configuration Attributes
 our $Config = {
