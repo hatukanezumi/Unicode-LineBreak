@@ -235,9 +235,9 @@ sub config {
 
     # Set config.
     my @o = ();
-    my %params = @_;
-    foreach my $k (keys %params) {
-        my $v = $params{$k};
+    while (scalar @_) {
+	my $k = shift;
+	my $v = shift;
 	if ($opts{uc $k}) {
 	    $self->{$opts{uc $k}} = $v;
 	} elsif (uc $k eq uc 'Newline') {
