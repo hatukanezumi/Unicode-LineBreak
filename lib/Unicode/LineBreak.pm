@@ -25,7 +25,7 @@ use Unicode::GCString;
 ### Globals
 
 ### The package version
-our $VERSION = '2018.012';
+our $VERSION = '2019.001';
 
 ### Public Configuration Attributes
 our @Config = (
