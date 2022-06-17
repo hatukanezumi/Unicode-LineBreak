@@ -66,13 +66,11 @@ sombok/libsombok.a:
 sub MY::c_o {
     package MY;
     my $self = shift;
+    # Have c -> o suffix rules specify the location of the object file. This
+    # keeps the source file and the corresponding object file in the same
+    # directory, without having to rewrite the suffix rules
+    local $self->{XSMULTI} = 1;
     my $inherited = $self->SUPER::c_o(@_);
-    $inherited =~ s{(:\n\t)(.*(?:\n\t.*)*)}
-	{ $1 . $self->cd('lib', split /(?<!\\)\n\t/, $2) }eg;
-    $inherited =~ s{(\s)(\$\*\.c\s)}
-	{ "$1..\$(DIRFILESEP)$2" }eg;
-    $inherited =~ s{(-o\s)(\$\*\$\(OBJ_EXT\))}
-	{ "$1..\$(DIRFILESEP)$2" }eg;
     $inherited;
 }
 
